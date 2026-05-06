@@ -8,6 +8,19 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Heebo',sans-serif;background:#F5F7FA;color:#222;direction:rtl}
+/* LOGIN */
+#loginScreen{position:fixed;inset:0;background:linear-gradient(135deg,#1F3864 0%,#2a4a80 60%,#1a2d50 100%);display:flex;align-items:center;justify-content:center;z-index:9999}
+.login-box{background:#fff;border-radius:16px;padding:40px 36px;width:90%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.35);text-align:center}
+.login-logo{font-size:2.8rem;margin-bottom:8px}
+.login-title{font-size:1.25rem;font-weight:700;color:#1F3864;margin-bottom:4px}
+.login-sub{font-size:.85rem;color:#888;margin-bottom:28px}
+.login-label{display:block;text-align:right;font-size:.82rem;font-weight:600;color:#555;margin-bottom:6px}
+.login-input{width:100%;padding:11px 14px;border:2px solid #dde3ed;border-radius:8px;font-family:'Heebo',sans-serif;font-size:1rem;outline:none;transition:border .2s;direction:rtl}
+.login-input:focus{border-color:#1F3864}
+.login-btn{width:100%;padding:12px;background:#E8A020;color:#fff;border:none;border-radius:8px;font-family:'Heebo',sans-serif;font-size:1rem;font-weight:700;cursor:pointer;margin-top:16px;transition:background .2s}
+.login-btn:hover{background:#c98a18}
+.login-err{color:#C00000;font-size:.85rem;min-height:22px;margin-top:8px}
+.login-footer{margin-top:24px;font-size:.75rem;color:#bbb}
 /* HEADER */
 .header{background:#1F3864;color:#fff;padding:16px 24px}
 .header h1{font-size:1.3rem;font-weight:700;margin-bottom:10px}
@@ -93,6 +106,23 @@ td{padding:9px 12px;vertical-align:middle}
 </head>
 <body>
 
+<!-- LOGIN -->
+<div id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo">🏛️</div>
+    <div class="login-title">דוח ארנונה ירושלים</div>
+    <div class="login-sub">גישה מורשית בלבד — עיריית ירושלים</div>
+    <label class="login-label" for="pwdInput">סיסמה</label>
+    <input class="login-input" type="password" id="pwdInput" placeholder="הכנס סיסמה...">
+    <div class="login-err" id="loginErr"></div>
+    <button class="login-btn" onclick="tryLogin()">כניסה למערכת</button>
+    <div class="login-footer">© עיריית ירושלים — שימוש פנימי בלבד</div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="mainApp" style="display:none">
+
 <div class="header">
   <h1>🏛️ דוח עסקים חשודים – ארנונה ירושלים</h1>
   <div class="stats-bar" id="statsBar"></div>
@@ -138,6 +168,8 @@ td{padding:9px 12px;vertical-align:middle}
     </table>
   </div>
 </div>
+
+</div><!-- /mainApp -->
 
 <!-- MODAL -->
 <div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
@@ -204,32 +236,42 @@ const DATA = [
   {n:"עינת יניב - מרפאה וטרינרית",t:"מרפאה וטרינרית",a:"דרך בית לחם 9",am:"לא נמצאה",o:"לא נמצאו",d:"לא ידוע",r:"דרוש בדיקה",det:"כתובת \"דרך בית לחם 9\" לא נמצאה בנתוני העירייה.",nc:"",url:"https://www.b144.co.il/וטרינרים/ירושלים-/"}
 ];
 
-let filtered = [...DATA];
-let sortCol = -1, sortDir = 1;
-let activeFilter = 'all';
+
+let filtered=[...DATA],sortCol=-1,sortDir=1,activeFilter='all';
 
 function ratingEmoji(r){return r==='גבוה'?'🔴':r==='לא חשוד'?'🟢':'🔵';}
 function ratingClass(r){return r==='גבוה'?'row-high':r==='לא חשוד'?'row-ok':'row-check';}
 function badgeClass(r){return r==='גבוה'?'badge-high':r==='לא חשוד'?'badge-ok':'badge-check';}
 function typeEmoji(t){return t==='מרפאת שיניים'?'🦷':t==='משרד עורכי דין'?'⚖️':t==='משרד רואי חשבון'?'📊':'🐾';}
 
+function tryLogin(){
+  const pwd=document.getElementById('pwdInput').value;
+  if(pwd==='אשכול הידע'){
+    document.getElementById('loginScreen').style.display='none';
+    document.getElementById('mainApp').style.display='block';
+  } else {
+    const err=document.getElementById('loginErr');
+    err.textContent='סיסמה שגויה. נסה שנית.';
+    document.getElementById('pwdInput').value='';
+    document.getElementById('pwdInput').focus();
+    setTimeout(()=>err.textContent='',3000);
+  }
+}
+document.getElementById('pwdInput').addEventListener('keydown',e=>{if(e.key==='Enter')tryLogin();});
+
 function buildStats(){
   const c={גבוה:0,'לא חשוד':0,'דרוש בדיקה':0};
   DATA.forEach(x=>c[x.r]++);
-  const bar=document.getElementById('statsBar');
-  bar.innerHTML=`
+  document.getElementById('statsBar').innerHTML=`
     <span class="stat-badge all" onclick="setFilter('all')">סה"כ <span class="count">${DATA.length}</span></span>
     <span class="stat-badge high" onclick="setFilter('גבוה')">🔴 חשד גבוה <span class="count">${c['גבוה']}</span></span>
     <span class="stat-badge ok" onclick="setFilter('לא חשוד')">🟢 לא חשוד <span class="count">${c['לא חשוד']}</span></span>
-    <span class="stat-badge check" onclick="setFilter('דרוש בדיקה')">🔵 דרוש בדיקה <span class="count">${c['דרוש בדיקה']}</span></span>
-  `;
+    <span class="stat-badge check" onclick="setFilter('דרוש בדיקה')">🔵 דרוש בדיקה <span class="count">${c['דרוש בדיקה']}</span></span>`;
 }
 
 function setFilter(f){
   activeFilter=f;
-  document.querySelectorAll('.toggle-btn').forEach(b=>{
-    b.classList.toggle('active', b.dataset.filter===f);
-  });
+  document.querySelectorAll('.toggle-btn').forEach(b=>b.classList.toggle('active',b.dataset.filter===f));
   applyFilters();
 }
 
@@ -237,9 +279,9 @@ function applyFilters(){
   const q=document.getElementById('searchInput').value.trim().toLowerCase();
   const tp=document.getElementById('typeFilter').value;
   filtered=DATA.filter(row=>{
-    if(activeFilter!=='all' && row.r!==activeFilter) return false;
-    if(tp && row.t!==tp) return false;
-    if(q && !row.n.toLowerCase().includes(q) && !row.a.toLowerCase().includes(q)) return false;
+    if(activeFilter!=='all'&&row.r!==activeFilter) return false;
+    if(tp&&row.t!==tp) return false;
+    if(q&&!row.n.toLowerCase().includes(q)&&!row.a.toLowerCase().includes(q)) return false;
     return true;
   });
   if(sortCol>=0) doSort(false);
@@ -251,7 +293,7 @@ function render(){
   if(!filtered.length){
     tbody.innerHTML=`<tr><td colspan="6" style="text-align:center;padding:30px;color:#888;">לא נמצאו תוצאות</td></tr>`;
   } else {
-    tbody.innerHTML=filtered.map((row,i)=>`
+    tbody.innerHTML=filtered.map(row=>`
       <tr class="${ratingClass(row.r)}" onclick="openModal(${DATA.indexOf(row)})">
         <td><strong>${row.n}</strong></td>
         <td><span class="type-tag">${typeEmoji(row.t)} ${row.t}</span></td>
@@ -265,7 +307,7 @@ function render(){
 }
 
 function sortBy(col){
-  if(sortCol===col) sortDir*=-1; else {sortCol=col;sortDir=1;}
+  if(sortCol===col) sortDir*=-1; else{sortCol=col;sortDir=1;}
   document.querySelectorAll('thead th').forEach((th,i)=>{
     th.classList.toggle('sorted',i===col);
     const arr=th.querySelector('.sort-arrow');
@@ -277,7 +319,7 @@ function sortBy(col){
 function doSort(rerender){
   const keys=['n','t','a','d','r'];
   filtered.sort((a,b)=>{
-    let va=a[keys[sortCol]], vb=b[keys[sortCol]];
+    let va=a[keys[sortCol]],vb=b[keys[sortCol]];
     if(typeof va==='number'&&typeof vb==='number') return (va-vb)*sortDir;
     return String(va).localeCompare(String(vb),'he')*sortDir;
   });
@@ -288,7 +330,7 @@ function openModal(idx){
   const row=DATA[idx];
   const emo=ratingEmoji(row.r);
   const alertCls=row.r==='גבוה'?'alert-high':row.r==='לא חשוד'?'alert-ok':'alert-check';
-  const content=row.r==='גבוה'?row.det:row.r==='לא חשוד'?row.nc:row.det;
+  const content=row.r==='לא חשוד'?row.nc:row.det;
   document.getElementById('modalTitle').innerHTML=`${emo} ${row.n}`;
   document.getElementById('modalBody').innerHTML=`
     <div class="modal-row"><span class="modal-icon">📍</span><div><div class="modal-label">כתובת</div><div class="modal-val">${row.a}${row.am&&row.am!==row.a?' <span style="color:#888;font-size:.8rem">(בעירייה: '+row.am+')</span>':''}</div></div></div>
@@ -298,12 +340,11 @@ function openModal(idx){
     <div class="modal-row"><span class="modal-icon">👤</span><div><div class="modal-label">בעלי נכסים</div><div class="owners-list">${row.o}</div></div></div>
     <hr class="modal-divider">
     <div class="alert-box ${alertCls}"><strong>${emo} ${row.r}:</strong> ${content||'—'}</div>
-    ${row.url?`<div class="modal-row"><span class="modal-icon">🔗</span><div><div class="modal-label">מקור המידע</div><a class="src-link" href="${row.url}" target="_blank" rel="noopener">${row.url}</a></div></div>`:''}
-  `;
+    ${row.url?`<div class="modal-row"><span class="modal-icon">🔗</span><div><div class="modal-label">מקור המידע</div><a class="src-link" href="${row.url}" target="_blank" rel="noopener">${row.url}</a></div></div>`:''}`;
   document.getElementById('modalOverlay').classList.add('open');
 }
 
-function closeModal(e){if(e.target===document.getElementById('modalOverlay')) closeModalDirect();}
+function closeModal(e){if(e.target===document.getElementById('modalOverlay'))closeModalDirect();}
 function closeModalDirect(){document.getElementById('modalOverlay').classList.remove('open');}
 
 function exportCSV(){
@@ -319,7 +360,7 @@ function exportCSV(){
 document.getElementById('searchInput').addEventListener('input',applyFilters);
 document.getElementById('typeFilter').addEventListener('change',applyFilters);
 document.querySelectorAll('.toggle-btn').forEach(b=>b.addEventListener('click',()=>setFilter(b.dataset.filter)));
-document.addEventListener('keydown',e=>{if(e.key==='Escape') closeModalDirect();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModalDirect();});
 
 buildStats();
 applyFilters();
