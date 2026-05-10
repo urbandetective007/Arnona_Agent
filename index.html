@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>דוח עסקים חשודים – ארנונה ירושלים</title>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Heebo',sans-serif;background:#F5F7FA;color:#222;direction:rtl}
+/* LOGIN */
+#loginScreen{position:fixed;inset:0;background:linear-gradient(135deg,#1F3864 0%,#2a4a80 60%,#1a2d50 100%);display:flex;align-items:center;justify-content:center;z-index:9999}
+.login-box{background:#fff;border-radius:16px;padding:40px 36px;width:90%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.35);text-align:center}
+.login-logo{font-size:2.8rem;margin-bottom:8px}
+.login-title{font-size:1.25rem;font-weight:700;color:#1F3864;margin-bottom:4px}
+.login-sub{font-size:.85rem;color:#888;margin-bottom:28px}
+.login-label{display:block;text-align:right;font-size:.82rem;font-weight:600;color:#555;margin-bottom:6px}
+.login-input{width:100%;padding:11px 14px;border:2px solid #dde3ed;border-radius:8px;font-family:'Heebo',sans-serif;font-size:1rem;outline:none;transition:border .2s;direction:rtl}
+.login-input:focus{border-color:#1F3864}
+.login-btn{width:100%;padding:12px;background:#E8A020;color:#fff;border:none;border-radius:8px;font-family:'Heebo',sans-serif;font-size:1rem;font-weight:700;cursor:pointer;margin-top:16px;transition:background .2s}
+.login-btn:hover{background:#c98a18}
+.login-err{color:#C00000;font-size:.85rem;min-height:22px;margin-top:8px}
+.login-footer{margin-top:24px;font-size:.75rem;color:#bbb}
+/* HEADER */
+.header{background:#1F3864;color:#fff;padding:16px 24px}
+.header h1{font-size:1.3rem;font-weight:700;margin-bottom:10px}
+.header h1 span{font-size:1.1rem;opacity:.8}
+.stats-bar{display:flex;gap:10px;flex-wrap:wrap}
+.stat-badge{display:flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;font-size:.85rem;font-weight:600;cursor:pointer;transition:opacity .2s}
+.stat-badge:hover{opacity:.85}
+.stat-badge.all{background:#E8A020;color:#fff}
+.stat-badge.high{background:#C00000;color:#fff}
+.stat-badge.ok{background:#2E7D32;color:#fff}
+.stat-badge.check{background:#005F8A;color:#fff}
+.stat-badge .count{background:rgba(255,255,255,.3);border-radius:10px;padding:1px 7px;font-size:.8rem}
+/* FILTERS */
+.filters{background:#fff;padding:14px 24px;border-bottom:1px solid #dde3ed;display:flex;gap:12px;flex-wrap:wrap;align-items:center;position:sticky;top:0;z-index:10;box-shadow:0 2px 6px rgba(0,0,0,.07)}
+.search-wrap{position:relative;flex:1;min-width:180px}
+.search-wrap input{width:100%;padding:8px 36px 8px 12px;border:1px solid #cdd5e0;border-radius:6px;font-family:'Heebo',sans-serif;font-size:.9rem;outline:none}
+.search-wrap input:focus{border-color:#1F3864}
+.search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#999;font-size:1rem}
+select{padding:8px 12px;border:1px solid #cdd5e0;border-radius:6px;font-family:'Heebo',sans-serif;font-size:.9rem;outline:none;background:#fff;cursor:pointer}
+select:focus{border-color:#1F3864}
+.toggle-group{display:flex;gap:6px;flex-wrap:wrap}
+.toggle-btn{padding:7px 13px;border:2px solid transparent;border-radius:20px;font-family:'Heebo',sans-serif;font-size:.82rem;font-weight:600;cursor:pointer;transition:all .15s}
+.toggle-btn.t-all{background:#fff;border-color:#E8A020;color:#E8A020}
+.toggle-btn.t-all.active{background:#E8A020;color:#fff}
+.toggle-btn.t-high{background:#fff;border-color:#C00000;color:#C00000}
+.toggle-btn.t-high.active{background:#FFE0E0;border-color:#C00000}
+.toggle-btn.t-ok{background:#fff;border-color:#2E7D32;color:#2E7D32}
+.toggle-btn.t-ok.active{background:#E8F5E9;border-color:#2E7D32}
+.toggle-btn.t-check{background:#fff;border-color:#005F8A;color:#005F8A}
+.toggle-btn.t-check.active{background:#D6F0FF;border-color:#005F8A}
+/* TABLE */
+.table-wrap{padding:16px 24px}
+.result-count{font-size:.85rem;color:#555;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
+.export-btn{background:#E8A020;color:#fff;border:none;padding:7px 16px;border-radius:6px;font-family:'Heebo',sans-serif;font-size:.85rem;font-weight:600;cursor:pointer;transition:background .2s}
+.export-btn:hover{background:#c98a18}
+.tbl-container{overflow-x:auto;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,.1)}
+table{width:100%;border-collapse:collapse;background:#fff;font-size:.87rem;min-width:700px}
+thead{background:#1F3864;color:#fff;position:sticky;top:0}
+thead th{padding:10px 12px;font-weight:600;white-space:nowrap;cursor:pointer;user-select:none}
+thead th:hover{background:#16305a}
+thead th .sort-arrow{opacity:.5;font-size:.75rem;margin-right:3px}
+thead th.sorted .sort-arrow{opacity:1}
+tbody tr{border-bottom:1px solid #eef0f5;cursor:pointer;transition:filter .15s}
+tbody tr:hover{filter:brightness(.96)}
+tbody tr.row-high{background:#FFF5F5}
+tbody tr.row-ok{background:#F5FBF5}
+tbody tr.row-check{background:#F0F8FF}
+td{padding:9px 12px;vertical-align:middle}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:12px;font-size:.78rem;font-weight:600;white-space:nowrap}
+.badge-high{background:#FFE0E0;color:#C00000}
+.badge-ok{background:#E8F5E9;color:#2E7D32}
+.badge-check{background:#D6F0FF;color:#005F8A}
+.type-tag{background:#EEF2FF;color:#3949AB;padding:2px 8px;border-radius:10px;font-size:.78rem;white-space:nowrap}
+.detail-btn{background:none;border:1px solid #1F3864;color:#1F3864;padding:4px 10px;border-radius:6px;font-family:'Heebo',sans-serif;font-size:.78rem;cursor:pointer;transition:all .15s;white-space:nowrap}
+.detail-btn:hover{background:#1F3864;color:#fff}
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:#fff;border-radius:10px;width:90%;max-width:560px;max-height:88vh;overflow-y:auto;direction:rtl}
+.modal-header{padding:16px 20px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #eee}
+.modal-header h2{font-size:1.05rem;font-weight:700;display:flex;align-items:center;gap:8px}
+.modal-close{background:none;border:none;font-size:1.4rem;cursor:pointer;color:#666;line-height:1;padding:0 4px}
+.modal-body{padding:18px 20px;display:flex;flex-direction:column;gap:12px}
+.modal-row{display:flex;gap:8px;align-items:flex-start}
+.modal-icon{font-size:1rem;margin-top:1px;flex-shrink:0}
+.modal-label{font-size:.8rem;color:#888;font-weight:500;white-space:nowrap}
+.modal-val{font-size:.9rem;color:#222;line-height:1.5}
+.modal-divider{border:none;border-top:1px solid #eee;margin:4px 0}
+.alert-box{padding:10px 14px;border-radius:7px;font-size:.87rem;line-height:1.5}
+.alert-high{background:#FFF0F0;border-right:4px solid #C00000;color:#7a0000}
+.alert-ok{background:#F0FBF0;border-right:4px solid #2E7D32;color:#1b5e20}
+.alert-check{background:#EEF8FF;border-right:4px solid #005F8A;color:#004060}
+.owners-list{font-size:.82rem;color:#555;line-height:1.7;background:#F9FAFB;padding:8px 12px;border-radius:6px;max-height:120px;overflow-y:auto}
+.src-link{color:#005F8A;font-size:.85rem;text-decoration:none}
+.src-link:hover{text-decoration:underline}
+@media(max-width:600px){
+  .header h1{font-size:1.1rem}
+  .filters{padding:10px 12px}
+  .table-wrap{padding:10px 12px}
+  .modal{width:96%;max-height:94vh}
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo">🏛️</div>
+    <div class="login-title">דוח ארנונה ירושלים</div>
+    <div class="login-sub">גישה מורשית בלבד — עיריית ירושלים</div>
+    <label class="login-label" for="pwdInput">סיסמה</label>
+    <input class="login-input" type="password" id="pwdInput" placeholder="הכנס סיסמה...">
+    <div class="login-err" id="loginErr"></div>
+    <button class="login-btn" onclick="tryLogin()">כניסה למערכת</button>
+    <div class="login-footer">© עיריית ירושלים — שימוש פנימי בלבד</div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="mainApp" style="display:none">
+
+<div class="header">
+  <h1>🏛️ דוח עסקים חשודים – ארנונה ירושלים</h1>
+  <div class="stats-bar" id="statsBar"></div>
+</div>
+
+<div class="filters">
+  <div class="search-wrap">
+    <input type="text" id="searchInput" placeholder="🔍  חיפוש לפי שם עסק או כתובת...">
+  </div>
+  <select id="typeFilter">
+    <option value="">כל סוגי העסקים</option>
+    <option value="מרפאת שיניים">🦷 מרפאת שיניים</option>
+    <option value="משרד עורכי דין">⚖️ משרד עורכי דין</option>
+    <option value="משרד רואי חשבון">📊 משרד רואי חשבון</option>
+    <option value="מרפאה וטרינרית">🐾 מרפאה וטרינרית</option>
+  </select>
+  <div class="toggle-group" id="toggleGroup">
+    <button class="toggle-btn t-all active" data-filter="all">● הכל</button>
+    <button class="toggle-btn t-high" data-filter="גבוה">🔴 גבוה</button>
+    <button class="toggle-btn t-ok" data-filter="לא חשוד">🟢 לא חשוד</button>
+    <button class="toggle-btn t-check" data-filter="דרוש בדיקה">🔵 דרוש בדיקה</button>
+  </div>
+</div>
+
+<div class="table-wrap">
+  <div class="result-count">
+    <span id="resultCount"></span>
+    <button class="export-btn" onclick="exportCSV()">⬇️ ייצוא CSV</button>
+  </div>
+  <div class="tbl-container">
+    <table id="mainTable">
+      <thead>
+        <tr>
+          <th onclick="sortBy(0)" data-col="0"><span class="sort-arrow">▼</span> שם העסק</th>
+          <th onclick="sortBy(1)" data-col="1"><span class="sort-arrow">▼</span> סוג</th>
+          <th onclick="sortBy(2)" data-col="2"><span class="sort-arrow">▼</span> כתובת</th>
+          <th onclick="sortBy(3)" data-col="3"><span class="sort-arrow">▼</span> יחידות</th>
+          <th onclick="sortBy(4)" data-col="4"><span class="sort-arrow">▼</span> דירוג חשד</th>
+          <th>פרטים</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
+</div>
+
+</div><!-- /mainApp -->
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal" id="modal">
+    <div class="modal-header">
+      <h2 id="modalTitle"></h2>
+      <button class="modal-close" onclick="closeModalDirect()">✕</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<script>
+const DATA = [
+  {n:"בן חיון מרפאת שיניים",t:"מרפאת שיניים",a:"לויד ג'ורג' 2",am:"לויד גורג 2",o:"עודד אבידני",d:1,r:"גבוה",det:"כל 1 היחידות מסווגות \"מגורים\". העסק עשוי לפעול מדירת מגורים ללא סיווג מתאים.",nc:"",url:"https://www.b144.co.il/מרפאות-שיניים/ירושלים/"},
+  {n:"דנטלית - רשת מרפאות שיניים",t:"מרפאת שיניים",a:"ירמיהו 42",am:"ירמיהו 42",o:"פרוש יהושע וליבא, אדית קליין, מרדכי יחיאל לודמיר, עזרא פריעדמאון, יצחק פלוטשעניק, יצחק שוימר, מיטשל יוסף גרינברג, בלומה רוזמן, פייגי פיקארסקי, מאיר פרידמן, יעקב ואדית קליין, לאה שטיין, ומרדכי הרשברג יהודית, ומסודי מורסיאנו אליהו, שאול יצחק דושינסקי",d:30,r:"גבוה",det:"כל 30 היחידות מסווגות \"מגורים\". העסק עשוי לפעול מדירת מגורים ללא סיווג מתאים.",nc:"",url:"https://www.d.co.il/80036383/32060/"},
+  {n:"הלה מרפאות שיניים",t:"מרפאת שיניים",a:"שלומציון המלכה 18",am:"שלומציון 18",o:"המוסד לביטוח לאומי, מדטכניקה - אורתופון בע\"מ, חברת החשמל לישראל בע\"מ, עזרי בן חור ונאוה, גיא/מרטין שטיינר, סירא אקאדה בע\"מ, עמל ומעבר בע\"מ, אילוז אילן, נדב - דורות של אומנות בע\"מ, מורשת שרה, מריס טכנולוגיה ופיתוח בע\"מ, כנפו גבריאל, קרין רקיע",d:26,r:"לא חשוד",det:"",nc:"קיימות 26 יחידות \"לא מגורים\" מתוך 26",url:"https://www.b144.co.il/מרפאות-שיניים/ירושלים/"},
+  {n:"ד\"ר לנדאו בנימין - מרפאת שיניים",t:"מרפאת שיניים",a:"הלל 5",am:"הלל 5",o:"נעם יצחק כהן, משה ביטון יעקב/ראובן/משה, שיראל לביא, גל כהן, נעמה כהן, תיגבור-מאגר כח אדם מקצועי זמני בע\"מ, דניאלה קרלין, רות מון עדה, לנדאו בנימין, איאקה קודו, שני בן דוד, צליל-פורטונה דרעי, משה יונס ניהול השקעות בע\"מ, מרים אסתר בליטי, ג'אד אוה קלייר פדילה",d:20,r:"לא חשוד",det:"",nc:"קיימות 9 יחידות \"לא מגורים\" מתוך 20; שם העסק תואם לבעל נכס: \"לנדאו בנימין\"",url:"https://www.b144.co.il/מרפאות-שיניים/ירושלים/"},
+  {n:"ד\"ר אבו גוש אחמד - רופא שיניים",t:"מרפאת שיניים",a:"ברל לוקר 25",am:"ברל לוקר 25",o:"חברת גראנד חומות ירושלים להחזקות בע\"מ, עבד עליאן, רוברט סכאפי, חמדי עליאן",d:4,r:"לא חשוד",det:"",nc:"קיימות 3 יחידות \"לא מגורים\" מתוך 4",url:"https://www.b144.co.il/מרפאות-שיניים/ירושלים/"},
+  {n:"Surgi Dent Clinic",t:"מרפאת שיניים",a:"סלאח א-דין 15",am:"סלאח אל-דין 15",o:"שרכת כהרבא מחאפטית אל קדס אל מסאהמה אל מחדוזה, סלקום ישראל בע\"מ",d:3,r:"לא חשוד",det:"",nc:"קיימות 3 יחידות \"לא מגורים\" מתוך 3",url:"https://www.b144.co.il/מרפאות-שיניים/ירושלים/"},
+  {n:"ד\"ר נעמה סינגין - מרפאת שיניים",t:"מרפאת שיניים",a:"אליעזר מרגולין 1",am:"מרגולין 1",o:"נעימה סינגין, נחמיה רחל, אזולאי שושנה, רותי סלם, יששכר דוד ורבקה, ידגאר יזדיאן, רחל כהן, השומר הצעיר, אסייג אלברט ואליס, נסים יונה, נועא סלע, רחל זנוא, אהרון שלי, עייני יגאל ואילנה",d:14,r:"לא חשוד",det:"",nc:"קיימות 1 יחידות \"לא מגורים\" מתוך 14; שם העסק תואם לבעל נכס: \"נעימה סינגין\"",url:"https://www.b144.co.il/מרפאות-שיניים/ירושלים/"},
+  {n:"מרפאת שיניים חירום 24 שעות",t:"מרפאת שיניים",a:"בארי 3",am:"בארי 3",o:"מ. פומרנץ - מוכר ספרים בע\"מ, ע.ר עמותת אחוזת רעים, מרדכי יוסף קריסטל, דוד ברדלי הורן, אולגה גולדמן, אירינה טולצ'ינסקי, ד\"ר עסלי מוסא, ארטסט אספקה לאמנות בע\"מ, ניק סולומוניק גבורגיאן, נטע לינור, אנה ניימן, חזקי השקעות בע\"מ, אוריה פינטו וולוובסק",d:26,r:"לא חשוד",det:"",nc:"קיימות 15 יחידות \"לא מגורים\" מתוך 26",url:"https://www.d.co.il/80236687/46230/"},
+  {n:"ד\"ר דוד זליג - מרפאת שיניים",t:"מרפאת שיניים",a:"דרך חברון 101",am:"דרך חברון 101",o:"יגאל מלמד משרד עו\"ד, א.ז. תמר נכסים בע\"מ, אלי לב יוסף, ג'י.קיי. אס.איי. אחזקות בע\"מ, אפרים אופי נרגסי, שנטל ריצ'רד, מרכז פריו ירושלים בע\"מ, א. סדן (אחזקות) בע\"מ, פרסונל דיוויסס בע\"מ, צחי יונה, אדם עיאד, זאב משה רוטקף",d:183,r:"לא חשוד",det:"",nc:"קיימות 183 יחידות \"לא מגורים\" מתוך 183; שם העסק תואם לבעל נכס: \"הדמיית שיניים בע\"מ\"",url:"https://www.b144.co.il/מרפאות-שיניים/ירושלים/"},
+  {n:"מרפאת שיניים ד\"ר אריאל ששון",t:"מרפאת שיניים",a:"שמואל הנגיד 1",am:"שמואל הנגיד 1",o:"מאיר משה מישל בן שושן, רבון רינה, שסקין יוסף, נ.א.י. נאכרישטן אוס ישראל בע\"מ, רוזנטל יאיר, שטרנבך דוד וגיזלה, אוריה פינטו וולוובסקי, מתנאל צ'רלס חיים קופיאצקי, חב' ד\"ר אריק כמכאג'י, נוסברה ייעוץ והשקעות בע\"מ, מנשה בן דוד, הריס גדליה, א.ר.ש. הנכס בשמואל הנגיד 1 בע\"מ, פינטו יוסף",d:19,r:"לא חשוד",det:"",nc:"קיימות 14 יחידות \"לא מגורים\" מתוך 19; שם העסק תואם לבעל נכס: \"ששון אריאל דר\"",url:"https://www.b144.co.il/מרפאות-שיניים/ירושלים/"},
+  {n:"כותרת השן",t:"מרפאת שיניים",a:"יעקב מאיר 11",am:"יעקב מאיר 11",o:"יצחק בייבבייב",d:1,r:"לא חשוד",det:"",nc:"קיימות 1 יחידות \"לא מגורים\" מתוך 1",url:"https://www.b144.co.il/מרפאות-שיניים/ירושלים/"},
+  {n:"ד\"ר בכר רות - רופאת שיניים",t:"מרפאת שיניים",a:"אלפסי 19",am:"אלפסי 19",o:"חיים כהנא שפירא, יצחקי ברוך, מרים עודי, מרדכי מאיר כהנא-שפירא, הכהן זל הקדש אי\"ש, גני הילדים_שע\"י מרכז, בכר רות, שי בנטל, דניאל חלה, דניאלה מוזסון, מורים עולים איגוד, חוה בינדפלד, כהנא שפירא אליעזר, סלקום ישראל בע\"מ",d:15,r:"לא חשוד",det:"",nc:"קיימות 3 יחידות \"לא מגורים\" מתוך 15; שם העסק תואם לבעל נכס: \"בכר רות\"",url:"https://www.b144.co.il/מרפאות-שיניים/ירושלים/"},
+  {n:"המרכז לרפואת שיניים",t:"מרפאת שיניים",a:"דיסקין 9",am:"דיסקין 9",o:"נחמיה יע קליינמאן, שרה לוי גולדשטיין, אינה דוברומילסקי, אשר לינדה אן, ליסון בן חמו, אבידור-המרכז הבריאותי לכף הרגל בע\"מ, הנרי צוקר, ותמי כץ דוד, בית מרקחת הפלמ\"ח בע\"מ, לפיאן אליעזר, יוסף שבתאי, ג'ניס מילר, פלורנס מורגנשטרן, אנט ג'וטקוביץ",d:73,r:"לא חשוד",det:"",nc:"קיימות 21 יחידות \"לא מגורים\" מתוך 73; שם העסק תואם לבעל נכס",url:"https://www.d.co.il/32042600/32060/"},
+  {n:"מרפאת שיניים שלו",t:"מרפאת שיניים",a:"יפו 97",am:"יפו 97",o:"עמותת נהרות מים חיים, קטמן בע\"מ, אליהו גמ\"ח חסדי יהודה דוד, טיטיאנה שטיינר, אמי - מתום מהנדסים ויועצים בע\"מ, משטרת ישראל 4904, מד יש.המשפטים, קהילת מלך המלכים-נהר, פרויקט טיוב משרד המשפטים, כלל קומה 4 4404 משטרה, לל קומה 31 5604 משטרה, י-ם מ' כלל 418 משטרה יח מחוז",d:407,r:"לא חשוד",det:"",nc:"קיימות 348 יחידות \"לא מגורים\" מתוך 407; שם העסק תואם לבעל נכס: \"יצחק שלו\"",url:"https://www.d.co.il/80109692/32060/"},
+  {n:"מכבידנט - מרפאת שיניים",t:"מרפאת שיניים",a:"אגריפס 40",am:"אגריפס 40",o:"וגלוריה מקס בנג'מין, חורחה מנריקה אלברס, אירנה אפלינסקי, מכבידנט בע\"מ, גינדי מוצרי אריזה וכלים חד פעמיים בע\"מ, מוריס אטיאס, כהן קארן, שמעון בנשטרית, משה מאיר אבקסיס, סטפן טייב, יניק שלו קוסקס, בינימין ברונו, פדות בודוק, דוד סילוורסטיין, טויטו נסים",d:111,r:"לא חשוד",det:"",nc:"קיימות 26 יחידות \"לא מגורים\" מתוך 111; שם העסק תואם לבעל נכס: \"מכבידנט בע\"מ\"",url:"https://www.d.co.il/3428400/32060/"},
+  {n:"עו\"ד שכטר מאיר",t:"משרד עורכי דין",a:"הלל 28",am:"הלל 28",o:"קסורלה דניאל, בן מיכאל עז, דניאל יה גאגין, שכטר מאיר עו\"ד, לירן הודיה גוסי, הרצל רבניפור, עוז בן מיכאל, אופיר תמם, יוסף ליאור בניטה, 4991 אוליק סוכנות לביטוח, פטריק צ'רנייצקי, אוליק סוכנות קרן דוד אליהו, מאמון סאלח, תומר יארינובסקי",d:20,r:"לא חשוד",det:"",nc:"קיימות 7 יחידות \"לא מגורים\" מתוך 20; שם העסק תואם לבעל נכס: \"שכטר מאיר עו\"ד\"",url:"https://www.b144.co.il/עורכי-דין/ירושלים/"},
+  {n:"יצהרי עזריה - עו\"ד",t:"משרד עורכי דין",a:"בני בתירא 11",am:"בני בתירא 11",o:"יצחק פיחה, עמית איי מלצר, חנה פרמון, רעיה בן אדון, מיכל שטרסברג, שלמה קופל, איתן ליפשיץ, זקן מנשה ורחל, עוזר גרינפלד, רינה מרקוביץ, וויל פנחס, טנז'י אלכס, זליגמן גק אנדרה, מרדכי איזביצקי, ישראל מרנס",d:28,r:"לא חשוד",det:"",nc:"שם העסק תואם לבעל נכס: \"עזריה יצהרי\"",url:"https://www.b144.co.il/עורכי-דין/ירושלים/"},
+  {n:"אקרמן תאנה - עו\"ד",t:"משרד עורכי דין",a:"בנימין מטודלה 29",am:"בנימין מטודלה 29",o:"תאנה אקרמן, ולבנה זעפרני שמואל, יהודה שלזינגר, מירה רות קני פז, אייבן סוקולוב, מתן גרוס רום, נועם שוורץ, יובל טנדלר",d:8,r:"לא חשוד",det:"",nc:"קיימות 1 יחידות \"לא מגורים\" מתוך 8; שם העסק תואם לבעל נכס: \"תאנה אקרמן\"",url:"https://www.b144.co.il/עורכי-דין/ירושלים/"},
+  {n:"דניאל פייר - עו\"ד ונוטריון",t:"משרד עורכי דין",a:"הרב חיים ברלין 47",am:"הרב ברלין 47",o:"יריב ויינברגר, מעין בלאיש, תמר ווינראוך, כהן גבריאל ובתיה, פייר דניאל, חיים פרסי, אריאל בר נתן, ברזל ישראל, דוד זילברמן, אביה אוחיון, לירון פורטגנג, עדיאל גוטשל",d:12,r:"לא חשוד",det:"",nc:"קיימות 1 יחידות \"לא מגורים\" מתוך 12; שם העסק תואם לבעל נכס: \"פייר דניאל\"",url:"https://www.b144.co.il/עורכי-דין/ירושלים/"},
+  {n:"רותלי פלאי - עורכת דין ונוטריונית",t:"משרד עורכי דין",a:"שד' ש\"י עגנון 8",am:"שד שי עגנון 8",o:"יצחק בורשטין, אברהם אלכסנדר בלייח, אביבה רות כהנא, ישראל משה קליין, חברת החשמל לישראל בע\"מ, יהודה ברופסקי, גייל טברסקי, מרק יעקב ביננשטוק, רותלי פלאי, ראבילו מרדכי ושו, כהן מינה, אודי אפשטיין, פיליפ רוזנברג, ברק גפרי, נעמה לב-כהן",d:25,r:"לא חשוד",det:"",nc:"קיימות 1 יחידות \"לא מגורים\" מתוך 25; שם העסק תואם לבעל נכס: \"רותלי פלאי\"",url:"https://www.b144.co.il/עורכי-דין/ירושלים/"},
+  {n:"בן טולילה דניאל - עו\"ד",t:"משרד עורכי דין",a:"הלל 8",am:"הלל 8",o:"עו\"ד רחל הראל מצלאוי, ד\"ר איתן מורה בע\"מ, שוורץ רחל, ריבקין אלנה/איליה, מילה וגנר, כליף אברהם, נוריאל דור, משרד עו\"ד לוי אברהם שותפות",d:9,r:"לא חשוד",det:"",nc:"קיימות 6 יחידות \"לא מגורים\" מתוך 9",url:"https://www.b144.co.il/עורכי-דין/ירושלים/"},
+  {n:"קורנבלוט דוד - עו\"ד",t:"משרד עורכי דין",a:"עוזיה 14",am:"עוזיה 14",o:"אפלבאום לורה, גרשון סמוחי, מוריס הנרי מיכאל, פיליפ הופר, אלי ניוברג, דוד גרשון עוד קורנבלוט, אפלבאום לורה אליסה",d:7,r:"לא חשוד",det:"",nc:"שם העסק תואם לבעל נכס: \"דוד גרשון עוד קורנבלוט\"",url:"https://www.b144.co.il/עורכי-דין/ירושלים/"},
+  {n:"טולדנו יוסי - עו\"ד",t:"משרד עורכי דין",a:"ינאי 6",am:"ינאי 6",o:"יהודה שושן, גדעון סיבוני, ויקטור בוביס, יעל מזל רביב, שמואל שרף, זליג רבינוביץ, ברגר שמשון, קוטלר עדיקא חברה לבניה בע\"מ, אמיליה לוי בוהארון, דוד אוסדון, נחשון שירות בתי הסוהר, גז יגל חברה לשיווק והפצת גז (1996) בע\"מ, מוחמד סרחן",d:34,r:"לא חשוד",det:"",nc:"קיימות 25 יחידות \"לא מגורים\" מתוך 34",url:"https://www.b144.co.il/עורכי-דין/ירושלים/"},
+  {n:"קרמר יהושע - עו\"ד",t:"משרד עורכי דין",a:"דוד המלך 19",am:"דוד המלך 19",o:"אלכס לוצקי, קרמר יהושע יוסף שפיר, שפירא יוסף עוד, פרססיליה דידי-חיון, ויינשטיין גילה פולד יואל, אליאב דניאל, מיכאל ואחרים שניידר, אביב מישל, סיטי אוף גולד אפרטמנטס בע\"מ, רפאל הררי, לוי הריטאג' בע\"מ, איבט גרול",d:68,r:"לא חשוד",det:"",nc:"קיימות 42 יחידות \"לא מגורים\" מתוך 68; שם העסק תואם לבעל נכס: \"קרמר יהושע יוסף שפיר\"",url:"https://www.b144.co.il/עורכי-דין/ירושלים/"},
+  {n:"ארנון יגאל ושות' - עורכי דין",t:"משרד עורכי דין",a:"הלל 31",am:"הלל 31",o:"יגאל ארנון, אורחה מחנאות וטיולים בע\"מ",d:2,r:"לא חשוד",det:"",nc:"קיימות 2 יחידות \"לא מגורים\" מתוך 2; שם העסק תואם לבעל נכס: \"יגאל ארנון\"",url:"https://www.d.co.il/5546830/38010/"},
+  {n:"פינטו בנישתי ושות' - משרד עורכי דין",t:"משרד עורכי דין",a:"האופה 4",am:"האופה 4",o:"נסים אריה, שלמה מזרחי, דוד חיימוב, מעבדות פרונט ירושלים בע\"מ",d:4,r:"לא חשוד",det:"",nc:"קיימות 4 יחידות \"לא מגורים\" מתוך 4",url:"https://www.d.co.il/80354358/9010106/"},
+  {n:"גוט אהוד - עו\"ד",t:"משרד עורכי דין",a:"הלל 23",am:"הלל 23",o:"חברת החשמל לישראל בע\"מ, ננה צח, אורן מזרחי, יהודה סימחייב, יהונתן טוביאן, חזן מיכאל, זאב ארד, אברהם עו אזולאי, קורדיט אוקסנה, חברת עו\"ד ברומברג ורוניקה, גלעד סיבוני, יהונתן י אזולאי, ריקי יעקב, בזק החברה הישראלית לתקשורת בע\"מ",d:101,r:"לא חשוד",det:"",nc:"קיימות 101 יחידות \"לא מגורים\" מתוך 101; שם העסק תואם לבעל נכס: \"בלטר, גוט,\"",url:"https://www.b144.co.il/עורכי-דין/ירושלים/"},
+  {n:"לנדס צבי - עו\"ד ונוטריון",t:"משרד עורכי דין",a:"הסורג 2",am:"הסורג 2",o:"לורן לאו דהן, נח בל, חברת החשמל לישראל בע\"מ, גדי נדלר, אליהו כהן, ג'ורדן אהרון זגדון, בל נח/רונית, עמיחי שם טוב, קטי אוחנה, מוסטפא יחיא, בתיה ברהון",d:69,r:"לא חשוד",det:"",nc:"קיימות 68 יחידות \"לא מגורים\" מתוך 69; שם העסק תואם לבעל נכס: \"לנדס צבי\"",url:"https://www.b144.co.il/עורכי-דין/ירושלים/"},
+  {n:"אבי כהן - רואה חשבון",t:"משרד רואי חשבון",a:"בית הדפוס 22",am:"בית הדפוס 22",o:"כהן נתן, אידע-החזקות (1996) בע\"מ, איי.אי.אל. הוצאה לאור בע\"מ, משה עו\"ד סיקרון ראם, נסים שוקר, פיצוחי ירושלים - עולם הממתקים בע\"מ, חי כהן מערכות מידע ומחשבים בע\"מ, ב. ישיר פיננסים בע\"מ, חשבון דוד פרנקל רואי, הירשוביץ פתרונות-סוכנות לביטוח (2009) בע\"מ, מטה הרשות רשות אוכלוסין, סה כ ייזום ניהול והשקעות בע\"מ, ח.ר.צ. נכסים בע\"מ, אכסקליבור מערכות בע\"מ",d:59,r:"לא חשוד",det:"",nc:"קיימות 59 יחידות \"לא מגורים\" מתוך 59; שם העסק תואם לבעל נכס: \"כהן נתן\"",url:"https://www.b144.co.il/רואי-חשבון/ירושלים/"},
+  {n:"א.דליה - חשבונאות ומיסים",t:"משרד רואי חשבון",a:"אגריפס 8",am:"אגריפס 8",o:"אגריפס סיטי סחר בע\"מ, בית מאפה יהודה (1994) - גאגו דה פריס בע\"מ, חזות השן בע\"מ, גרמי אייל אנדר זורנו, דוד שישפורטיש, ראיין ברמן, אלברטו מוסקטי, בע\"מ הלן משפחת אופים, משה יגאל שמאי, אוריאל 23 ניהול ופיתוח בע\"מ",d:63,r:"לא חשוד",det:"",nc:"קיימות 19 יחידות \"לא מגורים\" מתוך 63",url:"https://www.b144.co.il/רואי-חשבון/ירושלים/"},
+  {n:"אשכנזי משה - רואי חשבון",t:"משרד רואי חשבון",a:"רבקה 11",am:"רבקה 11",o:"ריס חשבונאות בע\"מ, קרן ירושלים הקרן, רחל קגנובסקי, פאט פיש קורונה בע\"מ, איי.אר.אם מרפאות מיכאל בע\"מ, קבוצת תבל ומלואה בע\"מ, י.מולכו אדריכלים בע\"מ, תקווה קרן אמל, הקרן לירושלים",d:10,r:"לא חשוד",det:"",nc:"קיימות 10 יחידות \"לא מגורים\" מתוך 10",url:"https://www.b144.co.il/רואי-חשבון/ירושלים/"},
+  {n:"צביקה בזק - רואה חשבון וכלכלן",t:"משרד רואי חשבון",a:"המעפילים 7",am:"המעפילים 7",o:"הראל מרים, צבי בזק, חנה מאירי, דנה אלישמריני, בנימין ישרים, יהושע יוסף ישר, גזונדהייט ישי, מאיה גרוס, מרי לוי, יישר יוסף, תמר ווסר, הודיה וולף, אסף הללה, הרייט וידר",d:14,r:"לא חשוד",det:"",nc:"שם העסק תואם לבעל נכס: \"צבי בזק\"",url:"https://www.b144.co.il/רואי-חשבון/ירושלים/"},
+  {n:"חסון ד\"ר זכרון - וטרינר",t:"מרפאה וטרינרית",a:"חזקיהו המלך 3",am:"חזקיהו המלך 3",o:"דיזי שפירא, סטיוארט פלברבוים, דניאל עמירם יעל פינק, איתי אריכא, חסון מרפאה לחיות בית, קורין ריקה עובדיה, גיטל ברנשטין, דוד דופלט",d:8,r:"לא חשוד",det:"",nc:"קיימות 1 יחידות \"לא מגורים\" מתוך 8; שם העסק תואם לבעל נכס: \"חסון מרפאה לחיות בית\"",url:"https://www.b144.co.il/וטרינרים/ירושלים-/"},
+  {n:"מרכז רפואי וטרינרי",t:"מרפאה וטרינרית",a:"המוסכים 9",am:"המוסכים 9",o:"האגודה להגנת ב, האגודה צער בעלי חיים",d:2,r:"לא חשוד",det:"",nc:"קיימות 2 יחידות \"לא מגורים\" מתוך 2",url:"https://www.d.co.il/80024746/14670/"},
+  {n:"ששון יעקב - רו\"ח",t:"משרד רואי חשבון",a:"החבצלת 7",am:"החבצלת 7",o:"אוהד הופמן, אוריאל אטון, חברת החשמל לישראל בע\"מ, יוסף וילנסקי, בלוי ראובן, אלישע זבולון רוט, בלוי ראובן צבי, רחל שפירא, גדעון רוסק, עדן את ארז בע\"מ, שרון רוז זקלר, צליל ענבר, ששון יעקב, אורי לדרמן",d:23,r:"לא חשוד",det:"",nc:"קיימות 6 יחידות \"לא מגורים\" מתוך 23; שם העסק תואם לבעל נכס: \"ששון יעקב\"",url:"https://www.b144.co.il/רואי-חשבון/ירושלים/"},
+  {n:"רודניק וורצל ושות' - רואה חשבון",t:"משרד רואי חשבון",a:"ירמיהו 78",am:"ירמיהו 78",o:"איחוד הצלה ישראל, מתנדבי הצלה, איחוד והצלה ישראל, איחוד הצלה",d:9,r:"לא חשוד",det:"",nc:"קיימות 9 יחידות \"לא מגורים\" מתוך 9",url:"https://www.b144.co.il/רואי-חשבון/ירושלים/"},
+  {n:"חנוך ארנטרוי - משרד רואי חשבון",t:"משרד רואי חשבון",a:"הלל 16",am:"הלל 16",o:"ההסתדרות לרפואת שיניים, רותם רבי, ארנטרוי חנוך, חברת החשמל לישראל בע\"מ, מקייבסקי לודמילה, רות אידלמן, עופרי חיימי, תמר ש.ת. שירותים פיננסים בע\"מ, שושנה אדלקוף, רותם גרבש, שלי שטיינגרד, מעבדות רמב\"ם החדשות 1997 בע\"מ, פוטו פריזמה בע\"מ, עותמאן גול",d:17,r:"לא חשוד",det:"",nc:"קיימות 10 יחידות \"לא מגורים\" מתוך 17; שם העסק תואם לבעל נכס: \"ארנטרוי חנוך\"",url:"https://www.b144.co.il/רואי-חשבון/ירושלים/"},
+  {n:"אליעזר שמאע - רואה חשבון",t:"משרד רואי חשבון",a:"המלך ג'ורג' 16",am:"המלך ג'ורג' 16",o:"אלבחר משה וחנה, יהושוע מרדכי ליפשיץ, ארץ בית חם תורה עם דרך, ילנה חריסטופורובה, רפאל בקו הזהב, נטלי כהן, קלמנס אבן מוחא, סלנה לבנה בן דוד, צבי שורץ, מימי אקלה, שירין ברגותי מלחם, אברמזון אפרים, אסטל דבורס, א. גולדמן - חברה לשרותי כוח אדם בע\"מ, גוש 30048 חלקות 22 1-23 בע\"מ",d:88,r:"לא חשוד",det:"",nc:"קיימות 51 יחידות \"לא מגורים\" מתוך 88",url:"https://www.b144.co.il/רואי-חשבון/ירושלים/"},
+  {n:"אכתילאת - רואי חשבון",t:"משרד רואי חשבון",a:"שמאי 13",am:"שמאי 13",o:"ג'סמל דסקו, מעומק הלב (ע\"ר), נתן הירשברג, חיים שמחון",d:4,r:"לא חשוד",det:"",nc:"קיימות 3 יחידות \"לא מגורים\" מתוך 4",url:"https://www.b144.co.il/רואי-חשבון/ירושלים/"},
+  {n:"שגב אשר ושות' - רואי חשבון",t:"משרד רואי חשבון",a:"שלומציון המלכה 8",am:"שלומציון 8",o:"הארמנית הפטריארכיה, אברהם רחמים, אליהו כהן, הפטריארכיה הארמני, רחמים שלמה, כהן יוסף",d:8,r:"לא חשוד",det:"",nc:"קיימות 6 יחידות \"לא מגורים\" מתוך 8",url:"https://www.b144.co.il/רואי-חשבון/ירושלים/"},
+  {n:"מרפאה וטרינרית עמק רפאים",t:"מרפאה וטרינרית",a:"עמק רפאים 8",am:"עמק רפאים 8",o:"דה סלר מאסטר בע\"מ, ברברה פריטשה היינס, טטיאנה קומרוב, דניאל סטרול, קישנובסקי ביורן, לוי יעקב, ישעיה נתנאל רובין, אטס חברה לתעשיה ומסחר בע\"מ, שגית מרסיאנו, טל תמר, ביורן קישינובסקי, צבי פליישמן, ג'יימס אלכ מוריס",d:15,r:"לא חשוד",det:"",nc:"קיימות 7 יחידות \"לא מגורים\" מתוך 15",url:"https://www.d.co.il/32518080/14670/"},
+  {n:"ארגוס מרפאה וטרינרית",t:"מרפאה וטרינרית",a:"דרך חברון 68",am:"דרך חברון 68",o:"שלמה רודר, אליאורה עפשטיין, בר נחום נס, אילון קלייר, אליאורה בת עפשטיין, ירחמיאל יחזקאל פוקס, ארגוס מרפאה וטרינרית בע\"מ, אוהד דוד ונדנברוק, בוזו לימור, קרול אן שיאבי, אביחיל מעלומי",d:13,r:"לא חשוד",det:"",nc:"קיימות 2 יחידות \"לא מגורים\" מתוך 13; שם העסק תואם לבעל נכס: \"ארגוס מרפאה וטרינרית בע\"מ\"",url:"https://www.b144.co.il/b144_sip/401C04134574625A4F160713/"},
+  {n:"מרפאה וטרינרית גילה",t:"מרפאה וטרינרית",a:"צביה ויצחק 800",am:"צביה ויצחק 800",o:"שולה ואלי ניסים, עזיזה משה, אבו צדקה יורם, בנק לאומי לישראל בע\"מ, קאופמן יעל אהוב, יעקב לוי, סדלצקי לרסיה, אהובה חסון, פרנקו משה, משה כהן סיידוף, שחר מייק משה, וייסמן פאול, אבי שי עיאש, עדנה חן, ויקטוריה ליפשיץ אנטולי",d:61,r:"לא חשוד",det:"",nc:"קיימות 25 יחידות \"לא מגורים\" מתוך 61",url:"https://www.d.co.il/80389661/14670/"},
+  {n:"ד\"ר א. מרכז וטרינרי - בני ספיר",t:"מרפאה וטרינרית",a:"הרב הרצוג 35",am:"הרב הרצוג 35",o:"שחר מצויינים, אלי טל, עמרני שושנה, תמר שטלוס, פונקה אניקה, אור שמש, אדר אניסמן, גל דב ואירית, ניסנהולף קלרה, איילת חיו, אלבו חיים_הנרי, מיכל ארז, ספיר בנימין, שחר יוספברג",d:16,r:"לא חשוד",det:"",nc:"קיימות 3 יחידות \"לא מגורים\" מתוך 16; שם העסק תואם לבעל נכס: \"ספיר בנימין\"",url:"https://www.d.co.il/9568960/14670/"},
+  {n:"ד\"ר הרשקוביץ אבירם - וטרינר",t:"מרפאה וטרינרית",a:"החלוץ 72",am:"החלוץ 72",o:"אלי כהן",d:1,r:"לא חשוד",det:"",nc:"קיימות 1 יחידות \"לא מגורים\" מתוך 1",url:"https://www.d.co.il/38873790/14670/"},
+  {n:"אלפא-וט מרפאות וטרינריות מתקדמות",t:"מרפאה וטרינרית",a:"שדרות משה דיין 72",am:"שד דיין משה 72",o:"אלמוג ברוך, יוסף פרחי, דוד פרלמוטר, סיגל גליל, מרגולין עמנואל וטטיא, מאיר בן דוד, שוורץ אלכסנדר, קרינה רסקין, פייגלסון פרצב סופיה, ילנה רוזנמן, מיכאל ניסמוב, איגור פפירוב, דניאלי אפרים, אליעזר פנחסוב, קלנדריוב לובוב",d:26,r:"לא חשוד",det:"",nc:"קיימות 4 יחידות \"לא מגורים\" מתוך 26",url:"https://www.b144.co.il/וטרינרים/ירושלים-/"},
+  {n:"ד\"ר מולי לווי - וטרינרית",t:"מרפאה וטרינרית",a:"מבוא העולה 16",am:"מבוא העולה 16",o:"יצחק וינר, ומולי לווי אריק, שרמר עדיאל, אברהם פרייזן",d:4,r:"לא חשוד",det:"",nc:"שם העסק תואם לבעל נכס: \"ומולי לווי אריק\"",url:"https://www.b144.co.il/וטרינרים/ירושלים-/"},
+  {n:"כהן מאור - עו\"ד",t:"משרד עורכי דין",a:"הגן הטכנולוגי 1",am:"לא נמצאה",o:"לא נמצאו",d:"לא ידוע",r:"דרוש בדיקה",det:"כתובת \"הגן הטכנולוגי 1\" לא נמצאה בנתוני העירייה.",nc:"",url:"https://www.b144.co.il/עורכי-דין/ירושלים/"},
+  {n:"ציגלר אליהו - עו\"ד ונוטריון",t:"משרד עורכי דין",a:"הלל 2",am:"לא נמצאה",o:"לא נמצאו",d:"לא ידוע",r:"דרוש בדיקה",det:"כתובת \"הלל 2\" לא נמצאה בנתוני העירייה.",nc:"",url:"https://www.b144.co.il/עורכי-דין/ירושלים/"},
+  {n:"עינת יניב - מרפאה וטרינרית",t:"מרפאה וטרינרית",a:"דרך בית לחם 9",am:"לא נמצאה",o:"לא נמצאו",d:"לא ידוע",r:"דרוש בדיקה",det:"כתובת \"דרך בית לחם 9\" לא נמצאה בנתוני העירייה.",nc:"",url:"https://www.b144.co.il/וטרינרים/ירושלים-/"}
+];
+
+
+let filtered=[...DATA],sortCol=-1,sortDir=1,activeFilter='all';
+
+function ratingEmoji(r){return r==='גבוה'?'🔴':r==='לא חשוד'?'🟢':'🔵';}
+function ratingClass(r){return r==='גבוה'?'row-high':r==='לא חשוד'?'row-ok':'row-check';}
+function badgeClass(r){return r==='גבוה'?'badge-high':r==='לא חשוד'?'badge-ok':'badge-check';}
+function typeEmoji(t){return t==='מרפאת שיניים'?'🦷':t==='משרד עורכי דין'?'⚖️':t==='משרד רואי חשבון'?'📊':'🐾';}
+
+function tryLogin(){
+  const pwd=document.getElementById('pwdInput').value;
+  if(pwd==='אשכול הידע'){
+    document.getElementById('loginScreen').style.display='none';
+    document.getElementById('mainApp').style.display='block';
+  } else {
+    const err=document.getElementById('loginErr');
+    err.textContent='סיסמה שגויה. נסה שנית.';
+    document.getElementById('pwdInput').value='';
+    document.getElementById('pwdInput').focus();
+    setTimeout(()=>err.textContent='',3000);
+  }
+}
+document.getElementById('pwdInput').addEventListener('keydown',e=>{if(e.key==='Enter')tryLogin();});
+
+function buildStats(){
+  const c={גבוה:0,'לא חשוד':0,'דרוש בדיקה':0};
+  DATA.forEach(x=>c[x.r]++);
+  document.getElementById('statsBar').innerHTML=`
+    <span class="stat-badge all" onclick="setFilter('all')">סה"כ <span class="count">${DATA.length}</span></span>
+    <span class="stat-badge high" onclick="setFilter('גבוה')">🔴 חשד גבוה <span class="count">${c['גבוה']}</span></span>
+    <span class="stat-badge ok" onclick="setFilter('לא חשוד')">🟢 לא חשוד <span class="count">${c['לא חשוד']}</span></span>
+    <span class="stat-badge check" onclick="setFilter('דרוש בדיקה')">🔵 דרוש בדיקה <span class="count">${c['דרוש בדיקה']}</span></span>`;
+}
+
+function setFilter(f){
+  activeFilter=f;
+  document.querySelectorAll('.toggle-btn').forEach(b=>b.classList.toggle('active',b.dataset.filter===f));
+  applyFilters();
+}
+
+function applyFilters(){
+  const q=document.getElementById('searchInput').value.trim().toLowerCase();
+  const tp=document.getElementById('typeFilter').value;
+  filtered=DATA.filter(row=>{
+    if(activeFilter!=='all'&&row.r!==activeFilter) return false;
+    if(tp&&row.t!==tp) return false;
+    if(q&&!row.n.toLowerCase().includes(q)&&!row.a.toLowerCase().includes(q)) return false;
+    return true;
+  });
+  if(sortCol>=0) doSort(false);
+  render();
+}
+
+function render(){
+  const tbody=document.getElementById('tableBody');
+  if(!filtered.length){
+    tbody.innerHTML=`<tr><td colspan="6" style="text-align:center;padding:30px;color:#888;">לא נמצאו תוצאות</td></tr>`;
+  } else {
+    tbody.innerHTML=filtered.map(row=>`
+      <tr class="${ratingClass(row.r)}" onclick="openModal(${DATA.indexOf(row)})">
+        <td><strong>${row.n}</strong></td>
+        <td><span class="type-tag">${typeEmoji(row.t)} ${row.t}</span></td>
+        <td>${row.a}</td>
+        <td>${typeof row.d==='number'?row.d.toLocaleString('he-IL'):row.d}</td>
+        <td><span class="badge ${badgeClass(row.r)}">${ratingEmoji(row.r)} ${row.r}</span></td>
+        <td><button class="detail-btn" onclick="event.stopPropagation();openModal(${DATA.indexOf(row)})">📄 פרטים</button></td>
+      </tr>`).join('');
+  }
+  document.getElementById('resultCount').textContent=`מציג ${filtered.length.toLocaleString('he-IL')} מתוך ${DATA.length.toLocaleString('he-IL')} עסקים`;
+}
+
+function sortBy(col){
+  if(sortCol===col) sortDir*=-1; else{sortCol=col;sortDir=1;}
+  document.querySelectorAll('thead th').forEach((th,i)=>{
+    th.classList.toggle('sorted',i===col);
+    const arr=th.querySelector('.sort-arrow');
+    if(arr) arr.textContent=i===col?(sortDir===1?'▲':'▼'):'▼';
+  });
+  doSort(true);
+}
+
+function doSort(rerender){
+  const keys=['n','t','a','d','r'];
+  filtered.sort((a,b)=>{
+    let va=a[keys[sortCol]],vb=b[keys[sortCol]];
+    if(typeof va==='number'&&typeof vb==='number') return (va-vb)*sortDir;
+    return String(va).localeCompare(String(vb),'he')*sortDir;
+  });
+  if(rerender) render();
+}
+
+function openModal(idx){
+  const row=DATA[idx];
+  const emo=ratingEmoji(row.r);
+  const alertCls=row.r==='גבוה'?'alert-high':row.r==='לא חשוד'?'alert-ok':'alert-check';
+  const content=row.r==='לא חשוד'?row.nc:row.det;
+  document.getElementById('modalTitle').innerHTML=`${emo} ${row.n}`;
+  document.getElementById('modalBody').innerHTML=`
+    <div class="modal-row"><span class="modal-icon">📍</span><div><div class="modal-label">כתובת</div><div class="modal-val">${row.a}${row.am&&row.am!==row.a?' <span style="color:#888;font-size:.8rem">(בעירייה: '+row.am+')</span>':''}</div></div></div>
+    <div class="modal-row"><span class="modal-icon">🏷️</span><div><div class="modal-label">סוג עסק</div><div class="modal-val">${typeEmoji(row.t)} ${row.t}</div></div></div>
+    <div class="modal-row"><span class="modal-icon">🏠</span><div><div class="modal-label">מספר יחידות בבניין</div><div class="modal-val">${typeof row.d==='number'?row.d.toLocaleString('he-IL')+' יחידות':row.d}</div></div></div>
+    <hr class="modal-divider">
+    <div class="modal-row"><span class="modal-icon">👤</span><div><div class="modal-label">בעלי נכסים</div><div class="owners-list">${row.o}</div></div></div>
+    <hr class="modal-divider">
+    <div class="alert-box ${alertCls}"><strong>${emo} ${row.r}:</strong> ${content||'—'}</div>
+    ${row.url?`<div class="modal-row"><span class="modal-icon">🔗</span><div><div class="modal-label">מקור המידע</div><a class="src-link" href="${row.url}" target="_blank" rel="noopener">${row.url}</a></div></div>`:''}`;
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function closeModal(e){if(e.target===document.getElementById('modalOverlay'))closeModalDirect();}
+function closeModalDirect(){document.getElementById('modalOverlay').classList.remove('open');}
+
+function exportCSV(){
+  const headers=['שם העסק','סוג העסק','כתובת','כתובת תואמת','מספר דירות','דירוג חשד','פירוט'];
+  const rows=filtered.map(r=>[r.n,r.t,r.a,r.am,r.d,r.r,r.r==='לא חשוד'?r.nc:r.det].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(','));
+  const csv='\uFEFF'+[headers.join(','),...rows].join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+  a.download='דוח_ארנונה_'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+}
+
+document.getElementById('searchInput').addEventListener('input',applyFilters);
+document.getElementById('typeFilter').addEventListener('change',applyFilters);
+document.querySelectorAll('.toggle-btn').forEach(b=>b.addEventListener('click',()=>setFilter(b.dataset.filter)));
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModalDirect();});
+
+buildStats();
+applyFilters();
+</script>
+</body>
+</html>
