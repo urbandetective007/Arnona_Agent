@@ -5,18 +5,18 @@ import AppLayout from '@/components/AppLayout'
 import { useRequireAuth } from '@/lib/useAuth'
 import type { Business, UploadSession } from '@/lib/types'
 
-const RATING_CLASS: Record<string, string> = {
-  'גבוה':        'bg-red-100 text-red-700',
-  'בינוני':      'bg-orange-100 text-orange-700',
-  'לא חשוד':    'bg-green-100 text-green-700',
-  'דרוש בדיקה': 'bg-yellow-100 text-yellow-700',
+const BADGE: Record<string, React.CSSProperties> = {
+  'גבוה':        { background: '#fef2f2', color: '#b91c1c' },
+  'בינוני':      { background: '#fff7ed', color: '#c2410c' },
+  'לא חשוד':    { background: '#f0fdf4', color: '#15803d' },
+  'דרוש בדיקה': { background: 'var(--cloud)', color: 'var(--charcoal)' },
 }
 
 export default function FilesPage() {
   const ready = useRequireAuth()
-  const [sessions, setSessions] = useState<UploadSession[]>([])
-  const [businesses, setBusinesses] = useState<Business[]>([])
-  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [sessions,    setSessions]    = useState<UploadSession[]>([])
+  const [businesses,  setBusinesses]  = useState<Business[]>([])
+  const [selectedId,  setSelectedId]  = useState<string | null>(null)
 
   useEffect(() => {
     const s = localStorage.getItem('uploadSessions')
@@ -27,197 +27,161 @@ export default function FilesPage() {
 
   if (!ready) return null
 
-  function save(newSessions: UploadSession[], newBusinesses: Business[]) {
-    localStorage.setItem('uploadSessions', JSON.stringify(newSessions))
-    localStorage.setItem('businesses', JSON.stringify(newBusinesses))
-    setSessions(newSessions)
-    setBusinesses(newBusinesses)
+  function save(s: UploadSession[], b: Business[]) {
+    localStorage.setItem('uploadSessions', JSON.stringify(s))
+    localStorage.setItem('businesses',     JSON.stringify(b))
+    setSessions(s); setBusinesses(b)
   }
 
-  function deleteSession(sessionId: string) {
+  function deleteSession(id: string) {
     if (!confirm('למחוק את הקובץ וכל העסקים שלו?')) return
-    const newSessions = sessions.filter((s) => s.id !== sessionId)
-    const newBusinesses = businesses.filter((b) => b.uploadSessionId !== sessionId)
-    save(newSessions, newBusinesses)
-    if (selectedId === sessionId) setSelectedId(null)
+    save(sessions.filter(s => s.id !== id), businesses.filter(b => b.uploadSessionId !== id))
+    if (selectedId === id) setSelectedId(null)
   }
 
-  function deleteBusiness(businessId: string) {
-    const newBusinesses = businesses.filter((b) => b.id !== businessId)
-    // Update session counts
-    const newSessions = sessions.map((s) => {
-      if (!s.businessIds.includes(businessId)) return s
-      const updated = newBusinesses.filter((b) => s.businessIds.includes(b.id))
-      return {
-        ...s,
-        totalCount: updated.length,
-        suspiciousCount: updated.filter((b) => b.arnonaStatus === 'suspicious').length,
-        okCount: updated.filter((b) => b.arnonaStatus === 'ok').length,
-        unknownCount: updated.filter((b) => b.arnonaStatus === 'unknown').length,
-        businessIds: updated.map((b) => b.id),
-      }
+  function deleteBusiness(id: string) {
+    const next = businesses.filter(b => b.id !== id)
+    const nextS = sessions.map(s => {
+      if (!s.businessIds.includes(id)) return s
+      const upd = next.filter(b => s.businessIds.includes(b.id))
+      return { ...s, totalCount: upd.length, suspiciousCount: upd.filter(b => b.arnonaStatus === 'suspicious').length, okCount: upd.filter(b => b.arnonaStatus === 'ok').length, unknownCount: upd.filter(b => b.arnonaStatus === 'unknown').length, businessIds: upd.map(b => b.id) }
     })
-    save(newSessions, newBusinesses)
+    save(nextS, next)
   }
 
   function clearAll() {
-    if (!confirm('למחוק את כל הנתונים מהמערכת? פעולה זו בלתי הפיכה.')) return
-    localStorage.removeItem('uploadSessions')
-    localStorage.removeItem('businesses')
-    setSessions([])
-    setBusinesses([])
-    setSelectedId(null)
+    if (!confirm('למחוק את כל הנתונים? פעולה זו בלתי הפיכה.')) return
+    localStorage.removeItem('uploadSessions'); localStorage.removeItem('businesses')
+    setSessions([]); setBusinesses([]); setSelectedId(null)
   }
 
-  const selectedSession = sessions.find((s) => s.id === selectedId)
-  const selectedBusinesses = selectedId
-    ? businesses.filter((b) => b.uploadSessionId === selectedId)
-    : []
+  const selected   = sessions.find(s => s.id === selectedId)
+  const selBiz     = selectedId ? businesses.filter(b => b.uploadSessionId === selectedId) : []
 
   return (
     <AppLayout>
-      <div className="max-w-7xl mx-auto px-6 py-6">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-xl font-bold text-gray-900">קבצים שהועלו</h1>
-            <p className="text-sm text-gray-500">{sessions.length} קבצים — {businesses.length} עסקים סה״כ</p>
-          </div>
-          {(sessions.length > 0 || businesses.length > 0) && (
-            <button
-              onClick={clearAll}
-              className="px-4 py-2 text-sm text-red-600 border border-red-300 rounded-lg hover:bg-red-50 transition-colors"
-            >
-              נקה את כל הנתונים
-            </button>
-          )}
+      {/* ── White header ── */}
+      <section style={{ background: 'var(--canvas)', padding: '48px 48px 32px', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between' }}>
+        <div>
+          <p style={eyebrow}>היסטוריית העלאות</p>
+          <h1 style={{ fontSize: 44, fontWeight: 500 }}>קבצים שהועלו</h1>
+          <p style={{ color: 'var(--charcoal)', marginTop: 6 }}>{sessions.length} קבצים · {businesses.length} עסקים סה״כ</p>
         </div>
+        {(sessions.length > 0 || businesses.length > 0) && (
+          <button onClick={clearAll} style={btnDanger}>נקה את כל הנתונים</button>
+        )}
+      </section>
 
-        {sessions.length === 0 && businesses.length === 0 ? (
-          <div className="text-center py-20 text-gray-400">
-            <p className="text-5xl mb-4">📁</p>
-            <p className="text-lg font-medium text-gray-600">לא הועלו קבצים עדיין</p>
-            <a href="/upload" className="mt-4 inline-block px-5 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">
-              העלה קובץ
-            </a>
-          </div>
-        ) : (
-          <div className="flex gap-6">
-            {/* Sessions list */}
-            <div className="w-80 flex-shrink-0 space-y-2">
-              {sessions.length === 0 && (
-                <p className="text-sm text-gray-400 px-2">אין קבצים עם מידע על מקור — ייתכן שהנתונים הועלו לפני עדכון המערכת</p>
-              )}
-              {[...sessions].reverse().map((session) => (
-                <div
-                  key={session.id}
-                  onClick={() => setSelectedId(selectedId === session.id ? null : session.id)}
-                  className={`bg-white rounded-xl border p-4 cursor-pointer transition-all hover:shadow-sm ${
-                    selectedId === session.id ? 'border-blue-400 ring-2 ring-blue-200' : 'border-gray-200'
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <p className="font-medium text-gray-800 text-sm truncate">{session.fileName}</p>
-                      <p className="text-xs text-gray-400 mt-0.5">{session.uploadDate}</p>
+      {/* ── Content ── */}
+      {sessions.length === 0 && businesses.length === 0 ? (
+        <section style={{ background: 'var(--cloud)', padding: '80px 48px', textAlign: 'center' }}>
+          <p style={{ fontSize: 32, fontWeight: 500, marginBottom: 16 }}>לא הועלו קבצים עדיין</p>
+          <a href="/upload" style={btnBlue}>העלאת קובץ ראשון</a>
+        </section>
+      ) : (
+        <section style={{ background: 'var(--cloud)', padding: '32px 48px 80px', display: 'flex', gap: 24, alignItems: 'flex-start' }}>
+
+          {/* Sessions list */}
+          <div style={{ width: 280, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {[...sessions].reverse().map(session => {
+              const active = selectedId === session.id
+              return (
+                <div key={session.id} onClick={() => setSelectedId(active ? null : session.id)}
+                  style={{ background: 'var(--canvas)', borderRadius: 16, padding: 20, cursor: 'pointer', boxShadow: '0 2px 8px rgba(26,26,26,0.08)', border: active ? '2px solid var(--hp-blue)' : '2px solid transparent' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div style={{ minWidth: 0 }}>
+                      <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{session.fileName}</p>
+                      <p style={{ fontSize: 12, color: 'var(--graphite)', marginTop: 3 }}>{session.uploadDate}</p>
                     </div>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); deleteSession(session.id) }}
-                      className="text-gray-300 hover:text-red-500 text-xl leading-none flex-shrink-0 font-light"
-                      title="מחק קובץ"
-                    >
+                    <button onClick={e => { e.stopPropagation(); deleteSession(session.id) }}
+                      style={{ background: 'none', border: 'none', color: 'var(--steel)', cursor: 'pointer', fontSize: 20, lineHeight: 1, flexShrink: 0 }}>
                       ×
                     </button>
                   </div>
-                  <div className="flex gap-2 mt-3 flex-wrap">
-                    <Badge label={`סה״כ: ${session.totalCount}`} color="gray" />
-                    {session.suspiciousCount > 0 && <Badge label={`חשוד: ${session.suspiciousCount}`} color="red" />}
-                    {session.okCount > 0 && <Badge label={`תקין: ${session.okCount}`} color="green" />}
-                    {session.unknownCount > 0 && <Badge label={`בדיקה: ${session.unknownCount}`} color="yellow" />}
+                  <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+                    <Chip label={`סה״כ: ${session.totalCount}`} />
+                    {session.suspiciousCount > 0 && <Chip label={`חשוד: ${session.suspiciousCount}`} color="#b91c1c" bg="#fef2f2" />}
+                    {session.okCount > 0 && <Chip label={`תקין: ${session.okCount}`} color="#15803d" bg="#f0fdf4" />}
                   </div>
                 </div>
-              ))}
-            </div>
-
-            {/* Businesses panel */}
-            <div className="flex-1 min-w-0">
-              {!selectedId ? (
-                <div className="bg-white rounded-xl border border-gray-200 flex items-center justify-center h-48 text-gray-400 text-sm">
-                  בחר קובץ כדי לראות את הנכסים שלו
-                </div>
-              ) : (
-                <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                  <div className="px-4 py-3 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
-                    <div>
-                      <p className="font-semibold text-gray-800">{selectedSession?.fileName}</p>
-                      <p className="text-xs text-gray-400">{selectedBusinesses.length} עסקים</p>
-                    </div>
-                    <button
-                      onClick={() => deleteSession(selectedId)}
-                      className="text-sm text-red-500 hover:text-red-700 border border-red-200 px-3 py-1 rounded-lg hover:bg-red-50 transition-colors"
-                    >
-                      מחק קובץ
-                    </button>
-                  </div>
-                  <div className="overflow-auto max-h-[600px]">
-                    <table className="w-full text-sm">
-                      <thead className="bg-gray-50 border-b sticky top-0">
-                        <tr>
-                          <th className="text-right px-4 py-2 font-medium text-gray-600">שם העסק</th>
-                          <th className="text-right px-4 py-2 font-medium text-gray-600">כתובת</th>
-                          <th className="text-right px-4 py-2 font-medium text-gray-600">דירוג</th>
-                          <th className="text-right px-4 py-2 font-medium text-gray-600">פירוט</th>
-                          <th className="px-4 py-2"></th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-100">
-                        {selectedBusinesses.length === 0 ? (
-                          <tr>
-                            <td colSpan={5} className="text-center py-8 text-gray-400">אין עסקים בקובץ זה</td>
-                          </tr>
-                        ) : selectedBusinesses.map((b) => (
-                          <tr key={b.id} className="hover:bg-gray-50 group">
-                            <td className="px-4 py-2 font-medium text-gray-900">{b.name}</td>
-                            <td className="px-4 py-2 text-gray-500">{b.address}</td>
-                            <td className="px-4 py-2">
-                              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${RATING_CLASS[b.suspicionRating] ?? 'bg-gray-100 text-gray-500'}`}>
-                                {b.suspicionRating || '—'}
-                              </span>
-                            </td>
-                            <td className="px-4 py-2 text-gray-400 text-xs max-w-[200px] truncate" title={b.suspicionDetail || b.noSuspicionReason}>
-                              {b.suspicionDetail || b.noSuspicionReason || '—'}
-                            </td>
-                            <td className="px-4 py-2">
-                              <button
-                                onClick={() => {
-                                  if (confirm(`למחוק את "${b.name}"?`)) deleteBusiness(b.id)
-                                }}
-                                className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500 transition-all text-lg leading-none"
-                                title="מחק עסק"
-                              >
-                                ×
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              )}
-            </div>
+              )
+            })}
           </div>
-        )}
-      </div>
+
+          {/* Businesses panel */}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            {!selectedId ? (
+              <div style={{ background: 'var(--canvas)', borderRadius: 16, padding: 48, textAlign: 'center', color: 'var(--graphite)', boxShadow: '0 2px 8px rgba(26,26,26,0.08)' }}>
+                בחר קובץ מהרשימה כדי לראות את הנכסים שלו
+              </div>
+            ) : (
+              <div style={{ background: 'var(--canvas)', borderRadius: 16, overflow: 'hidden', boxShadow: '0 2px 8px rgba(26,26,26,0.08)' }}>
+                {/* Panel header */}
+                <div style={{ padding: '16px 24px', background: 'var(--fog)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <p style={{ fontWeight: 600, color: 'var(--ink)' }}>{selected?.fileName}</p>
+                    <p style={{ fontSize: 12, color: 'var(--graphite)', marginTop: 2 }}>{selBiz.length} עסקים</p>
+                  </div>
+                  <button onClick={() => deleteSession(selectedId)} style={btnDanger}>מחק קובץ</button>
+                </div>
+
+                {/* Table */}
+                <div style={{ overflow: 'auto', maxHeight: 560 }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+                    <thead style={{ position: 'sticky', top: 0, background: 'var(--cloud)', zIndex: 1 }}>
+                      <tr style={{ borderBottom: '1px solid var(--hairline)' }}>
+                        {['שם העסק', 'כתובת', 'דירוג', 'פירוט', ''].map((h, i) => (
+                          <th key={i} style={{ textAlign: 'right', padding: '10px 16px', fontSize: 12, fontWeight: 600, color: 'var(--charcoal)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selBiz.length === 0 ? (
+                        <tr><td colSpan={5} style={{ textAlign: 'center', padding: 32, color: 'var(--graphite)' }}>אין עסקים בקובץ זה</td></tr>
+                      ) : selBiz.map(b => (
+                        <tr key={b.id} style={{ borderBottom: '1px solid var(--hairline)' }} className="group">
+                          <td style={{ padding: '12px 16px', fontWeight: 500, color: 'var(--ink)' }}>{b.name}</td>
+                          <td style={{ padding: '12px 16px', color: 'var(--charcoal)' }}>{b.address}</td>
+                          <td style={{ padding: '12px 16px' }}>
+                            {b.suspicionRating
+                              ? <span style={{ ...badgeBase, ...(BADGE[b.suspicionRating] ?? { background: 'var(--cloud)', color: 'var(--charcoal)' }) }}>{b.suspicionRating}</span>
+                              : '—'}
+                          </td>
+                          <td style={{ padding: '12px 16px', color: 'var(--graphite)', fontSize: 12, maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={b.suspicionDetail || b.noSuspicionReason}>
+                            {b.suspicionDetail || b.noSuspicionReason || '—'}
+                          </td>
+                          <td style={{ padding: '12px 16px' }}>
+                            <button onClick={() => { if (confirm(`למחוק "${b.name}"?`)) deleteBusiness(b.id) }}
+                              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--steel)', fontSize: 18, lineHeight: 1 }}>
+                              ×
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* ── Ink footer slab ── */}
+      <section style={{ background: 'var(--ink)', padding: '48px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <p style={{ color: 'var(--steel)', fontSize: 16 }}>להוספת נתונים חדשים — העלה דוח יומי</p>
+        <a href="/upload" style={btnWhite}>העלאת דוח חדש</a>
+      </section>
     </AppLayout>
   )
 }
 
-function Badge({ label, color }: { label: string; color: string }) {
-  const colors: Record<string, string> = {
-    gray:   'bg-gray-100 text-gray-600',
-    red:    'bg-red-100 text-red-700',
-    green:  'bg-green-100 text-green-700',
-    yellow: 'bg-yellow-100 text-yellow-700',
-  }
-  return <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${colors[color]}`}>{label}</span>
+function Chip({ label, color = 'var(--charcoal)', bg = 'var(--cloud)' }: { label: string; color?: string; bg?: string }) {
+  return <span style={{ fontSize: 12, fontWeight: 600, color, background: bg, borderRadius: 4, padding: '2px 8px' }}>{label}</span>
 }
+
+const eyebrow:   React.CSSProperties = { fontSize: 13, fontWeight: 500, color: 'var(--graphite)', textTransform: 'uppercase', letterSpacing: '0.7px', marginBottom: 10 }
+const badgeBase: React.CSSProperties = { borderRadius: 4, padding: '3px 10px', fontSize: 12, fontWeight: 600 }
+const btnBlue:   React.CSSProperties = { display: 'inline-block', height: 44, padding: '0 24px', lineHeight: '44px', background: 'var(--hp-blue)', color: '#fff', borderRadius: 4, fontSize: 14, fontWeight: 600, letterSpacing: '0.7px', textTransform: 'uppercase', textDecoration: 'none' }
+const btnWhite:  React.CSSProperties = { display: 'inline-block', height: 44, padding: '0 24px', lineHeight: '44px', background: 'var(--canvas)', color: 'var(--ink)', borderRadius: 4, fontSize: 14, fontWeight: 600, letterSpacing: '0.7px', textTransform: 'uppercase', textDecoration: 'none', flexShrink: 0 }
+const btnDanger: React.CSSProperties = { height: 36, padding: '0 14px', background: 'none', border: '1px solid #b91c1c', color: '#b91c1c', borderRadius: 4, fontSize: 13, fontWeight: 600, cursor: 'pointer', letterSpacing: '0.5px', textTransform: 'uppercase', whiteSpace: 'nowrap' }

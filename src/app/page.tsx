@@ -25,202 +25,179 @@ export default function Dashboard() {
   const notSuspect = businesses.filter(b => b.suspicionRating === 'לא חשוד').length
   const needsCheck = businesses.filter(b => b.suspicionRating === 'דרוש בדיקה').length
   const suspectPct = total > 0 ? Math.round(((highRisk + midRisk) / total) * 100) : 0
+  const lastSession = sessions.at(-1)
 
-  // Top business types
   const typeMap: Record<string, number> = {}
   businesses.forEach(b => { if (b.type) typeMap[b.type] = (typeMap[b.type] || 0) + 1 })
   const topTypes = Object.entries(typeMap).sort((a, b) => b[1] - a[1]).slice(0, 6)
   const maxType  = Math.max(...topTypes.map(t => t[1]), 1)
 
-  // Unit stats
-  const unitNums  = businesses.map(b => parseInt(b.unitCount)).filter(n => !isNaN(n))
-  const avgUnits  = unitNums.length > 0 ? (unitNums.reduce((a, b) => a + b, 0) / unitNums.length).toFixed(1) : '—'
+  const unitNums = businesses.map(b => parseInt(b.unitCount)).filter(n => !isNaN(n))
+  const avgUnits = unitNums.length > 0 ? (unitNums.reduce((a, b) => a + b, 0) / unitNums.length).toFixed(1) : '—'
 
-  const lastSession = sessions.at(-1)
-
-  const demoColors = [
-    'var(--color-sig-peach)',
-    'var(--color-sig-mint)',
-    'var(--color-sig-yellow)',
-    'var(--color-sig-cream)',
-    '#e8d5f5',
-    '#c9e4f5',
-  ]
-
-  // Empty state
   if (total === 0) return (
     <AppLayout>
-      <div style={{ padding: '96px 48px', textAlign: 'center' }}>
-        <h1 style={{ fontSize: 40, fontWeight: 400, color: 'var(--color-ink)', marginBottom: 16 }}>דשבורד</h1>
-        <p style={{ color: 'var(--color-muted)', marginBottom: 32 }}>העלה דוח יומי כדי לראות סטטיסטיקות</p>
-        <a href="/upload" style={btnPrimary}>העלאת דוח חדש</a>
-      </div>
+      <Section bg="var(--canvas)" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', gap: 16 }}>
+        <h1 style={{ fontSize: 44, fontWeight: 500 }}>דשבורד</h1>
+        <p style={{ color: 'var(--charcoal)', fontSize: 16 }}>אין נתונים — העלה דוח יומי כדי להתחיל</p>
+        <a href="/upload" style={btnBlue}>העלאת דוח חדש</a>
+      </Section>
     </AppLayout>
   )
 
   return (
     <AppLayout>
-      {/* ── Hero band ── */}
-      <section style={{ padding: '64px 48px 48px', background: 'var(--color-canvas)' }}>
-        <p style={{ color: 'var(--color-muted)', fontSize: 13, fontWeight: 500, letterSpacing: '0.04em', marginBottom: 12 }}>
-          עיריית ירושלים
-        </p>
-        <h1 style={{ fontSize: 40, fontWeight: 400, color: 'var(--color-ink)', marginBottom: 8 }}>דשבורד</h1>
-        <p style={{ color: 'var(--color-body)', fontSize: 14 }}>
-          {total} עסקים במערכת · {sessions.length} קבצים שהועלו
-        </p>
-      </section>
 
-      {/* ── Metric cards ── */}
-      <section style={{ padding: '0 48px 48px', background: 'var(--color-canvas)' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
+      {/* ── White hero ── */}
+      <Section bg="var(--canvas)">
+        <p style={eyebrow}>ניתוח ארנונה · עיריית ירושלים</p>
+        <h1 style={{ fontSize: 44, fontWeight: 500, marginBottom: 8 }}>דשבורד</h1>
+        <p style={{ color: 'var(--charcoal)', fontSize: 16 }}>
+          {total.toLocaleString()} עסקים במערכת &nbsp;·&nbsp; {sessions.length} קבצים שהועלו
+        </p>
+      </Section>
+
+      {/* ── Cloud: metric cards ── */}
+      <Section bg="var(--cloud)">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 16 }}>
           {[
-            { label: 'סה״כ עסקים',   value: total,      sub: 'במערכת'         },
-            { label: 'חשד גבוה',     value: highRisk,   sub: 'עסקים'          },
-            { label: 'שיעור חשד',    value: `${suspectPct}%`, sub: 'מכלל העסקים' },
-            { label: 'קבצים שהועלו', value: sessions.length, sub: 'מאז ההתחלה' },
-          ].map(({ label, value, sub }) => (
-            <div key={label} style={{ background: 'var(--color-surface-soft)', border: '1px solid var(--color-hairline)', borderRadius: 10, padding: 24 }}>
-              <p style={{ color: 'var(--color-muted)', fontSize: 13, marginBottom: 8 }}>{label}</p>
-              <p style={{ fontSize: 36, fontWeight: 400, color: 'var(--color-ink)', lineHeight: 1.1 }}>{value}</p>
-              <p style={{ color: 'var(--color-muted)', fontSize: 12, marginTop: 4 }}>{sub}</p>
+            { label: 'סה״כ עסקים',   value: total,      note: 'במערכת' },
+            { label: 'חשד גבוה',     value: highRisk,   note: 'עסקים'  },
+            { label: 'שיעור חשד',    value: `${suspectPct}%`, note: 'מהעסקים' },
+            { label: 'קבצים שהועלו', value: sessions.length, note: 'מאז ההתחלה' },
+          ].map(({ label, value, note }) => (
+            <div key={label} style={metricCard}>
+              <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--charcoal)', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{label}</p>
+              <p style={{ fontSize: 40, fontWeight: 500, color: 'var(--ink)', lineHeight: 1 }}>{value}</p>
+              <p style={{ fontSize: 13, color: 'var(--graphite)', marginTop: 6 }}>{note}</p>
             </div>
           ))}
         </div>
-      </section>
+      </Section>
 
-      {/* ── Signature coral card ── */}
-      <section style={{ padding: '0 48px 24px' }}>
-        <div style={{ background: 'var(--color-sig-coral)', borderRadius: 12, padding: 48 }}>
-          <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: 13, fontWeight: 500, letterSpacing: '0.04em', marginBottom: 12 }}>
-            ממצא מרכזי
-          </p>
-          <h2 style={{ fontSize: 32, fontWeight: 400, color: '#fff', marginBottom: 16 }}>
-            {highRisk} עסקים בחשד גבוה
-          </h2>
-          <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: 14, maxWidth: 520, marginBottom: 32, lineHeight: 1.6 }}>
-            עסקים אלה פועלים בכתובות שבהן כל הנכסים מסווגים כמגורים — חשד חזק לתשלום ארנונת מגורים שלא כדין.
-          </p>
-          <a href="/businesses" style={{ ...btnOnDark }}>צפה בכל העסקים</a>
-        </div>
-      </section>
-
-      {/* ── White body: Distribution ── */}
-      <section style={{ padding: '48px', background: 'var(--color-canvas)' }}>
-        <h2 style={{ fontSize: 24, fontWeight: 400, color: 'var(--color-ink)', marginBottom: 32 }}>
-          התפלגות דירוג חשד
-        </h2>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 560 }}>
+      {/* ── White: distribution ── */}
+      <Section bg="var(--canvas)">
+        <h2 style={{ fontSize: 32, fontWeight: 500, marginBottom: 32 }}>התפלגות דירוג חשד</h2>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, maxWidth: 720 }}>
           {[
-            { label: 'חשד גבוה',    count: highRisk,   bar: 'var(--color-sig-coral)' },
-            { label: 'חשד בינוני',  count: midRisk,    bar: '#d97706' },
-            { label: 'דרוש בדיקה', count: needsCheck, bar: '#b45309' },
-            { label: 'לא חשוד',    count: notSuspect, bar: '#166534' },
-          ].map(({ label, count, bar }) => (
-            <div key={label}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                <span style={{ color: 'var(--color-body)', fontSize: 14 }}>{label}</span>
-                <span style={{ color: 'var(--color-muted)', fontSize: 14 }}>
-                  {count} {total > 0 ? `(${Math.round(count / total * 100)}%)` : ''}
-                </span>
+            { label: 'חשד גבוה',    count: highRisk,   color: '#b91c1c' },
+            { label: 'חשד בינוני',  count: midRisk,    color: '#d97706' },
+            { label: 'דרוש בדיקה', count: needsCheck, color: '#6b7280' },
+            { label: 'לא חשוד',    count: notSuspect, color: '#15803d' },
+          ].map(({ label, count, color }) => (
+            <div key={label} style={{ background: 'var(--cloud)', borderRadius: 16, padding: 24, boxShadow: '0 2px 8px rgba(26,26,26,0.08)' }}>
+              <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--charcoal)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{label}</p>
+              <p style={{ fontSize: 36, fontWeight: 500, color: 'var(--ink)' }}>{count}</p>
+              <div style={{ height: 4, background: 'var(--fog)', borderRadius: 9999, marginTop: 12 }}>
+                <div style={{ height: '100%', width: `${total > 0 ? (count/total)*100 : 0}%`, background: color, borderRadius: 9999 }} />
               </div>
-              <div style={{ height: 6, background: 'var(--color-surface-strong)', borderRadius: 9999 }}>
-                <div style={{ height: '100%', width: `${total > 0 ? (count / total) * 100 : 0}%`, background: bar, borderRadius: 9999, transition: 'width 0.4s ease' }} />
-              </div>
+              <p style={{ fontSize: 13, color: 'var(--graphite)', marginTop: 6 }}>
+                {total > 0 ? Math.round((count/total)*100) : 0}% מהעסקים
+              </p>
             </div>
           ))}
         </div>
-      </section>
+      </Section>
 
-      {/* ── Demo grid: Business types ── */}
+      {/* ── Ink slab: key finding ── */}
+      <Section bg="var(--ink)">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 48 }}>
+          <div>
+            <p style={{ ...eyebrow, color: 'var(--steel)' }}>ממצא מרכזי</p>
+            <h2 style={{ fontSize: 44, fontWeight: 500, color: 'var(--on-ink)', marginBottom: 12 }}>
+              {highRisk} עסקים בחשד גבוה
+            </h2>
+            <p style={{ color: 'var(--steel)', fontSize: 16, maxWidth: 480, lineHeight: 1.5 }}>
+              עסקים הפועלים בכתובות שכל יחידותיהן מסווגות כמגורים — חשד חזק לתשלום ארנונה מופחת שלא כדין.
+            </p>
+          </div>
+          <a href="/businesses" style={{ ...btnWhiteOnDark, flexShrink: 0 }}>צפה בכל העסקים</a>
+        </div>
+      </Section>
+
+      {/* ── Cloud: business types ── */}
       {topTypes.length > 0 && (
-        <section style={{ padding: '0 48px 48px', background: 'var(--color-canvas)' }}>
-          <h2 style={{ fontSize: 24, fontWeight: 400, color: 'var(--color-ink)', marginBottom: 24 }}>
-            סוגי עסקים נפוצים
-          </h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
-            {topTypes.map(([type, count], i) => (
-              <div key={type} style={{ background: demoColors[i % demoColors.length], borderRadius: 10, padding: 24 }}>
-                <p style={{ fontSize: 28, fontWeight: 400, color: 'var(--color-ink)', marginBottom: 4 }}>{count}</p>
-                <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--color-ink)' }}>{type}</p>
-                <div style={{ marginTop: 12, height: 4, background: 'rgba(0,0,0,0.1)', borderRadius: 9999 }}>
-                  <div style={{ height: '100%', width: `${(count / maxType) * 100}%`, background: 'rgba(0,0,0,0.25)', borderRadius: 9999 }} />
+        <Section bg="var(--cloud)">
+          <h2 style={{ fontSize: 32, fontWeight: 500, marginBottom: 24 }}>סוגי עסקים נפוצים</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 16 }}>
+            {topTypes.map(([type, count]) => (
+              <div key={type} style={{ background: 'var(--canvas)', borderRadius: 16, padding: 24, boxShadow: '0 2px 8px rgba(26,26,26,0.08)' }}>
+                <p style={{ fontSize: 36, fontWeight: 500, color: 'var(--hp-blue)', lineHeight: 1, marginBottom: 8 }}>{count}</p>
+                <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--ink)' }}>{type}</p>
+                <div style={{ height: 3, background: 'var(--fog)', borderRadius: 9999, marginTop: 14 }}>
+                  <div style={{ height: '100%', width: `${(count/maxType)*100}%`, background: 'var(--hp-blue)', borderRadius: 9999 }} />
                 </div>
               </div>
             ))}
           </div>
-        </section>
+        </Section>
       )}
 
-      {/* ── Signature forest card: upload stats ── */}
+      {/* ── White: last upload info ── */}
       {lastSession && (
-        <section style={{ padding: '0 48px 48px' }}>
-          <div style={{ background: 'var(--color-sig-forest)', borderRadius: 12, padding: 48, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 32 }}>
-            <div>
-              <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, fontWeight: 500, letterSpacing: '0.04em', marginBottom: 12 }}>
-                העלאה אחרונה
-              </p>
-              <h2 style={{ fontSize: 28, fontWeight: 400, color: '#fff', marginBottom: 8 }}>
-                {lastSession.fileName}
-              </h2>
-              <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14 }}>{lastSession.uploadDate}</p>
-            </div>
-            <div style={{ display: 'flex', gap: 32, flexShrink: 0 }}>
-              {[
-                { label: 'סה״כ', value: lastSession.totalCount },
-                { label: 'חשודים', value: lastSession.suspiciousCount },
-                { label: 'תקינים', value: lastSession.okCount },
-              ].map(({ label, value }) => (
-                <div key={label} style={{ textAlign: 'center' }}>
-                  <p style={{ fontSize: 32, fontWeight: 400, color: '#fff' }}>{value}</p>
-                  <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', marginTop: 4 }}>{label}</p>
-                </div>
-              ))}
-            </div>
+        <Section bg="var(--canvas)">
+          <h2 style={{ fontSize: 32, fontWeight: 500, marginBottom: 24 }}>העלאה אחרונה</h2>
+          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+            {[
+              { label: 'שם הקובץ',     value: lastSession.fileName    },
+              { label: 'תאריך',         value: lastSession.uploadDate  },
+              { label: 'סה״כ עסקים',   value: String(lastSession.totalCount) },
+              { label: 'חשודים',        value: String(lastSession.suspiciousCount) },
+              { label: 'ממוצע יחידות', value: avgUnits                },
+            ].map(({ label, value }) => (
+              <div key={label} style={{ background: 'var(--cloud)', borderRadius: 16, padding: '16px 24px', minWidth: 140, boxShadow: '0 2px 8px rgba(26,26,26,0.08)' }}>
+                <p style={{ fontSize: 12, fontWeight: 500, color: 'var(--graphite)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 6 }}>{label}</p>
+                <p style={{ fontSize: 20, fontWeight: 500, color: 'var(--ink)', wordBreak: 'break-all' }}>{value}</p>
+              </div>
+            ))}
           </div>
-        </section>
+        </Section>
       )}
 
-      {/* ── CTA band ── */}
-      <section style={{ padding: '0 48px 96px' }}>
-        <div style={{ background: 'var(--color-surface-strong)', borderRadius: 12, padding: 48, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div>
-            <h2 style={{ fontSize: 24, fontWeight: 400, color: 'var(--color-ink)', marginBottom: 8 }}>
-              נתוני ממצאים נוספים
-            </h2>
-            <p style={{ color: 'var(--color-body)', fontSize: 14 }}>
-              ממוצע יחידות דיור בכתובת: <strong>{avgUnits}</strong>
-            </p>
-          </div>
-          <a href="/upload" style={btnPrimary}>העלאת דוח חדש</a>
+      {/* ── Ink footer CTA ── */}
+      <Section bg="var(--ink)" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 32 }}>
+        <div>
+          <h2 style={{ fontSize: 32, fontWeight: 500, color: 'var(--on-ink)', marginBottom: 8 }}>מוכן להעלאת דוח חדש?</h2>
+          <p style={{ color: 'var(--steel)', fontSize: 16 }}>הוסף נתונים חדשים למערכת בקלות</p>
         </div>
-      </section>
+        <a href="/upload" style={{ ...btnBlue, flexShrink: 0 }}>העלאת דוח חדש</a>
+      </Section>
+
     </AppLayout>
   )
 }
 
-const btnPrimary: React.CSSProperties = {
-  display:      'inline-block',
-  padding:      '14px 24px',
-  background:   'var(--color-ink)',
-  color:        '#fff',
-  borderRadius: 12,
-  fontSize:     16,
-  fontWeight:   500,
-  textDecoration: 'none',
-  cursor:       'pointer',
-  border:       'none',
-  whiteSpace:   'nowrap',
+/* ── Helpers ── */
+function Section({ bg, children, style }: { bg: string; children: React.ReactNode; style?: React.CSSProperties }) {
+  return (
+    <section style={{ background: bg, padding: '64px 48px', ...style }}>
+      {children}
+    </section>
+  )
 }
 
-const btnOnDark: React.CSSProperties = {
-  display:        'inline-block',
-  padding:        '12px 24px',
-  background:     '#fff',
-  color:          'var(--color-ink)',
-  borderRadius:   12,
-  fontSize:       16,
-  fontWeight:     500,
-  textDecoration: 'none',
-  cursor:         'pointer',
+const eyebrow: React.CSSProperties = {
+  fontSize: 13, fontWeight: 500, color: 'var(--graphite)',
+  textTransform: 'uppercase', letterSpacing: '0.7px', marginBottom: 12,
+}
+
+const metricCard: React.CSSProperties = {
+  background: 'var(--canvas)', borderRadius: 16, padding: 24,
+  boxShadow: '0 2px 8px rgba(26,26,26,0.08)',
+}
+
+const btnBlue: React.CSSProperties = {
+  display: 'inline-block', height: 44, padding: '0 24px', lineHeight: '44px',
+  background: 'var(--hp-blue)', color: 'var(--on-ink)',
+  borderRadius: 4, fontSize: 14, fontWeight: 600,
+  letterSpacing: '0.7px', textTransform: 'uppercase', textDecoration: 'none',
+  whiteSpace: 'nowrap',
+}
+
+const btnWhiteOnDark: React.CSSProperties = {
+  display: 'inline-block', height: 44, padding: '0 24px', lineHeight: '44px',
+  background: 'var(--canvas)', color: 'var(--ink)',
+  borderRadius: 4, fontSize: 14, fontWeight: 600,
+  letterSpacing: '0.7px', textTransform: 'uppercase', textDecoration: 'none',
+  whiteSpace: 'nowrap',
 }

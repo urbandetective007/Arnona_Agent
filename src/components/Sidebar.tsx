@@ -5,41 +5,40 @@ import { usePathname, useRouter } from 'next/navigation'
 import { logout } from '@/lib/auth'
 
 const NAV_LINKS = [
-  { href: '/',           label: 'דשבורד'         },
-  { href: '/businesses', label: 'כלל הנתונים'     },
-  { href: '/files',      label: 'קבצים שהועלו'   },
-  { href: '/upload',     label: 'העלאת דוח חדש'  },
+  { href: '/',           label: 'דשבורד'        },
+  { href: '/businesses', label: 'כלל הנתונים'    },
+  { href: '/files',      label: 'קבצים שהועלו'  },
+  { href: '/upload',     label: 'העלאת דוח חדש' },
 ]
 
 export default function Sidebar() {
   const pathname = usePathname()
-  const router  = useRouter()
+  const router   = useRouter()
 
   return (
-    <aside
-      style={{ borderColor: 'var(--color-hairline)' }}
-      className="w-52 flex-shrink-0 bg-white border-l flex flex-col min-h-screen sticky top-0"
-    >
+    <aside style={{ width: 208, flexShrink: 0, background: 'var(--ink)', display: 'flex', flexDirection: 'column', minHeight: '100vh', position: 'sticky', top: 0 }}>
+
       {/* Logo */}
-      <div style={{ borderColor: 'var(--color-hairline)' }} className="px-6 py-6 border-b">
-        <p style={{ color: 'var(--color-ink)', fontWeight: 500, fontSize: 15 }}>סוכן ארנונה</p>
-        <p style={{ color: 'var(--color-muted)', fontSize: 12, marginTop: 2 }}>עיריית ירושלים</p>
+      <div style={{ padding: '24px 20px 20px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+        <p style={{ color: 'var(--on-ink)', fontWeight: 700, fontSize: 15, letterSpacing: 0.3 }}>סוכן ארנונה</p>
+        <p style={{ color: 'var(--graphite)', fontSize: 12, marginTop: 3 }}>עיריית ירושלים</p>
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 px-3 py-5 flex flex-col gap-0.5">
+      <nav style={{ flex: 1, padding: '12px 8px', display: 'flex', flexDirection: 'column', gap: 2 }}>
         {NAV_LINKS.map(({ href, label }) => {
           const active = pathname === href
           return (
-            <Link
-              key={href}
-              href={href}
-              style={active
-                ? { background: 'var(--color-ink)', color: '#fff', borderRadius: 10, fontWeight: 500 }
-                : { color: 'var(--color-body)', borderRadius: 10 }
-              }
-              className="block px-4 py-2.5 text-sm transition-colors hover:bg-[#f8fafc]"
-            >
+            <Link key={href} href={href} style={{
+              display: 'block',
+              padding: '10px 12px',
+              borderRadius: 4,
+              fontSize: 14,
+              fontWeight: active ? 600 : 400,
+              color: active ? 'var(--on-ink)' : 'var(--steel)',
+              background: active ? 'var(--hp-blue)' : 'transparent',
+              textDecoration: 'none',
+            }}>
               {label}
             </Link>
           )
@@ -47,12 +46,12 @@ export default function Sidebar() {
       </nav>
 
       {/* Logout */}
-      <div style={{ borderColor: 'var(--color-hairline)' }} className="px-3 py-4 border-t">
-        <button
-          onClick={() => { logout(); router.push('/login') }}
-          style={{ color: 'var(--color-muted)', borderRadius: 10 }}
-          className="w-full text-right px-4 py-2.5 text-sm hover:bg-[#f8fafc] transition-colors"
-        >
+      <div style={{ padding: '12px 8px 20px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+        <button onClick={() => { logout(); router.push('/login') }} style={{
+          width: '100%', textAlign: 'right', padding: '10px 12px',
+          background: 'none', border: 'none', borderRadius: 4,
+          color: 'var(--graphite)', fontSize: 14, cursor: 'pointer',
+        }}>
           יציאה
         </button>
       </div>
