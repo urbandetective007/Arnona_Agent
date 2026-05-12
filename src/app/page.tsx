@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import Navbar from '@/components/Navbar'
+import AppLayout from '@/components/AppLayout'
 import { useRequireAuth } from '@/lib/useAuth'
 import type { Business, UploadSession } from '@/lib/types'
 
@@ -63,8 +63,7 @@ export default function Dashboard() {
 
   if (total === 0) {
     return (
-      <>
-        <Navbar />
+      <AppLayout>
         <div className="flex flex-col items-center justify-center py-32 text-gray-400">
           <p className="text-5xl mb-4">📊</p>
           <p className="text-lg font-medium text-gray-600">אין נתונים להצגה</p>
@@ -73,14 +72,13 @@ export default function Dashboard() {
             העלה עכשיו
           </a>
         </div>
-      </>
+      </AppLayout>
     )
   }
 
   return (
-    <>
-      <Navbar />
-      <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
+    <AppLayout>
+      <div className="max-w-5xl mx-auto px-6 py-6 space-y-6">
         <div>
           <h1 className="text-xl font-bold text-gray-900">דשבורד</h1>
           <p className="text-sm text-gray-500">סטטיסטיקות על בסיס {total} עסקים במערכת</p>
@@ -176,7 +174,7 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
-    </>
+    </AppLayout>
   )
 }
 

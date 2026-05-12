@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import Navbar from '@/components/Navbar'
+import AppLayout from '@/components/AppLayout'
 import { useRequireAuth } from '@/lib/useAuth'
 import type { Business, UploadSession } from '@/lib/types'
 
@@ -75,9 +75,8 @@ export default function FilesPage() {
     : []
 
   return (
-    <>
-      <Navbar />
-      <div className="max-w-7xl mx-auto px-4 py-6">
+    <AppLayout>
+      <div className="max-w-7xl mx-auto px-6 py-6">
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-xl font-bold text-gray-900">קבצים שהועלו</h1>
@@ -209,7 +208,7 @@ export default function FilesPage() {
           </div>
         )}
       </div>
-    </>
+    </AppLayout>
   )
 }
 

@@ -6,7 +6,7 @@ import * as XLSX from 'xlsx'
 import { useRequireAuth } from '@/lib/useAuth'
 import { lookupAddress } from '@/lib/addressUtils'
 import type { Business, UploadSession } from '@/lib/types'
-import Navbar from '@/components/Navbar'
+import AppLayout from '@/components/AppLayout'
 
 type Status = 'idle' | 'processing' | 'done' | 'error'
 
@@ -124,9 +124,8 @@ export default function UploadPage() {
   if (!ready) return null
 
   return (
-    <>
-      <Navbar />
-      <div className="max-w-4xl mx-auto px-4 py-8">
+    <AppLayout>
+      <div className="max-w-3xl mx-auto px-6 py-8">
         <div className="mb-6">
           <h1 className="text-xl font-bold text-gray-900">העלאת דוח יומי</h1>
           <p className="text-sm text-gray-500 mt-1">
@@ -213,6 +212,6 @@ export default function UploadPage() {
           </div>
         )}
       </div>
-    </>
+    </AppLayout>
   )
 }
