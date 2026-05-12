@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import * as XLSX from 'xlsx'
 import { useRequireAuth } from '@/lib/useAuth'
@@ -207,7 +208,7 @@ export default function UploadPage() {
       {/* ── Ink footer slab ── */}
       <section style={{ background: 'var(--ink)', padding: '48px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <p style={{ color: 'var(--steel)', fontSize: 16 }}>צפה בנתונים שהועלו עד כה</p>
-        <a href="/files" style={btnWhite}>קבצים שהועלו</a>
+        <Link href="/files" style={btnWhite}>קבצים שהועלו</Link>
       </section>
     </AppLayout>
   )

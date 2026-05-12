@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useMemo } from 'react'
+import Link from 'next/link'
 import AppLayout from '@/components/AppLayout'
 import { useRequireAuth } from '@/lib/useAuth'
 import type { Business } from '@/lib/types'
@@ -22,10 +23,12 @@ export default function BusinessesPage() {
   const [ratingFilter, setRatingFilter] = useState('הכל')
   const [typeFilter,   setTypeFilter]   = useState('הכל')
   const [expanded,     setExpanded]     = useState<string | null>(null)
+  const [loading,      setLoading]      = useState(true)
 
   useEffect(() => {
     supabase.from('businesses').select('*').then(({ data }) => {
       if (data) setBusinesses(data.map(dbToBusiness))
+      setLoading(false)
     })
   }, [])
 
@@ -47,7 +50,7 @@ export default function BusinessesPage() {
     if (expanded === id) setExpanded(null)
   }
 
-  if (!ready) return null
+  if (!ready || loading) return null
 
   return (
     <AppLayout>
@@ -84,7 +87,7 @@ export default function BusinessesPage() {
         {businesses.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '80px 0' }}>
             <p style={{ fontSize: 32, fontWeight: 500, marginBottom: 16 }}>אין עסקים במערכת</p>
-            <a href="/upload" style={btnBlue}>העלאת דוח ראשון</a>
+            <Link href="/upload" style={btnBlue}>העלאת דוח ראשון</Link>
           </div>
         ) : (
           <div style={{ border: '1px solid var(--hairline)', borderRadius: 16, overflow: 'hidden', boxShadow: '0 2px 8px rgba(26,26,26,0.08)' }}>

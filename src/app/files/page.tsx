@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import AppLayout from '@/components/AppLayout'
 import { useRequireAuth } from '@/lib/useAuth'
 import type { Business, UploadSession } from '@/lib/types'
@@ -18,17 +19,20 @@ export default function FilesPage() {
   const [sessions,   setSessions]   = useState<UploadSession[]>([])
   const [businesses, setBusinesses] = useState<Business[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [loading,    setLoading]    = useState(true)
 
   useEffect(() => {
-    supabase.from('upload_sessions').select('*').then(({ data }) => {
-      if (data) setSessions(data.map(dbToSession))
-    })
-    supabase.from('businesses').select('*').then(({ data }) => {
-      if (data) setBusinesses(data.map(dbToBusiness))
+    Promise.all([
+      supabase.from('upload_sessions').select('*'),
+      supabase.from('businesses').select('*'),
+    ]).then(([{ data: sData }, { data: bData }]) => {
+      if (sData) setSessions(sData.map(dbToSession))
+      if (bData) setBusinesses(bData.map(dbToBusiness))
+      setLoading(false)
     })
   }, [])
 
-  if (!ready) return null
+  if (!ready || loading) return null
 
   async function deleteSession(id: string) {
     if (!confirm('למחוק את הקובץ וכל העסקים שלו?')) return
@@ -86,7 +90,7 @@ export default function FilesPage() {
       {sessions.length === 0 && businesses.length === 0 ? (
         <section style={{ background: 'var(--cloud)', padding: '80px 48px', textAlign: 'center' }}>
           <p style={{ fontSize: 32, fontWeight: 500, marginBottom: 16 }}>לא הועלו קבצים עדיין</p>
-          <a href="/upload" style={btnBlue}>העלאת קובץ ראשון</a>
+          <Link href="/upload" style={btnBlue}>העלאת קובץ ראשון</Link>
         </section>
       ) : (
         <section style={{ background: 'var(--cloud)', padding: '32px 48px 80px', display: 'flex', gap: 24, alignItems: 'flex-start' }}>
@@ -177,7 +181,7 @@ export default function FilesPage() {
 
       <section style={{ background: 'var(--ink)', padding: '48px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <p style={{ color: 'var(--steel)', fontSize: 16 }}>להוספת נתונים חדשים — העלה דוח יומי</p>
-        <a href="/upload" style={btnWhite}>העלאת דוח חדש</a>
+        <Link href="/upload" style={btnWhite}>העלאת דוח חדש</Link>
       </section>
     </AppLayout>
   )

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import AppLayout from '@/components/AppLayout'
 import { useRequireAuth } from '@/lib/useAuth'
 import type { Business, UploadSession } from '@/lib/types'
@@ -10,17 +11,20 @@ export default function Dashboard() {
   const ready = useRequireAuth()
   const [businesses, setBusinesses] = useState<Business[]>([])
   const [sessions,   setSessions]   = useState<UploadSession[]>([])
+  const [loading,    setLoading]    = useState(true)
 
   useEffect(() => {
-    supabase.from('businesses').select('*').then(({ data }) => {
-      if (data) setBusinesses(data.map(dbToBusiness))
-    })
-    supabase.from('upload_sessions').select('*').then(({ data }) => {
-      if (data) setSessions(data.map(dbToSession))
+    Promise.all([
+      supabase.from('businesses').select('*'),
+      supabase.from('upload_sessions').select('*'),
+    ]).then(([{ data: bData }, { data: sData }]) => {
+      if (bData) setBusinesses(bData.map(dbToBusiness))
+      if (sData) setSessions(sData.map(dbToSession))
+      setLoading(false)
     })
   }, [])
 
-  if (!ready) return null
+  if (!ready || loading) return null
 
   const total      = businesses.length
   const highRisk   = businesses.filter(b => b.suspicionRating === 'גבוה').length
@@ -43,7 +47,7 @@ export default function Dashboard() {
       <Section bg="var(--canvas)" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', gap: 16 }}>
         <h1 style={{ fontSize: 44, fontWeight: 500 }}>דשבורד</h1>
         <p style={{ color: 'var(--charcoal)', fontSize: 16 }}>אין נתונים — העלה דוח יומי כדי להתחיל</p>
-        <a href="/upload" style={btnBlue}>העלאת דוח חדש</a>
+        <Link href="/upload" style={btnBlue}>העלאת דוח חדש</Link>
       </Section>
     </AppLayout>
   )
@@ -109,7 +113,7 @@ export default function Dashboard() {
               עסקים הפועלים בכתובות שכל יחידותיהן מסווגות כמגורים — חשד חזק לתשלום ארנונה מופחת שלא כדין.
             </p>
           </div>
-          <a href="/businesses" style={{ ...btnWhiteOnDark, flexShrink: 0 }}>צפה בכל העסקים</a>
+          <Link href="/businesses" style={{ ...btnWhiteOnDark, flexShrink: 0 }}>צפה בכל העסקים</Link>
         </div>
       </Section>
 
