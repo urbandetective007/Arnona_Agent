@@ -87,10 +87,6 @@ export default function UploadPage() {
       const keys = new Set((existing ?? []).map((b: {name: string, address: string}) => `${b.name}|${b.address}`))
       const toAdd = newBiz.filter(b => !keys.has(`${b.name}|${b.address}`))
 
-      if (toAdd.length > 0) {
-        await supabase.from('businesses').insert(toAdd.map(businessToDb))
-      }
-
       const session: UploadSession = {
         id: sessionId,
         fileName: file.name,
@@ -101,7 +97,15 @@ export default function UploadPage() {
         unknownCount:    toAdd.filter(b => b.arnonaStatus === 'unknown').length,
         businessIds:     toAdd.map(b => b.id),
       }
-      await supabase.from('upload_sessions').insert(sessionToDb(session))
+
+      // Insert session FIRST (businesses reference it via FK)
+      const { error: sessionErr } = await supabase.from('upload_sessions').insert(sessionToDb(session))
+      if (sessionErr) throw new Error(`שגיאה בשמירת הסשן: ${sessionErr.message}`)
+
+      if (toAdd.length > 0) {
+        const { error: bizErr } = await supabase.from('businesses').insert(toAdd.map(businessToDb))
+        if (bizErr) throw new Error(`שגיאה בשמירת העסקים: ${bizErr.message}`)
+      }
 
       setPreview(newBiz)
       setStatus('done')
