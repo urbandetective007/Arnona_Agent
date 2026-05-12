@@ -6,6 +6,7 @@ import AppLayout from '@/components/AppLayout'
 import { useRequireAuth } from '@/lib/useAuth'
 import type { Business } from '@/lib/types'
 import { supabase, dbToBusiness } from '@/lib/supabase'
+import { getCache, setCache, clearCache } from '@/lib/cache'
 
 const BADGE: Record<string, React.CSSProperties> = {
   'גבוה':        { background: '#fef2f2', color: '#b91c1c' },
@@ -26,8 +27,10 @@ export default function BusinessesPage() {
   const [loading,      setLoading]      = useState(true)
 
   useEffect(() => {
+    const cached = getCache<Business[]>('businesses')
+    if (cached) { setBusinesses(cached); setLoading(false) }
     supabase.from('businesses').select('*').then(({ data }) => {
-      if (data) setBusinesses(data.map(dbToBusiness))
+      if (data) { const b = data.map(dbToBusiness); setBusinesses(b); setCache('businesses', b) }
       setLoading(false)
     })
   }, [])
@@ -46,11 +49,16 @@ export default function BusinessesPage() {
   async function deleteBusiness(id: string) {
     if (!confirm('למחוק עסק זה?')) return
     await supabase.from('businesses').delete().eq('id', id)
-    setBusinesses(prev => prev.filter(b => b.id !== id))
+    setBusinesses(prev => {
+      const next = prev.filter(b => b.id !== id)
+      setCache('businesses', next)
+      return next
+    })
     if (expanded === id) setExpanded(null)
   }
 
-  if (!ready || loading) return null
+  if (!ready) return null
+  if (loading) return <AppLayout><Spinner /></AppLayout>
 
   return (
     <AppLayout>
@@ -171,6 +179,14 @@ export default function BusinessesPage() {
         )}
       </section>
     </AppLayout>
+  )
+}
+
+function Spinner() {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1, minHeight: '60vh' }}>
+      <div style={{ width: 32, height: 32, border: '3px solid var(--fog)', borderTopColor: 'var(--hp-blue)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+    </div>
   )
 }
 

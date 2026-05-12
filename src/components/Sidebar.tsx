@@ -54,6 +54,9 @@ export default function Sidebar() {
         }}>
           יציאה
         </button>
+        <p style={{ textAlign: 'center', fontSize: 11, color: 'rgba(255,255,255,0.18)', marginTop: 4, letterSpacing: '0.5px' }}>
+          v1.4 · Supabase
+        </p>
       </div>
     </aside>
   )

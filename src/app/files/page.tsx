@@ -6,6 +6,7 @@ import AppLayout from '@/components/AppLayout'
 import { useRequireAuth } from '@/lib/useAuth'
 import type { Business, UploadSession } from '@/lib/types'
 import { supabase, dbToBusiness, dbToSession, sessionToDb } from '@/lib/supabase'
+import { getCache, setCache } from '@/lib/cache'
 
 const BADGE: Record<string, React.CSSProperties> = {
   'גבוה':        { background: '#fef2f2', color: '#b91c1c' },
@@ -22,30 +23,38 @@ export default function FilesPage() {
   const [loading,    setLoading]    = useState(true)
 
   useEffect(() => {
+    const cachedS = getCache<UploadSession[]>('sessions')
+    const cachedB = getCache<Business[]>('businesses')
+    if (cachedS && cachedB) {
+      setSessions(cachedS); setBusinesses(cachedB); setLoading(false)
+    }
     Promise.all([
       supabase.from('upload_sessions').select('*'),
       supabase.from('businesses').select('*'),
     ]).then(([{ data: sData }, { data: bData }]) => {
-      if (sData) setSessions(sData.map(dbToSession))
-      if (bData) setBusinesses(bData.map(dbToBusiness))
+      if (sData) { const s = sData.map(dbToSession);  setSessions(s);   setCache('sessions', s) }
+      if (bData) { const b = bData.map(dbToBusiness); setBusinesses(b); setCache('businesses', b) }
       setLoading(false)
     })
   }, [])
 
-  if (!ready || loading) return null
+  if (!ready) return null
+  if (loading) return <AppLayout><Spinner /></AppLayout>
 
   async function deleteSession(id: string) {
     if (!confirm('למחוק את הקובץ וכל העסקים שלו?')) return
     await supabase.from('upload_sessions').delete().eq('id', id)
-    setSessions(prev => prev.filter(s => s.id !== id))
-    setBusinesses(prev => prev.filter(b => b.uploadSessionId !== id))
+    const nextS = sessions.filter(s => s.id !== id)
+    const nextB = businesses.filter(b => b.uploadSessionId !== id)
+    setSessions(nextS); setBusinesses(nextB)
+    setCache('sessions', nextS); setCache('businesses', nextB)
     if (selectedId === id) setSelectedId(null)
   }
 
   async function deleteBusiness(id: string) {
     await supabase.from('businesses').delete().eq('id', id)
     const next = businesses.filter(b => b.id !== id)
-    setBusinesses(next)
+    setBusinesses(next); setCache('businesses', next)
 
     const nextSessions = await Promise.all(sessions.map(async s => {
       if (!s.businessIds.includes(id)) return s
@@ -61,7 +70,7 @@ export default function FilesPage() {
       await supabase.from('upload_sessions').update(sessionToDb(updated)).eq('id', s.id)
       return updated
     }))
-    setSessions(nextSessions)
+    setSessions(nextSessions); setCache('sessions', nextSessions)
   }
 
   async function clearAll() {
@@ -69,6 +78,7 @@ export default function FilesPage() {
     await supabase.from('businesses').delete().neq('id', '')
     await supabase.from('upload_sessions').delete().neq('id', '')
     setSessions([]); setBusinesses([]); setSelectedId(null)
+    setCache('businesses', []); setCache('sessions', [])
   }
 
   const selected = sessions.find(s => s.id === selectedId)
@@ -184,6 +194,14 @@ export default function FilesPage() {
         <Link href="/upload" style={btnWhite}>העלאת דוח חדש</Link>
       </section>
     </AppLayout>
+  )
+}
+
+function Spinner() {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1, minHeight: '60vh' }}>
+      <div style={{ width: 32, height: 32, border: '3px solid var(--fog)', borderTopColor: 'var(--hp-blue)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+    </div>
   )
 }
 

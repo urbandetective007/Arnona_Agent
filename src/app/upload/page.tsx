@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { clearCache } from '@/lib/cache'
 import * as XLSX from 'xlsx'
 import { useRequireAuth } from '@/lib/useAuth'
 import AppLayout from '@/components/AppLayout'
@@ -108,6 +109,7 @@ export default function UploadPage() {
         if (bizErr) throw new Error(`שגיאה בשמירת העסקים: ${bizErr.message}`)
       }
 
+      clearCache('businesses', 'sessions')
       setPreview(newBiz)
       setStatus('done')
       setMessage(`נוספו ${toAdd.length} עסקים חדשים${newBiz.length - toAdd.length > 0 ? ` (${newBiz.length - toAdd.length} כפולים דולגו)` : ''}`)

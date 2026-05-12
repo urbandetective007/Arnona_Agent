@@ -6,6 +6,7 @@ import AppLayout from '@/components/AppLayout'
 import { useRequireAuth } from '@/lib/useAuth'
 import type { Business, UploadSession } from '@/lib/types'
 import { supabase, dbToBusiness, dbToSession } from '@/lib/supabase'
+import { getCache, setCache } from '@/lib/cache'
 
 export default function Dashboard() {
   const ready = useRequireAuth()
@@ -14,17 +15,23 @@ export default function Dashboard() {
   const [loading,    setLoading]    = useState(true)
 
   useEffect(() => {
+    const cachedB = getCache<Business[]>('businesses')
+    const cachedS = getCache<UploadSession[]>('sessions')
+    if (cachedB && cachedS) {
+      setBusinesses(cachedB); setSessions(cachedS); setLoading(false)
+    }
     Promise.all([
       supabase.from('businesses').select('*'),
       supabase.from('upload_sessions').select('*'),
     ]).then(([{ data: bData }, { data: sData }]) => {
-      if (bData) setBusinesses(bData.map(dbToBusiness))
-      if (sData) setSessions(sData.map(dbToSession))
+      if (bData) { const b = bData.map(dbToBusiness); setBusinesses(b); setCache('businesses', b) }
+      if (sData) { const s = sData.map(dbToSession);  setSessions(s);   setCache('sessions', s) }
       setLoading(false)
     })
   }, [])
 
-  if (!ready || loading) return null
+  if (!ready) return null
+  if (loading) return <AppLayout><Spinner /></AppLayout>
 
   const total      = businesses.length
   const highRisk   = businesses.filter(b => b.suspicionRating === 'גבוה').length
@@ -167,6 +174,14 @@ export default function Dashboard() {
 
 function Section({ bg, children, style }: { bg: string; children: React.ReactNode; style?: React.CSSProperties }) {
   return <section style={{ background: bg, padding: '64px 48px', ...style }}>{children}</section>
+}
+
+function Spinner() {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1, minHeight: '60vh' }}>
+      <div style={{ width: 32, height: 32, border: '3px solid var(--fog)', borderTopColor: 'var(--hp-blue)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+    </div>
+  )
 }
 
 const eyebrow: React.CSSProperties = { fontSize: 13, fontWeight: 500, color: 'var(--graphite)', textTransform: 'uppercase', letterSpacing: '0.7px', marginBottom: 12 }
