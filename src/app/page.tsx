@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import AppLayout from '@/components/AppLayout'
 import { useRequireAuth } from '@/lib/useAuth'
 import type { Business, UploadSession } from '@/lib/types'
+import { supabase, dbToBusiness, dbToSession } from '@/lib/supabase'
 
 export default function Dashboard() {
   const ready = useRequireAuth()
@@ -11,10 +12,12 @@ export default function Dashboard() {
   const [sessions,   setSessions]   = useState<UploadSession[]>([])
 
   useEffect(() => {
-    const b = localStorage.getItem('businesses')
-    const s = localStorage.getItem('uploadSessions')
-    if (b) setBusinesses(JSON.parse(b))
-    if (s) setSessions(JSON.parse(s))
+    supabase.from('businesses').select('*').then(({ data }) => {
+      if (data) setBusinesses(data.map(dbToBusiness))
+    })
+    supabase.from('upload_sessions').select('*').then(({ data }) => {
+      if (data) setSessions(data.map(dbToSession))
+    })
   }, [])
 
   if (!ready) return null
@@ -47,8 +50,6 @@ export default function Dashboard() {
 
   return (
     <AppLayout>
-
-      {/* ── White hero ── */}
       <Section bg="var(--canvas)">
         <p style={eyebrow}>ניתוח ארנונה · עיריית ירושלים</p>
         <h1 style={{ fontSize: 44, fontWeight: 500, marginBottom: 8 }}>דשבורד</h1>
@@ -57,7 +58,6 @@ export default function Dashboard() {
         </p>
       </Section>
 
-      {/* ── Cloud: metric cards ── */}
       <Section bg="var(--cloud)">
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 16 }}>
           {[
@@ -75,7 +75,6 @@ export default function Dashboard() {
         </div>
       </Section>
 
-      {/* ── White: distribution ── */}
       <Section bg="var(--canvas)">
         <h2 style={{ fontSize: 32, fontWeight: 500, marginBottom: 32 }}>התפלגות דירוג חשד</h2>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, maxWidth: 720 }}>
@@ -99,7 +98,6 @@ export default function Dashboard() {
         </div>
       </Section>
 
-      {/* ── Ink slab: key finding ── */}
       <Section bg="var(--ink)">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 48 }}>
           <div>
@@ -115,7 +113,6 @@ export default function Dashboard() {
         </div>
       </Section>
 
-      {/* ── Cloud: business types ── */}
       {topTypes.length > 0 && (
         <Section bg="var(--cloud)">
           <h2 style={{ fontSize: 32, fontWeight: 500, marginBottom: 24 }}>סוגי עסקים נפוצים</h2>
@@ -133,7 +130,6 @@ export default function Dashboard() {
         </Section>
       )}
 
-      {/* ── White: last upload info ── */}
       {lastSession && (
         <Section bg="var(--canvas)">
           <h2 style={{ fontSize: 32, fontWeight: 500, marginBottom: 24 }}>העלאה אחרונה</h2>
@@ -154,7 +150,6 @@ export default function Dashboard() {
         </Section>
       )}
 
-      {/* ── Ink footer CTA ── */}
       <Section bg="var(--ink)" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 32 }}>
         <div>
           <h2 style={{ fontSize: 32, fontWeight: 500, color: 'var(--on-ink)', marginBottom: 8 }}>מוכן להעלאת דוח חדש?</h2>
@@ -162,42 +157,15 @@ export default function Dashboard() {
         </div>
         <a href="/upload" style={{ ...btnBlue, flexShrink: 0 }}>העלאת דוח חדש</a>
       </Section>
-
     </AppLayout>
   )
 }
 
-/* ── Helpers ── */
 function Section({ bg, children, style }: { bg: string; children: React.ReactNode; style?: React.CSSProperties }) {
-  return (
-    <section style={{ background: bg, padding: '64px 48px', ...style }}>
-      {children}
-    </section>
-  )
+  return <section style={{ background: bg, padding: '64px 48px', ...style }}>{children}</section>
 }
 
-const eyebrow: React.CSSProperties = {
-  fontSize: 13, fontWeight: 500, color: 'var(--graphite)',
-  textTransform: 'uppercase', letterSpacing: '0.7px', marginBottom: 12,
-}
-
-const metricCard: React.CSSProperties = {
-  background: 'var(--canvas)', borderRadius: 16, padding: 24,
-  boxShadow: '0 2px 8px rgba(26,26,26,0.08)',
-}
-
-const btnBlue: React.CSSProperties = {
-  display: 'inline-block', height: 44, padding: '0 24px', lineHeight: '44px',
-  background: 'var(--hp-blue)', color: 'var(--on-ink)',
-  borderRadius: 4, fontSize: 14, fontWeight: 600,
-  letterSpacing: '0.7px', textTransform: 'uppercase', textDecoration: 'none',
-  whiteSpace: 'nowrap',
-}
-
-const btnWhiteOnDark: React.CSSProperties = {
-  display: 'inline-block', height: 44, padding: '0 24px', lineHeight: '44px',
-  background: 'var(--canvas)', color: 'var(--ink)',
-  borderRadius: 4, fontSize: 14, fontWeight: 600,
-  letterSpacing: '0.7px', textTransform: 'uppercase', textDecoration: 'none',
-  whiteSpace: 'nowrap',
-}
+const eyebrow: React.CSSProperties = { fontSize: 13, fontWeight: 500, color: 'var(--graphite)', textTransform: 'uppercase', letterSpacing: '0.7px', marginBottom: 12 }
+const metricCard: React.CSSProperties = { background: 'var(--canvas)', borderRadius: 16, padding: 24, boxShadow: '0 2px 8px rgba(26,26,26,0.08)' }
+const btnBlue: React.CSSProperties = { display: 'inline-block', height: 44, padding: '0 24px', lineHeight: '44px', background: 'var(--hp-blue)', color: 'var(--on-ink)', borderRadius: 4, fontSize: 14, fontWeight: 600, letterSpacing: '0.7px', textTransform: 'uppercase', textDecoration: 'none', whiteSpace: 'nowrap' }
+const btnWhiteOnDark: React.CSSProperties = { display: 'inline-block', height: 44, padding: '0 24px', lineHeight: '44px', background: 'var(--canvas)', color: 'var(--ink)', borderRadius: 4, fontSize: 14, fontWeight: 600, letterSpacing: '0.7px', textTransform: 'uppercase', textDecoration: 'none', whiteSpace: 'nowrap' }

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import AppLayout from '@/components/AppLayout'
 import { useRequireAuth } from '@/lib/useAuth'
 import type { Business, UploadSession } from '@/lib/types'
+import { supabase, dbToBusiness, dbToSession, sessionToDb } from '@/lib/supabase'
 
 const BADGE: Record<string, React.CSSProperties> = {
   'גבוה':        { background: '#fef2f2', color: '#b91c1c' },
@@ -14,53 +15,63 @@ const BADGE: Record<string, React.CSSProperties> = {
 
 export default function FilesPage() {
   const ready = useRequireAuth()
-  const [sessions,    setSessions]    = useState<UploadSession[]>([])
-  const [businesses,  setBusinesses]  = useState<Business[]>([])
-  const [selectedId,  setSelectedId]  = useState<string | null>(null)
+  const [sessions,   setSessions]   = useState<UploadSession[]>([])
+  const [businesses, setBusinesses] = useState<Business[]>([])
+  const [selectedId, setSelectedId] = useState<string | null>(null)
 
   useEffect(() => {
-    const s = localStorage.getItem('uploadSessions')
-    const b = localStorage.getItem('businesses')
-    if (s) setSessions(JSON.parse(s))
-    if (b) setBusinesses(JSON.parse(b))
+    supabase.from('upload_sessions').select('*').then(({ data }) => {
+      if (data) setSessions(data.map(dbToSession))
+    })
+    supabase.from('businesses').select('*').then(({ data }) => {
+      if (data) setBusinesses(data.map(dbToBusiness))
+    })
   }, [])
 
   if (!ready) return null
 
-  function save(s: UploadSession[], b: Business[]) {
-    localStorage.setItem('uploadSessions', JSON.stringify(s))
-    localStorage.setItem('businesses',     JSON.stringify(b))
-    setSessions(s); setBusinesses(b)
-  }
-
-  function deleteSession(id: string) {
+  async function deleteSession(id: string) {
     if (!confirm('למחוק את הקובץ וכל העסקים שלו?')) return
-    save(sessions.filter(s => s.id !== id), businesses.filter(b => b.uploadSessionId !== id))
+    await supabase.from('upload_sessions').delete().eq('id', id)
+    setSessions(prev => prev.filter(s => s.id !== id))
+    setBusinesses(prev => prev.filter(b => b.uploadSessionId !== id))
     if (selectedId === id) setSelectedId(null)
   }
 
-  function deleteBusiness(id: string) {
+  async function deleteBusiness(id: string) {
+    await supabase.from('businesses').delete().eq('id', id)
     const next = businesses.filter(b => b.id !== id)
-    const nextS = sessions.map(s => {
+    setBusinesses(next)
+
+    const nextSessions = await Promise.all(sessions.map(async s => {
       if (!s.businessIds.includes(id)) return s
       const upd = next.filter(b => s.businessIds.includes(b.id))
-      return { ...s, totalCount: upd.length, suspiciousCount: upd.filter(b => b.arnonaStatus === 'suspicious').length, okCount: upd.filter(b => b.arnonaStatus === 'ok').length, unknownCount: upd.filter(b => b.arnonaStatus === 'unknown').length, businessIds: upd.map(b => b.id) }
-    })
-    save(nextS, next)
+      const updated: UploadSession = {
+        ...s,
+        totalCount: upd.length,
+        suspiciousCount: upd.filter(b => b.arnonaStatus === 'suspicious').length,
+        okCount: upd.filter(b => b.arnonaStatus === 'ok').length,
+        unknownCount: upd.filter(b => b.arnonaStatus === 'unknown').length,
+        businessIds: upd.map(b => b.id),
+      }
+      await supabase.from('upload_sessions').update(sessionToDb(updated)).eq('id', s.id)
+      return updated
+    }))
+    setSessions(nextSessions)
   }
 
-  function clearAll() {
+  async function clearAll() {
     if (!confirm('למחוק את כל הנתונים? פעולה זו בלתי הפיכה.')) return
-    localStorage.removeItem('uploadSessions'); localStorage.removeItem('businesses')
+    await supabase.from('businesses').delete().neq('id', '')
+    await supabase.from('upload_sessions').delete().neq('id', '')
     setSessions([]); setBusinesses([]); setSelectedId(null)
   }
 
-  const selected   = sessions.find(s => s.id === selectedId)
-  const selBiz     = selectedId ? businesses.filter(b => b.uploadSessionId === selectedId) : []
+  const selected = sessions.find(s => s.id === selectedId)
+  const selBiz   = selectedId ? businesses.filter(b => b.uploadSessionId === selectedId) : []
 
   return (
     <AppLayout>
-      {/* ── White header ── */}
       <section style={{ background: 'var(--canvas)', padding: '48px 48px 32px', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between' }}>
         <div>
           <p style={eyebrow}>היסטוריית העלאות</p>
@@ -72,7 +83,6 @@ export default function FilesPage() {
         )}
       </section>
 
-      {/* ── Content ── */}
       {sessions.length === 0 && businesses.length === 0 ? (
         <section style={{ background: 'var(--cloud)', padding: '80px 48px', textAlign: 'center' }}>
           <p style={{ fontSize: 32, fontWeight: 500, marginBottom: 16 }}>לא הועלו קבצים עדיין</p>
@@ -116,7 +126,6 @@ export default function FilesPage() {
               </div>
             ) : (
               <div style={{ background: 'var(--canvas)', borderRadius: 16, overflow: 'hidden', boxShadow: '0 2px 8px rgba(26,26,26,0.08)' }}>
-                {/* Panel header */}
                 <div style={{ padding: '16px 24px', background: 'var(--fog)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
                     <p style={{ fontWeight: 600, color: 'var(--ink)' }}>{selected?.fileName}</p>
@@ -125,7 +134,6 @@ export default function FilesPage() {
                   <button onClick={() => deleteSession(selectedId)} style={btnDanger}>מחק קובץ</button>
                 </div>
 
-                {/* Table */}
                 <div style={{ overflow: 'auto', maxHeight: 560 }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
                     <thead style={{ position: 'sticky', top: 0, background: 'var(--cloud)', zIndex: 1 }}>
@@ -139,7 +147,7 @@ export default function FilesPage() {
                       {selBiz.length === 0 ? (
                         <tr><td colSpan={5} style={{ textAlign: 'center', padding: 32, color: 'var(--graphite)' }}>אין עסקים בקובץ זה</td></tr>
                       ) : selBiz.map(b => (
-                        <tr key={b.id} style={{ borderBottom: '1px solid var(--hairline)' }} className="group">
+                        <tr key={b.id} style={{ borderBottom: '1px solid var(--hairline)' }}>
                           <td style={{ padding: '12px 16px', fontWeight: 500, color: 'var(--ink)' }}>{b.name}</td>
                           <td style={{ padding: '12px 16px', color: 'var(--charcoal)' }}>{b.address}</td>
                           <td style={{ padding: '12px 16px' }}>
@@ -167,7 +175,6 @@ export default function FilesPage() {
         </section>
       )}
 
-      {/* ── Ink footer slab ── */}
       <section style={{ background: 'var(--ink)', padding: '48px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <p style={{ color: 'var(--steel)', fontSize: 16 }}>להוספת נתונים חדשים — העלה דוח יומי</p>
         <a href="/upload" style={btnWhite}>העלאת דוח חדש</a>

@@ -6,6 +6,7 @@ import * as XLSX from 'xlsx'
 import { useRequireAuth } from '@/lib/useAuth'
 import AppLayout from '@/components/AppLayout'
 import type { Business, UploadSession } from '@/lib/types'
+import { supabase, businessToDb, sessionToDb } from '@/lib/supabase'
 
 type Status = 'idle' | 'processing' | 'done' | 'error'
 
@@ -78,23 +79,29 @@ export default function UploadPage() {
       const today     = new Date().toLocaleDateString('he-IL')
       const newBiz    = parseFile(buffer, sessionId, today)
 
-      const stored   = localStorage.getItem('businesses')
-      const existing: Business[] = stored ? JSON.parse(stored) : []
-      const keys     = new Set(existing.map(b => `${b.name}|${b.address}`))
-      const toAdd    = newBiz.filter(b => !keys.has(`${b.name}|${b.address}`))
-      localStorage.setItem('businesses', JSON.stringify([...existing, ...toAdd]))
+      // fetch existing name|address pairs to deduplicate
+      const { data: existing } = await supabase
+        .from('businesses')
+        .select('name, address')
+
+      const keys = new Set((existing ?? []).map((b: {name: string, address: string}) => `${b.name}|${b.address}`))
+      const toAdd = newBiz.filter(b => !keys.has(`${b.name}|${b.address}`))
+
+      if (toAdd.length > 0) {
+        await supabase.from('businesses').insert(toAdd.map(businessToDb))
+      }
 
       const session: UploadSession = {
-        id: sessionId, fileName: file.name, uploadDate: today,
+        id: sessionId,
+        fileName: file.name,
+        uploadDate: today,
         totalCount: toAdd.length,
         suspiciousCount: toAdd.filter(b => b.arnonaStatus === 'suspicious').length,
         okCount:         toAdd.filter(b => b.arnonaStatus === 'ok').length,
         unknownCount:    toAdd.filter(b => b.arnonaStatus === 'unknown').length,
         businessIds:     toAdd.map(b => b.id),
       }
-      const storedS  = localStorage.getItem('uploadSessions')
-      const sessions: UploadSession[] = storedS ? JSON.parse(storedS) : []
-      localStorage.setItem('uploadSessions', JSON.stringify([...sessions, session]))
+      await supabase.from('upload_sessions').insert(sessionToDb(session))
 
       setPreview(newBiz)
       setStatus('done')
@@ -143,7 +150,6 @@ export default function UploadPage() {
           />
         </div>
 
-        {/* Status banner */}
         {status !== 'idle' && (
           <div style={{
             marginTop: 16, padding: '14px 20px', borderRadius: 4, fontSize: 14, maxWidth: 640,
@@ -163,7 +169,6 @@ export default function UploadPage() {
           <h2 style={{ fontSize: 24, fontWeight: 500, marginBottom: 24 }}>
             תצוגה מקדימה — {preview.length} עסקים
           </h2>
-
           <div style={{ border: '1px solid var(--hairline)', borderRadius: 16, overflow: 'hidden', boxShadow: '0 2px 8px rgba(26,26,26,0.08)', maxWidth: 800 }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
               <thead>
@@ -179,10 +184,7 @@ export default function UploadPage() {
                     <td style={{ padding: '12px 16px', fontWeight: 500, color: 'var(--ink)' }}>{b.name}</td>
                     <td style={{ padding: '12px 16px', color: 'var(--charcoal)' }}>{b.address}</td>
                     <td style={{ padding: '12px 16px' }}>
-                      <span style={{
-                        ...(RATING_STYLE[b.suspicionRating] ?? { background: 'var(--cloud)', color: 'var(--charcoal)' }),
-                        borderRadius: 4, padding: '3px 10px', fontSize: 12, fontWeight: 600,
-                      }}>
+                      <span style={{ ...(RATING_STYLE[b.suspicionRating] ?? { background: 'var(--cloud)', color: 'var(--charcoal)' }), borderRadius: 4, padding: '3px 10px', fontSize: 12, fontWeight: 600 }}>
                         {b.suspicionRating || '—'}
                       </span>
                     </td>
@@ -191,14 +193,9 @@ export default function UploadPage() {
               </tbody>
             </table>
           </div>
-
           <div style={{ display: 'flex', gap: 12, marginTop: 24 }}>
-            <button onClick={() => router.push('/')} style={btnPrimary}>
-              עבור לדשבורד
-            </button>
-            <button onClick={() => router.push('/files')} style={btnOutline}>
-              צפה בקבצים
-            </button>
+            <button onClick={() => router.push('/')} style={btnPrimary}>עבור לדשבורד</button>
+            <button onClick={() => router.push('/files')} style={btnOutline}>צפה בקבצים</button>
           </div>
         </section>
       )}

@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo } from 'react'
 import AppLayout from '@/components/AppLayout'
 import { useRequireAuth } from '@/lib/useAuth'
 import type { Business } from '@/lib/types'
+import { supabase, dbToBusiness } from '@/lib/supabase'
 
 const BADGE: Record<string, React.CSSProperties> = {
   'גבוה':        { background: '#fef2f2', color: '#b91c1c' },
@@ -23,8 +24,9 @@ export default function BusinessesPage() {
   const [expanded,     setExpanded]     = useState<string | null>(null)
 
   useEffect(() => {
-    const b = localStorage.getItem('businesses')
-    if (b) setBusinesses(JSON.parse(b))
+    supabase.from('businesses').select('*').then(({ data }) => {
+      if (data) setBusinesses(data.map(dbToBusiness))
+    })
   }, [])
 
   const types = useMemo(() =>
@@ -38,11 +40,10 @@ export default function BusinessesPage() {
               && (typeFilter   === 'הכל' || b.type === typeFilter)
   }), [businesses, search, ratingFilter, typeFilter])
 
-  function deleteBusiness(id: string) {
+  async function deleteBusiness(id: string) {
     if (!confirm('למחוק עסק זה?')) return
-    const next = businesses.filter(b => b.id !== id)
-    setBusinesses(next)
-    localStorage.setItem('businesses', JSON.stringify(next))
+    await supabase.from('businesses').delete().eq('id', id)
+    setBusinesses(prev => prev.filter(b => b.id !== id))
     if (expanded === id) setExpanded(null)
   }
 
@@ -50,13 +51,11 @@ export default function BusinessesPage() {
 
   return (
     <AppLayout>
-      {/* ── White header ── */}
       <section style={{ background: 'var(--canvas)', padding: '48px 48px 32px' }}>
         <p style={eyebrow}>מאגר עסקים</p>
         <h1 style={{ fontSize: 44, fontWeight: 500 }}>כלל הנתונים</h1>
       </section>
 
-      {/* ── Cloud: filters ── */}
       <section style={{ background: 'var(--cloud)', padding: '20px 48px', display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
         <input
           type="text" placeholder="חיפוש לפי שם, כתובת, סוג עסק..."
@@ -81,7 +80,6 @@ export default function BusinessesPage() {
         </span>
       </section>
 
-      {/* ── White: table ── */}
       <section style={{ background: 'var(--canvas)', padding: '32px 48px 80px' }}>
         {businesses.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '80px 0' }}>
@@ -107,11 +105,8 @@ export default function BusinessesPage() {
                       key={b.id}
                       onClick={() => setExpanded(expanded === b.id ? null : b.id)}
                       style={{ cursor: 'pointer', borderBottom: '1px solid var(--hairline)', background: expanded === b.id ? 'var(--cloud)' : 'var(--canvas)' }}
-                      className="group"
                     >
-                      <td style={{ padding: '14px 12px 14px 16px', color: 'var(--steel)', fontSize: 10, width: 28 }}>
-                        {expanded === b.id ? '▾' : '▸'}
-                      </td>
+                      <td style={{ padding: '14px 12px 14px 16px', color: 'var(--steel)', fontSize: 10, width: 28 }}>{expanded === b.id ? '▾' : '▸'}</td>
                       <td style={{ padding: '14px 16px', fontWeight: 500, color: 'var(--ink)' }}>{b.name}</td>
                       <td style={{ padding: '14px 16px', color: 'var(--charcoal)' }}>{b.type}</td>
                       <td style={{ padding: '14px 16px', color: 'var(--charcoal)' }}>{b.address}</td>
@@ -155,10 +150,7 @@ export default function BusinessesPage() {
                             {b.link && (
                               <div style={{ gridColumn: '1/-1' }}>
                                 <span style={{ fontWeight: 600, color: 'var(--charcoal)' }}>קישור: </span>
-                                <a href={b.link} target="_blank" rel="noopener noreferrer"
-                                  style={{ color: 'var(--hp-blue)', textDecoration: 'none' }}>
-                                  {b.link}
-                                </a>
+                                <a href={b.link} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--hp-blue)', textDecoration: 'none' }}>{b.link}</a>
                               </div>
                             )}
                           </div>
@@ -182,5 +174,5 @@ export default function BusinessesPage() {
 const eyebrow: React.CSSProperties = { fontSize: 13, fontWeight: 500, color: 'var(--graphite)', textTransform: 'uppercase', letterSpacing: '0.7px', marginBottom: 10 }
 const badge:   React.CSSProperties = { borderRadius: 4, padding: '3px 10px', fontSize: 12, fontWeight: 600 }
 const inputStyle: React.CSSProperties = { height: 44, padding: '0 14px', border: '1px solid var(--steel)', borderRadius: 4, fontSize: 14, color: 'var(--ink)', background: 'var(--canvas)', outline: 'none' }
-const btnBlue:     React.CSSProperties = { display: 'inline-block', height: 44, padding: '0 24px', lineHeight: '44px', background: 'var(--hp-blue)', color: '#fff', borderRadius: 4, fontSize: 14, fontWeight: 600, letterSpacing: '0.7px', textTransform: 'uppercase', textDecoration: 'none' }
+const btnBlue: React.CSSProperties = { display: 'inline-block', height: 44, padding: '0 24px', lineHeight: '44px', background: 'var(--hp-blue)', color: '#fff', borderRadius: 4, fontSize: 14, fontWeight: 600, letterSpacing: '0.7px', textTransform: 'uppercase', textDecoration: 'none' }
 const btnOutlineInk: React.CSSProperties = { height: 44, padding: '0 16px', background: 'var(--canvas)', color: 'var(--ink)', border: '1px solid var(--ink)', borderRadius: 4, fontSize: 14, fontWeight: 600, letterSpacing: '0.7px', textTransform: 'uppercase', cursor: 'pointer', whiteSpace: 'nowrap' }
