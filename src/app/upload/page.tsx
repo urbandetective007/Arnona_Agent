@@ -55,10 +55,10 @@ function parseFile(buffer: ArrayBuffer, sessionId: string, today: string): Busin
 }
 
 const RATING_STYLE: Record<string, React.CSSProperties> = {
-  'גבוה':        { background: '#fef2f2', color: '#991b1b' },
-  'בינוני':      { background: '#fff7ed', color: '#9a3412' },
-  'לא חשוד':    { background: '#f0fdf4', color: '#166534' },
-  'דרוש בדיקה': { background: '#fefce8', color: '#854d0e' },
+  'גבוה':        { background: '#fef2f2', color: '#b91c1c' },
+  'בינוני':      { background: '#fff7ed', color: '#c2410c' },
+  'לא חשוד':    { background: '#f0fdf4', color: '#15803d' },
+  'דרוש בדיקה': { background: 'var(--cloud)', color: 'var(--charcoal)' },
 }
 
 export default function UploadPage() {
@@ -109,102 +109,110 @@ export default function UploadPage() {
 
   return (
     <AppLayout>
-      {/* Header */}
-      <div style={{ padding: '48px 48px 32px' }}>
-        <h1 style={{ fontSize: 32, fontWeight: 400, color: 'var(--color-ink)', marginBottom: 8 }}>העלאת דוח חדש</h1>
-        <p style={{ color: 'var(--color-muted)', fontSize: 14 }}>
+      {/* ── White header ── */}
+      <section style={{ background: 'var(--canvas)', padding: '48px 48px 32px' }}>
+        <p style={eyebrow}>ניתוח ארנונה · עיריית ירושלים</p>
+        <h1 style={{ fontSize: 44, fontWeight: 500 }}>העלאת דוח חדש</h1>
+        <p style={{ color: 'var(--charcoal)', marginTop: 6 }}>
           קובץ בפורמט דוח נכסים חשודים — עמודות: שם העסק, סוג העסק, כתובת, דירוג חשד
         </p>
-      </div>
+      </section>
 
-      {/* Drop zone */}
-      <div style={{ padding: '0 48px 48px', maxWidth: 680 }}>
+      {/* ── Cloud: drop zone ── */}
+      <section style={{ background: 'var(--cloud)', padding: '40px 48px 48px' }}>
         <div
           onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files?.[0]; if (f) handleFile(f) }}
           onDragOver={e => e.preventDefault()}
           onClick={() => fileRef.current?.click()}
           style={{
-            border: '1px dashed var(--color-hairline)',
-            borderRadius: 12, padding: '64px 48px',
+            border: '2px dashed var(--steel)',
+            borderRadius: 16, padding: '64px 48px',
             textAlign: 'center', cursor: 'pointer',
-            background: 'var(--color-surface-soft)',
+            background: 'var(--canvas)',
+            maxWidth: 640,
           }}
         >
-          <p style={{ fontSize: 32, marginBottom: 12 }}>↑</p>
-          <p style={{ fontSize: 16, fontWeight: 500, color: 'var(--color-ink)', marginBottom: 4 }}>
+          <p style={{ fontSize: 40, marginBottom: 16, color: 'var(--steel)' }}>↑</p>
+          <p style={{ fontSize: 18, fontWeight: 600, color: 'var(--ink)', marginBottom: 6 }}>
             גרור קובץ אקסל לכאן
           </p>
-          <p style={{ color: 'var(--color-muted)', fontSize: 14 }}>או לחץ לבחירת קובץ · פורמט .xlsx</p>
+          <p style={{ color: 'var(--graphite)', fontSize: 14 }}>או לחץ לבחירת קובץ · פורמט .xlsx</p>
           <input ref={fileRef} type="file" accept=".xlsx,.xls"
             onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f) }}
             style={{ display: 'none' }}
           />
         </div>
 
-        {/* Status */}
+        {/* Status banner */}
         {status !== 'idle' && (
           <div style={{
-            marginTop: 16, padding: '14px 18px', borderRadius: 10, fontSize: 14,
-            background: status === 'error' ? '#fef2f2' : status === 'done' ? '#f0fdf4' : 'var(--color-surface-soft)',
-            color: status === 'error' ? '#991b1b' : status === 'done' ? '#166534' : 'var(--color-body)',
-            border: `1px solid ${status === 'error' ? '#fecaca' : status === 'done' ? '#bbf7d0' : 'var(--color-hairline)'}`,
+            marginTop: 16, padding: '14px 20px', borderRadius: 4, fontSize: 14, maxWidth: 640,
+            background: status === 'error' ? '#fef2f2' : status === 'done' ? '#f0fdf4' : 'var(--fog)',
+            color: status === 'error' ? '#b91c1c' : status === 'done' ? '#15803d' : 'var(--charcoal)',
+            border: `1px solid ${status === 'error' ? '#fecaca' : status === 'done' ? '#bbf7d0' : 'var(--hairline)'}`,
+            fontWeight: 500,
           }}>
             {message}
           </div>
         )}
+      </section>
 
-        {/* Preview */}
-        {status === 'done' && preview.length > 0 && (
-          <div style={{ marginTop: 32 }}>
-            <p style={{ fontSize: 18, fontWeight: 400, color: 'var(--color-ink)', marginBottom: 16 }}>
-              תצוגה מקדימה — {preview.length} עסקים
-            </p>
-            <div style={{ border: '1px solid var(--color-hairline)', borderRadius: 10, overflow: 'hidden' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
-                <thead>
-                  <tr style={{ background: 'var(--color-surface-soft)', borderBottom: '1px solid var(--color-hairline)' }}>
-                    {['שם העסק', 'כתובת', 'דירוג חשד'].map(h => (
-                      <th key={h} style={{ textAlign: 'right', padding: '10px 16px', fontSize: 13, fontWeight: 500, color: 'var(--color-muted)' }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {preview.map(b => (
-                    <tr key={b.id} style={{ borderBottom: '1px solid var(--color-hairline)' }}>
-                      <td style={{ padding: '12px 16px', fontWeight: 500, color: 'var(--color-ink)' }}>{b.name}</td>
-                      <td style={{ padding: '12px 16px', color: 'var(--color-muted)' }}>{b.address}</td>
-                      <td style={{ padding: '12px 16px' }}>
-                        <span style={{ ...(RATING_STYLE[b.suspicionRating] ?? { background: 'var(--color-surface-soft)', color: 'var(--color-muted)' }), borderRadius: 9999, padding: '2px 10px', fontSize: 12, fontWeight: 500 }}>
-                          {b.suspicionRating || '—'}
-                        </span>
-                      </td>
-                    </tr>
+      {/* ── White: preview table ── */}
+      {status === 'done' && preview.length > 0 && (
+        <section style={{ background: 'var(--canvas)', padding: '40px 48px' }}>
+          <h2 style={{ fontSize: 24, fontWeight: 500, marginBottom: 24 }}>
+            תצוגה מקדימה — {preview.length} עסקים
+          </h2>
+
+          <div style={{ border: '1px solid var(--hairline)', borderRadius: 16, overflow: 'hidden', boxShadow: '0 2px 8px rgba(26,26,26,0.08)', maxWidth: 800 }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+              <thead>
+                <tr style={{ background: 'var(--cloud)', borderBottom: '1px solid var(--hairline)' }}>
+                  {['שם העסק', 'כתובת', 'דירוג חשד'].map(h => (
+                    <th key={h} style={{ textAlign: 'right', padding: '10px 16px', fontSize: 12, fontWeight: 600, color: 'var(--charcoal)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{h}</th>
                   ))}
-                </tbody>
-              </table>
-            </div>
-
-            <div style={{ display: 'flex', gap: 12, marginTop: 20 }}>
-              <button onClick={() => router.push('/')} style={btnPrimary}>
-                עבור לדשבורד
-              </button>
-              <button onClick={() => router.push('/files')} style={btnSecondary}>
-                צפה בקבצים
-              </button>
-            </div>
+                </tr>
+              </thead>
+              <tbody>
+                {preview.map(b => (
+                  <tr key={b.id} style={{ borderBottom: '1px solid var(--hairline)' }}>
+                    <td style={{ padding: '12px 16px', fontWeight: 500, color: 'var(--ink)' }}>{b.name}</td>
+                    <td style={{ padding: '12px 16px', color: 'var(--charcoal)' }}>{b.address}</td>
+                    <td style={{ padding: '12px 16px' }}>
+                      <span style={{
+                        ...(RATING_STYLE[b.suspicionRating] ?? { background: 'var(--cloud)', color: 'var(--charcoal)' }),
+                        borderRadius: 4, padding: '3px 10px', fontSize: 12, fontWeight: 600,
+                      }}>
+                        {b.suspicionRating || '—'}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        )}
-      </div>
+
+          <div style={{ display: 'flex', gap: 12, marginTop: 24 }}>
+            <button onClick={() => router.push('/')} style={btnPrimary}>
+              עבור לדשבורד
+            </button>
+            <button onClick={() => router.push('/files')} style={btnOutline}>
+              צפה בקבצים
+            </button>
+          </div>
+        </section>
+      )}
+
+      {/* ── Ink footer slab ── */}
+      <section style={{ background: 'var(--ink)', padding: '48px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <p style={{ color: 'var(--steel)', fontSize: 16 }}>צפה בנתונים שהועלו עד כה</p>
+        <a href="/files" style={btnWhite}>קבצים שהועלו</a>
+      </section>
     </AppLayout>
   )
 }
 
-const btnPrimary: React.CSSProperties = {
-  padding: '12px 24px', background: 'var(--color-ink)', color: '#fff',
-  borderRadius: 12, fontSize: 16, fontWeight: 500, border: 'none', cursor: 'pointer',
-}
-const btnSecondary: React.CSSProperties = {
-  padding: '12px 24px', background: 'var(--color-canvas)', color: 'var(--color-ink)',
-  borderRadius: 12, fontSize: 16, fontWeight: 500,
-  border: '1px solid var(--color-hairline)', cursor: 'pointer',
-}
+const eyebrow: React.CSSProperties = { fontSize: 13, fontWeight: 500, color: 'var(--graphite)', textTransform: 'uppercase', letterSpacing: '0.7px', marginBottom: 10 }
+const btnPrimary: React.CSSProperties = { height: 44, padding: '0 24px', background: 'var(--hp-blue)', color: '#fff', border: 'none', borderRadius: 4, fontSize: 14, fontWeight: 600, letterSpacing: '0.7px', textTransform: 'uppercase', cursor: 'pointer', whiteSpace: 'nowrap' }
+const btnOutline: React.CSSProperties = { height: 44, padding: '0 24px', background: 'var(--canvas)', color: 'var(--ink)', border: '1px solid var(--ink)', borderRadius: 4, fontSize: 14, fontWeight: 600, letterSpacing: '0.7px', textTransform: 'uppercase', cursor: 'pointer', whiteSpace: 'nowrap' }
+const btnWhite: React.CSSProperties = { display: 'inline-block', height: 44, padding: '0 24px', lineHeight: '44px', background: 'var(--canvas)', color: 'var(--ink)', borderRadius: 4, fontSize: 14, fontWeight: 600, letterSpacing: '0.7px', textTransform: 'uppercase', textDecoration: 'none', flexShrink: 0 }
