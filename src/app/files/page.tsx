@@ -27,34 +27,73 @@ export default function FilesPage() {
 
   if (!ready) return null
 
+  function save(newSessions: UploadSession[], newBusinesses: Business[]) {
+    localStorage.setItem('uploadSessions', JSON.stringify(newSessions))
+    localStorage.setItem('businesses', JSON.stringify(newBusinesses))
+    setSessions(newSessions)
+    setBusinesses(newBusinesses)
+  }
+
+  function deleteSession(sessionId: string) {
+    if (!confirm('למחוק את הקובץ וכל העסקים שלו?')) return
+    const newSessions = sessions.filter((s) => s.id !== sessionId)
+    const newBusinesses = businesses.filter((b) => b.uploadSessionId !== sessionId)
+    save(newSessions, newBusinesses)
+    if (selectedId === sessionId) setSelectedId(null)
+  }
+
+  function deleteBusiness(businessId: string) {
+    const newBusinesses = businesses.filter((b) => b.id !== businessId)
+    // Update session counts
+    const newSessions = sessions.map((s) => {
+      if (!s.businessIds.includes(businessId)) return s
+      const updated = newBusinesses.filter((b) => s.businessIds.includes(b.id))
+      return {
+        ...s,
+        totalCount: updated.length,
+        suspiciousCount: updated.filter((b) => b.arnonaStatus === 'suspicious').length,
+        okCount: updated.filter((b) => b.arnonaStatus === 'ok').length,
+        unknownCount: updated.filter((b) => b.arnonaStatus === 'unknown').length,
+        businessIds: updated.map((b) => b.id),
+      }
+    })
+    save(newSessions, newBusinesses)
+  }
+
+  function clearAll() {
+    if (!confirm('למחוק את כל הנתונים מהמערכת? פעולה זו בלתי הפיכה.')) return
+    localStorage.removeItem('uploadSessions')
+    localStorage.removeItem('businesses')
+    setSessions([])
+    setBusinesses([])
+    setSelectedId(null)
+  }
+
   const selectedSession = sessions.find((s) => s.id === selectedId)
   const selectedBusinesses = selectedId
     ? businesses.filter((b) => b.uploadSessionId === selectedId)
     : []
 
-  function deleteSession(sessionId: string) {
-    if (!confirm('למחוק את הקובץ וכל העסקים שלו?')) return
-    const session = sessions.find(s => s.id === sessionId)
-    if (!session) return
-    const newSessions = sessions.filter((s) => s.id !== sessionId)
-    const newBusinesses = businesses.filter((b) => b.uploadSessionId !== sessionId)
-    localStorage.setItem('uploadSessions', JSON.stringify(newSessions))
-    localStorage.setItem('businesses', JSON.stringify(newBusinesses))
-    setSessions(newSessions)
-    setBusinesses(newBusinesses)
-    if (selectedId === sessionId) setSelectedId(null)
-  }
-
   return (
     <>
       <Navbar />
       <div className="max-w-7xl mx-auto px-4 py-6">
-        <div className="mb-6">
-          <h1 className="text-xl font-bold text-gray-900">קבצים שהועלו</h1>
-          <p className="text-sm text-gray-500">{sessions.length} קבצים — {businesses.length} עסקים סה״כ</p>
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">קבצים שהועלו</h1>
+            <p className="text-sm text-gray-500">{sessions.length} קבצים — {businesses.length} עסקים סה״כ</p>
+          </div>
+          {(sessions.length > 0 || businesses.length > 0) && (
+            <button
+              onClick={clearAll}
+              className="px-4 py-2 text-sm text-red-600 border border-red-300 rounded-lg hover:bg-red-50 transition-colors"
+            >
+              נקה את כל הנתונים
+            </button>
+          )}
         </div>
 
-        {sessions.length === 0 ? (
+        {sessions.length === 0 && businesses.length === 0 ? (
           <div className="text-center py-20 text-gray-400">
             <p className="text-5xl mb-4">📁</p>
             <p className="text-lg font-medium text-gray-600">לא הועלו קבצים עדיין</p>
@@ -66,6 +105,9 @@ export default function FilesPage() {
           <div className="flex gap-6">
             {/* Sessions list */}
             <div className="w-80 flex-shrink-0 space-y-2">
+              {sessions.length === 0 && (
+                <p className="text-sm text-gray-400 px-2">אין קבצים עם מידע על מקור — ייתכן שהנתונים הועלו לפני עדכון המערכת</p>
+              )}
               {[...sessions].reverse().map((session) => (
                 <div
                   key={session.id}
@@ -81,7 +123,7 @@ export default function FilesPage() {
                     </div>
                     <button
                       onClick={(e) => { e.stopPropagation(); deleteSession(session.id) }}
-                      className="text-gray-300 hover:text-red-500 text-lg leading-none flex-shrink-0"
+                      className="text-gray-300 hover:text-red-500 text-xl leading-none flex-shrink-0 font-light"
                       title="מחק קובץ"
                     >
                       ×
@@ -105,9 +147,17 @@ export default function FilesPage() {
                 </div>
               ) : (
                 <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                  <div className="px-4 py-3 border-b border-gray-200 bg-gray-50">
-                    <p className="font-semibold text-gray-800">{selectedSession?.fileName}</p>
-                    <p className="text-xs text-gray-400">{selectedBusinesses.length} עסקים</p>
+                  <div className="px-4 py-3 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
+                    <div>
+                      <p className="font-semibold text-gray-800">{selectedSession?.fileName}</p>
+                      <p className="text-xs text-gray-400">{selectedBusinesses.length} עסקים</p>
+                    </div>
+                    <button
+                      onClick={() => deleteSession(selectedId)}
+                      className="text-sm text-red-500 hover:text-red-700 border border-red-200 px-3 py-1 rounded-lg hover:bg-red-50 transition-colors"
+                    >
+                      מחק קובץ
+                    </button>
                   </div>
                   <div className="overflow-auto max-h-[600px]">
                     <table className="w-full text-sm">
@@ -117,11 +167,16 @@ export default function FilesPage() {
                           <th className="text-right px-4 py-2 font-medium text-gray-600">כתובת</th>
                           <th className="text-right px-4 py-2 font-medium text-gray-600">דירוג</th>
                           <th className="text-right px-4 py-2 font-medium text-gray-600">פירוט</th>
+                          <th className="px-4 py-2"></th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-100">
-                        {selectedBusinesses.map((b) => (
-                          <tr key={b.id} className="hover:bg-gray-50">
+                        {selectedBusinesses.length === 0 ? (
+                          <tr>
+                            <td colSpan={5} className="text-center py-8 text-gray-400">אין עסקים בקובץ זה</td>
+                          </tr>
+                        ) : selectedBusinesses.map((b) => (
+                          <tr key={b.id} className="hover:bg-gray-50 group">
                             <td className="px-4 py-2 font-medium text-gray-900">{b.name}</td>
                             <td className="px-4 py-2 text-gray-500">{b.address}</td>
                             <td className="px-4 py-2">
@@ -129,8 +184,19 @@ export default function FilesPage() {
                                 {b.suspicionRating || '—'}
                               </span>
                             </td>
-                            <td className="px-4 py-2 text-gray-400 text-xs max-w-xs truncate">
+                            <td className="px-4 py-2 text-gray-400 text-xs max-w-[200px] truncate" title={b.suspicionDetail || b.noSuspicionReason}>
                               {b.suspicionDetail || b.noSuspicionReason || '—'}
+                            </td>
+                            <td className="px-4 py-2">
+                              <button
+                                onClick={() => {
+                                  if (confirm(`למחוק את "${b.name}"?`)) deleteBusiness(b.id)
+                                }}
+                                className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500 transition-all text-lg leading-none"
+                                title="מחק עסק"
+                              >
+                                ×
+                              </button>
                             </td>
                           </tr>
                         ))}
