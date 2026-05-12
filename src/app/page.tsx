@@ -166,7 +166,7 @@ export default function Dashboard() {
           <h2 style={{ fontSize: 32, fontWeight: 500, color: 'var(--on-ink)', marginBottom: 8 }}>מוכן להעלאת דוח חדש?</h2>
           <p style={{ color: 'var(--steel)', fontSize: 16 }}>הוסף נתונים חדשים למערכת בקלות</p>
         </div>
-        <a href="/upload" style={{ ...btnBlue, flexShrink: 0 }}>העלאת דוח חדש</a>
+        <Link href="/upload" style={{ ...btnBlue, flexShrink: 0 }}>העלאת דוח חדש</Link>
       </Section>
     </AppLayout>
   )
