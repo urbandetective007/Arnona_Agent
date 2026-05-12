@@ -5,11 +5,11 @@ import AppLayout from '@/components/AppLayout'
 import { useRequireAuth } from '@/lib/useAuth'
 import type { Business } from '@/lib/types'
 
-const RATING_CLASS: Record<string, string> = {
-  'גבוה':        'bg-red-100 text-red-700',
-  'בינוני':      'bg-orange-100 text-orange-700',
-  'לא חשוד':    'bg-green-100 text-green-700',
-  'דרוש בדיקה': 'bg-yellow-100 text-yellow-700',
+const RATING_STYLE: Record<string, React.CSSProperties> = {
+  'גבוה':        { background: '#fef2f2', color: '#991b1b', borderRadius: 9999, padding: '2px 10px', fontSize: 12, fontWeight: 500, display: 'inline-block' },
+  'בינוני':      { background: '#fff7ed', color: '#9a3412', borderRadius: 9999, padding: '2px 10px', fontSize: 12, fontWeight: 500, display: 'inline-block' },
+  'לא חשוד':    { background: '#f0fdf4', color: '#166534', borderRadius: 9999, padding: '2px 10px', fontSize: 12, fontWeight: 500, display: 'inline-block' },
+  'דרוש בדיקה': { background: '#fefce8', color: '#854d0e', borderRadius: 9999, padding: '2px 10px', fontSize: 12, fontWeight: 500, display: 'inline-block' },
 }
 
 const ALL_RATINGS = ['גבוה', 'בינוני', 'דרוש בדיקה', 'לא חשוד']
@@ -17,38 +17,35 @@ const ALL_RATINGS = ['גבוה', 'בינוני', 'דרוש בדיקה', 'לא ח
 export default function BusinessesPage() {
   const ready = useRequireAuth()
   const [businesses, setBusinesses] = useState<Business[]>([])
-  const [search, setSearch] = useState('')
+  const [search,      setSearch]     = useState('')
   const [ratingFilter, setRatingFilter] = useState('הכל')
-  const [typeFilter, setTypeFilter] = useState('הכל')
-  const [expanded, setExpanded] = useState<string | null>(null)
+  const [typeFilter,  setTypeFilter]  = useState('הכל')
+  const [expanded,    setExpanded]    = useState<string | null>(null)
 
   useEffect(() => {
     const b = localStorage.getItem('businesses')
     if (b) setBusinesses(JSON.parse(b))
   }, [])
 
-  const businessTypes = useMemo(() => {
-    const types = [...new Set(businesses.map((b) => b.type).filter(Boolean))].sort()
-    return types
-  }, [businesses])
+  const businessTypes = useMemo(() =>
+    [...new Set(businesses.map(b => b.type).filter(Boolean))].sort()
+  , [businesses])
 
-  const filtered = useMemo(() => {
-    return businesses.filter((b) => {
-      const q = search.toLowerCase()
-      const matchSearch = !q ||
-        b.name.toLowerCase().includes(q) ||
-        b.address.toLowerCase().includes(q) ||
-        b.type.toLowerCase().includes(q) ||
-        b.propertyOwners?.toLowerCase().includes(q)
-      const matchRating = ratingFilter === 'הכל' || b.suspicionRating === ratingFilter
-      const matchType = typeFilter === 'הכל' || b.type === typeFilter
-      return matchSearch && matchRating && matchType
-    })
-  }, [businesses, search, ratingFilter, typeFilter])
+  const filtered = useMemo(() => businesses.filter(b => {
+    const q = search.toLowerCase()
+    const matchSearch = !q ||
+      b.name.toLowerCase().includes(q) ||
+      b.address.toLowerCase().includes(q) ||
+      b.type.toLowerCase().includes(q) ||
+      (b.propertyOwners || '').toLowerCase().includes(q)
+    const matchRating = ratingFilter === 'הכל' || b.suspicionRating === ratingFilter
+    const matchType   = typeFilter   === 'הכל' || b.type === typeFilter
+    return matchSearch && matchRating && matchType
+  }), [businesses, search, ratingFilter, typeFilter])
 
   function deleteBusiness(id: string) {
     if (!confirm('למחוק עסק זה?')) return
-    const updated = businesses.filter((b) => b.id !== id)
+    const updated = businesses.filter(b => b.id !== id)
     setBusinesses(updated)
     localStorage.setItem('businesses', JSON.stringify(updated))
     if (expanded === id) setExpanded(null)
@@ -56,106 +53,105 @@ export default function BusinessesPage() {
 
   if (!ready) return null
 
+  const hasFilter = search || ratingFilter !== 'הכל' || typeFilter !== 'הכל'
+
   return (
     <AppLayout>
-      <div className="px-6 py-6">
-        <div className="mb-5">
-          <h1 className="text-xl font-bold text-gray-900">כלל הנתונים</h1>
-          <p className="text-sm text-gray-500">{filtered.length} עסקים מתוך {businesses.length}</p>
-        </div>
+      {/* Header */}
+      <div style={{ padding: '48px 48px 32px', background: 'var(--color-canvas)' }}>
+        <h1 style={{ fontSize: 32, fontWeight: 400, color: 'var(--color-ink)', marginBottom: 6 }}>כלל הנתונים</h1>
+        <p style={{ color: 'var(--color-muted)', fontSize: 14 }}>
+          {filtered.length} עסקים{businesses.length !== filtered.length ? ` מתוך ${businesses.length}` : ''}
+        </p>
+      </div>
 
-        {/* Search & Filters */}
-        <div className="flex gap-3 mb-5 flex-wrap">
-          <input
-            type="text"
-            placeholder="חיפוש לפי שם, כתובת, סוג עסק, בעלי נכסים..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="flex-1 min-w-48 px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          <select
-            value={ratingFilter}
-            onChange={(e) => setRatingFilter(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+      {/* Filters */}
+      <div style={{ padding: '0 48px 24px', display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+        <input
+          type="text"
+          placeholder="חיפוש לפי שם, כתובת, סוג עסק..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          style={{ ...inputStyle, flex: 1, minWidth: 200 }}
+        />
+        <select value={ratingFilter} onChange={e => setRatingFilter(e.target.value)} style={inputStyle}>
+          <option value="הכל">כל הדירוגים</option>
+          {ALL_RATINGS.map(r => <option key={r} value={r}>{r}</option>)}
+        </select>
+        <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)} style={inputStyle}>
+          <option value="הכל">כל סוגי העסק</option>
+          {businessTypes.map(t => <option key={t} value={t}>{t}</option>)}
+        </select>
+        {hasFilter && (
+          <button
+            onClick={() => { setSearch(''); setRatingFilter('הכל'); setTypeFilter('הכל') }}
+            style={{ ...inputStyle, cursor: 'pointer', color: 'var(--color-muted)' }}
           >
-            <option value="הכל">כל הדירוגים</option>
-            {ALL_RATINGS.map((r) => (
-              <option key={r} value={r}>{r}</option>
-            ))}
-          </select>
-          <select
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-          >
-            <option value="הכל">כל סוגי העסק</option>
-            {businessTypes.map((t) => (
-              <option key={t} value={t}>{t}</option>
-            ))}
-          </select>
-          {(search || ratingFilter !== 'הכל' || typeFilter !== 'הכל') && (
-            <button
-              onClick={() => { setSearch(''); setRatingFilter('הכל'); setTypeFilter('הכל') }}
-              className="px-3 py-2 text-sm text-gray-500 border border-gray-300 rounded-lg hover:bg-gray-50"
-            >
-              נקה סינון
-            </button>
-          )}
-        </div>
+            נקה סינון
+          </button>
+        )}
+      </div>
 
+      {/* Table */}
+      <div style={{ padding: '0 48px 96px' }}>
         {businesses.length === 0 ? (
-          <div className="text-center py-20 text-gray-400">
-            <p className="text-5xl mb-4">🏢</p>
-            <p className="text-lg font-medium text-gray-600">אין עסקים במערכת</p>
-            <a href="/upload" className="mt-4 inline-block px-5 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">
-              העלה דוח ראשון
-            </a>
+          <div style={{ textAlign: 'center', padding: '96px 0' }}>
+            <p style={{ fontSize: 32, fontWeight: 400, color: 'var(--color-ink)', marginBottom: 12 }}>אין עסקים במערכת</p>
+            <a href="/upload" style={btnPrimary}>העלה דוח ראשון</a>
           </div>
         ) : (
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="w-6 px-3 py-3"></th>
-                  <th className="text-right px-4 py-3 font-medium text-gray-600">שם העסק</th>
-                  <th className="text-right px-4 py-3 font-medium text-gray-600">סוג עסק</th>
-                  <th className="text-right px-4 py-3 font-medium text-gray-600">כתובת</th>
-                  <th className="text-right px-4 py-3 font-medium text-gray-600">דירוג חשד</th>
-                  <th className="text-right px-4 py-3 font-medium text-gray-600">יחידות</th>
-                  <th className="text-right px-4 py-3 font-medium text-gray-600">תאריך</th>
-                  <th className="w-8 px-3 py-3"></th>
+          <div style={{ border: '1px solid var(--color-hairline)', borderRadius: 12, overflow: 'hidden' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+              <thead>
+                <tr style={{ background: 'var(--color-surface-soft)', borderBottom: '1px solid var(--color-hairline)' }}>
+                  <th style={th}></th>
+                  <th style={th}>שם העסק</th>
+                  <th style={th}>סוג עסק</th>
+                  <th style={th}>כתובת</th>
+                  <th style={th}>דירוג חשד</th>
+                  <th style={th}>יחידות</th>
+                  <th style={th}>תאריך</th>
+                  <th style={{ ...th, width: 32 }}></th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody>
                 {filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="text-center py-10 text-gray-400">לא נמצאו תוצאות</td>
+                    <td colSpan={8} style={{ textAlign: 'center', padding: 48, color: 'var(--color-muted)' }}>
+                      לא נמצאו תוצאות
+                    </td>
                   </tr>
-                ) : filtered.map((b) => (
+                ) : filtered.map((b, idx) => (
                   <>
                     <tr
                       key={b.id}
-                      className="hover:bg-gray-50 cursor-pointer group"
                       onClick={() => setExpanded(expanded === b.id ? null : b.id)}
+                      style={{
+                        cursor: 'pointer',
+                        borderBottom: `1px solid var(--color-hairline)`,
+                        background: expanded === b.id ? 'var(--color-surface-soft)' : idx % 2 === 0 ? 'var(--color-canvas)' : 'var(--color-canvas)',
+                      }}
+                      className="group"
                     >
-                      <td className="px-3 py-3 text-gray-400 text-xs select-none">
+                      <td style={{ ...td, color: 'var(--color-muted)', width: 32, fontSize: 10 }}>
                         {expanded === b.id ? '▾' : '▸'}
                       </td>
-                      <td className="px-4 py-3 font-medium text-gray-900">{b.name}</td>
-                      <td className="px-4 py-3 text-gray-500">{b.type}</td>
-                      <td className="px-4 py-3 text-gray-600">{b.address}</td>
-                      <td className="px-4 py-3">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${RATING_CLASS[b.suspicionRating] ?? 'bg-gray-100 text-gray-500'}`}>
-                          {b.suspicionRating || 'לא ידוע'}
+                      <td style={{ ...td, fontWeight: 500, color: 'var(--color-ink)' }}>{b.name}</td>
+                      <td style={{ ...td, color: 'var(--color-muted)' }}>{b.type}</td>
+                      <td style={{ ...td, color: 'var(--color-body)' }}>{b.address}</td>
+                      <td style={td}>
+                        <span style={RATING_STYLE[b.suspicionRating] ?? { ...RATING_STYLE['דרוש בדיקה'], background: '#f8fafc', color: 'var(--color-muted)' }}>
+                          {b.suspicionRating || '—'}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-gray-500">{b.unitCount || '—'}</td>
-                      <td className="px-4 py-3 text-gray-400 text-xs">{b.uploadDate}</td>
-                      <td className="px-3 py-3">
+                      <td style={{ ...td, color: 'var(--color-muted)' }}>{b.unitCount || '—'}</td>
+                      <td style={{ ...td, color: 'var(--color-muted)', fontSize: 12 }}>{b.uploadDate}</td>
+                      <td style={td}>
                         <button
-                          onClick={(e) => { e.stopPropagation(); deleteBusiness(b.id) }}
-                          className="opacity-0 group-hover:opacity-100 text-gray-300 hover:text-red-500 transition-all text-lg leading-none"
+                          onClick={e => { e.stopPropagation(); deleteBusiness(b.id) }}
+                          style={{ background: 'none', border: 'none', color: 'var(--color-hairline)', cursor: 'pointer', fontSize: 18, lineHeight: 1 }}
                           title="מחק עסק"
+                          className="group-hover:!text-red-400"
                         >
                           ×
                         </button>
@@ -163,33 +159,19 @@ export default function BusinessesPage() {
                     </tr>
 
                     {expanded === b.id && (
-                      <tr key={`${b.id}-exp`} className="bg-blue-50 border-blue-100">
-                        <td colSpan={8} className="px-6 py-5">
-                          <div className="grid grid-cols-2 gap-x-8 gap-y-3 text-sm">
-                            {b.matchedAddress && (
-                              <DetailRow label="כתובת תואמת מהעירייה" value={b.matchedAddress} />
-                            )}
-                            {b.unitCount && (
-                              <DetailRow label="מספר יחידות בכתובת" value={b.unitCount} />
-                            )}
-                            {b.suspicionDetail && (
-                              <DetailRow label="פירוט החשד" value={b.suspicionDetail} full />
-                            )}
-                            {b.noSuspicionReason && (
-                              <DetailRow label="סיבת אי-חשד" value={b.noSuspicionReason} full />
-                            )}
-                            {b.propertyOwners && (
-                              <DetailRow label="שמות בעלי נכסים" value={b.propertyOwners} full />
-                            )}
+                      <tr key={`${b.id}-exp`} style={{ background: 'var(--color-surface-soft)', borderBottom: `1px solid var(--color-hairline)` }}>
+                        <td colSpan={8} style={{ padding: '20px 48px' }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px 48px', fontSize: 14 }}>
+                            {b.matchedAddress    && <Detail label="כתובת תואמת מהעירייה" value={b.matchedAddress} />}
+                            {b.unitCount         && <Detail label="מספר יחידות בכתובת"  value={b.unitCount} />}
+                            {b.suspicionDetail   && <Detail label="פירוט החשד"           value={b.suspicionDetail} full />}
+                            {b.noSuspicionReason && <Detail label="סיבת אי-חשד"          value={b.noSuspicionReason} full />}
+                            {b.propertyOwners    && <Detail label="שמות בעלי נכסים"      value={b.propertyOwners} full />}
                             {b.link && (
-                              <div className="col-span-2">
-                                <span className="text-gray-500 font-medium">קישור למקור: </span>
-                                <a
-                                  href={b.link}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-blue-600 hover:underline break-all"
-                                >
+                              <div style={{ gridColumn: '1 / -1' }}>
+                                <span style={{ color: 'var(--color-muted)', fontWeight: 500 }}>קישור למקור: </span>
+                                <a href={b.link} target="_blank" rel="noopener noreferrer"
+                                  style={{ color: '#1b61c9', textDecoration: 'none', wordBreak: 'break-all' }}>
                                   {b.link}
                                 </a>
                               </div>
@@ -203,7 +185,7 @@ export default function BusinessesPage() {
               </tbody>
             </table>
 
-            <div className="px-4 py-3 bg-gray-50 border-t border-gray-200 text-xs text-gray-400">
+            <div style={{ padding: '12px 24px', background: 'var(--color-surface-soft)', borderTop: '1px solid var(--color-hairline)', color: 'var(--color-muted)', fontSize: 13 }}>
               מציג {filtered.length} מתוך {businesses.length} עסקים
             </div>
           </div>
@@ -213,11 +195,39 @@ export default function BusinessesPage() {
   )
 }
 
-function DetailRow({ label, value, full }: { label: string; value: string; full?: boolean }) {
+function Detail({ label, value, full }: { label: string; value: string; full?: boolean }) {
   return (
-    <div className={full ? 'col-span-2' : ''}>
-      <span className="font-medium text-gray-600">{label}: </span>
-      <span className="text-gray-800">{value}</span>
+    <div style={full ? { gridColumn: '1 / -1' } : {}}>
+      <span style={{ color: 'var(--color-muted)', fontWeight: 500 }}>{label}: </span>
+      <span style={{ color: 'var(--color-body)' }}>{value}</span>
     </div>
   )
+}
+
+const inputStyle: React.CSSProperties = {
+  height: 44, padding: '0 14px',
+  border: '1px solid var(--color-hairline)',
+  borderRadius: 6, fontSize: 14,
+  color: 'var(--color-ink)',
+  background: 'var(--color-canvas)',
+  outline: 'none',
+}
+
+const btnPrimary: React.CSSProperties = {
+  display: 'inline-block', padding: '14px 24px',
+  background: 'var(--color-ink)', color: '#fff',
+  borderRadius: 12, fontSize: 16, fontWeight: 500,
+  textDecoration: 'none',
+}
+
+const th: React.CSSProperties = {
+  textAlign: 'right', padding: '12px 16px',
+  fontSize: 13, fontWeight: 500,
+  color: 'var(--color-muted)',
+}
+
+const td: React.CSSProperties = {
+  padding: '14px 16px',
+  color: 'var(--color-body)',
+  verticalAlign: 'middle',
 }
