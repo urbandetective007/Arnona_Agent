@@ -123,7 +123,8 @@ export default function FilesPage() {
                     </button>
                   </div>
                   <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
-                    <Chip label={`סה״כ: ${session.totalCount}`} />
+                    <Chip label={`חדש: ${session.totalCount}`} color="#1d4ed8" bg="#eff6ff" />
+                    {session.skippedCount > 0 && <Chip label={`כפול: ${session.skippedCount}`} color="#92400e" bg="#fffbeb" />}
                     {session.suspiciousCount > 0 && <Chip label={`חשוד: ${session.suspiciousCount}`} color="#b91c1c" bg="#fef2f2" />}
                     {session.okCount > 0 && <Chip label={`תקין: ${session.okCount}`} color="#15803d" bg="#f0fdf4" />}
                   </div>
@@ -147,6 +148,14 @@ export default function FilesPage() {
                   </div>
                   <button onClick={() => deleteSession(selectedId)} style={btnDanger}>מחק קובץ</button>
                 </div>
+                {selected && (selected.skippedCount > 0 || selected.totalCount > 0) && (
+                  <div style={{ padding: '10px 24px', background: '#f8faff', borderBottom: '1px solid var(--hairline)', display: 'flex', gap: 24, fontSize: 13 }}>
+                    <span style={{ color: '#1d4ed8', fontWeight: 600 }}>✓ {selected.totalCount} עסקים חדשים נוספו</span>
+                    {selected.skippedCount > 0 && (
+                      <span style={{ color: '#92400e', fontWeight: 600 }}>⊘ {selected.skippedCount} כפולים דולגו</span>
+                    )}
+                  </div>
+                )}
 
                 <div style={{ overflow: 'auto', maxHeight: 560 }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>

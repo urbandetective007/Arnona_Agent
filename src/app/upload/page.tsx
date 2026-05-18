@@ -97,6 +97,7 @@ export default function UploadPage() {
         suspiciousCount: toAdd.filter(b => b.arnonaStatus === 'suspicious').length,
         okCount:         toAdd.filter(b => b.arnonaStatus === 'ok').length,
         unknownCount:    toAdd.filter(b => b.arnonaStatus === 'unknown').length,
+        skippedCount:    newBiz.length - toAdd.length,
         businessIds:     toAdd.map(b => b.id),
       }
 

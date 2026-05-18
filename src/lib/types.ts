@@ -23,5 +23,6 @@ export interface UploadSession {
   suspiciousCount: number
   okCount: number
   unknownCount: number
+  skippedCount: number
   businessIds: string[]
 }

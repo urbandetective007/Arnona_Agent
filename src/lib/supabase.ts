@@ -55,6 +55,7 @@ export function dbToSession(row: any): UploadSession {
     suspiciousCount: row.suspicious_count,
     okCount: row.ok_count,
     unknownCount: row.unknown_count,
+    skippedCount: row.skipped_count ?? 0,
     businessIds: row.business_ids ?? [],
   }
 }
@@ -68,6 +69,7 @@ export function sessionToDb(s: UploadSession) {
     suspicious_count: s.suspiciousCount,
     ok_count: s.okCount,
     unknown_count: s.unknownCount,
+    skipped_count: s.skippedCount,
     business_ids: s.businessIds,
   }
 }
