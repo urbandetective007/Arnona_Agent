@@ -43,6 +43,7 @@ export default function FilesPage() {
 
   async function deleteSession(id: string) {
     if (!confirm('למחוק את הקובץ וכל העסקים שלו?')) return
+    await supabase.from('businesses').delete().eq('upload_session_id', id)
     await supabase.from('upload_sessions').delete().eq('id', id)
     const nextS = sessions.filter(s => s.id !== id)
     const nextB = businesses.filter(b => b.uploadSessionId !== id)
