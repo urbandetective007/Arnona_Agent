@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react'
 import Link from 'next/link'
+import * as XLSX from 'xlsx'
 import AppLayout from '@/components/AppLayout'
 import { useRequireAuth } from '@/lib/useAuth'
 import type { Business } from '@/lib/types'
@@ -46,6 +47,26 @@ export default function BusinessesPage() {
               && (typeFilter   === 'הכל' || b.type === typeFilter)
   }), [businesses, search, ratingFilter, typeFilter])
 
+  function exportToExcel() {
+    const rows = filtered.map(b => ({
+      'שם העסק':        b.name,
+      'סוג עסק':        b.type,
+      'כתובת':          b.address,
+      'כתובת תואמת':    b.matchedAddress,
+      'דירוג חשד':      b.suspicionRating,
+      'פירוט החשד':     b.suspicionDetail,
+      'סיבת אי-חשד':   b.noSuspicionReason,
+      'מספר יחידות':   b.unitCount,
+      'בעלי נכסים':    b.propertyOwners,
+      'קישור':          b.link,
+      'תאריך העלאה':   b.uploadDate,
+    }))
+    const ws = XLSX.utils.json_to_sheet(rows)
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'נתונים')
+    XLSX.writeFile(wb, 'נתוני_עסקים.xlsx')
+  }
+
   async function deleteBusiness(id: string) {
     if (!confirm('למחוק עסק זה?')) return
     await supabase.from('businesses').delete().eq('id', id)
@@ -89,6 +110,9 @@ export default function BusinessesPage() {
         <span style={{ marginRight: 'auto', fontSize: 13, color: 'var(--graphite)', whiteSpace: 'nowrap' }}>
           {filtered.length} מתוך {businesses.length} עסקים
         </span>
+        <button onClick={exportToExcel} style={btnExport} title={`ייצוא ${filtered.length} עסקים לאקסל`}>
+          ייצוא לאקסל ↓
+        </button>
       </section>
 
       <section style={{ background: 'var(--canvas)', padding: '32px 48px 80px' }}>
@@ -195,3 +219,4 @@ const badge:   React.CSSProperties = { borderRadius: 4, padding: '3px 10px', fon
 const inputStyle: React.CSSProperties = { height: 44, padding: '0 14px', border: '1px solid var(--steel)', borderRadius: 4, fontSize: 14, color: 'var(--ink)', background: 'var(--canvas)', outline: 'none' }
 const btnBlue: React.CSSProperties = { display: 'inline-block', height: 44, padding: '0 24px', lineHeight: '44px', background: 'var(--hp-blue)', color: '#fff', borderRadius: 4, fontSize: 14, fontWeight: 600, letterSpacing: '0.7px', textTransform: 'uppercase', textDecoration: 'none' }
 const btnOutlineInk: React.CSSProperties = { height: 44, padding: '0 16px', background: 'var(--canvas)', color: 'var(--ink)', border: '1px solid var(--ink)', borderRadius: 4, fontSize: 14, fontWeight: 600, letterSpacing: '0.7px', textTransform: 'uppercase', cursor: 'pointer', whiteSpace: 'nowrap' }
+const btnExport: React.CSSProperties = { height: 44, padding: '0 18px', background: '#16a34a', color: '#fff', border: 'none', borderRadius: 4, fontSize: 14, fontWeight: 600, letterSpacing: '0.5px', cursor: 'pointer', whiteSpace: 'nowrap' }
