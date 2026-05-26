@@ -134,7 +134,7 @@ export default function MapPage() {
       </section>
 
       {/* Map Container */}
-      <section style={{ background: 'var(--canvas)', padding: '0 48px 64px', display: 'flex', flexDirection: 'column', height: 'calc(100vh - 280px)', minHeight: '600px' }}>
+      <section style={{ background: 'var(--canvas)', padding: '0 48px 64px', display: 'flex', flexDirection: 'column', height: 'calc(100vh - 360px)', minHeight: '500px' }}>
         {businesses.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '80px 0', border: '1px solid var(--hairline)', borderRadius: 16 }}>
             <p style={{ fontSize: 32, fontWeight: 500, marginBottom: 16 }}>אין עסקים להצגה על המפה</p>
@@ -146,6 +146,7 @@ export default function MapPage() {
           </div>
         )}
       </section>
+
     </AppLayout>
   )
 }

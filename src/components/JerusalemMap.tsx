@@ -53,7 +53,7 @@ export default function JerusalemMap({ businesses }: JerusalemMapProps) {
 
   // Load coordinates cache once on mount
   useEffect(() => {
-    fetch('/geocoded_addresses.json')
+    fetch('/Arnona_Agent/geocoded_addresses.json')
       .then(res => {
         if (!res.ok) throw new Error('Failed to load geocoding cache')
         return res.json()
@@ -178,13 +178,13 @@ export default function JerusalemMap({ businesses }: JerusalemMapProps) {
   }, [businesses, coordsCache, cacheLoaded])
 
   return (
-    <div style={{ position: 'relative', width: '100%', height: '100%', minHeight: '600px' }}>
+    <div style={{ position: 'relative', width: '100%', height: '100%', minHeight: '500px' }}>
       <div 
         ref={mapRef} 
         style={{ 
           width: '100%', 
           height: '100%', 
-          minHeight: '600px', 
+          minHeight: '500px', 
           borderRadius: '16px',
           boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
           border: '1px solid var(--hairline)',
