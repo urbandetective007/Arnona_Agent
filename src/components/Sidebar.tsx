@@ -7,6 +7,7 @@ import { logout } from '@/lib/auth'
 const NAV_LINKS = [
   { href: '/',           label: 'דשבורד'        },
   { href: '/businesses', label: 'כלל הנתונים'    },
+  { href: '/map',        label: 'מפת נכסים'     },
   { href: '/files',      label: 'קבצים שהועלו'  },
   { href: '/upload',     label: 'העלאת דוח חדש' },
 ]

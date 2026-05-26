@@ -38,3 +38,46 @@ h1, h2, h3, h4 {
 }
 
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* ==========================================
+   Premium Leaflet Map Customizations
+   ========================================== */
+
+.leaflet-popup-content-wrapper {
+  background: var(--canvas) !important;
+  color: var(--ink) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.08) !important;
+  border: 1px solid var(--hairline) !important;
+  padding: 4px !important;
+}
+
+.leaflet-popup-tip {
+  background: var(--canvas) !important;
+  border: 1px solid var(--hairline) !important;
+  box-shadow: none !important;
+}
+
+.leaflet-popup-close-button {
+  color: var(--graphite) !important;
+  padding: 8px !important;
+  font-size: 16px !important;
+}
+
+.leaflet-popup-close-button:hover {
+  color: var(--ink) !important;
+  background: transparent !important;
+}
+
+/* Smooth zoom/hover animation on map pins */
+.custom-leaflet-marker svg {
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-origin: bottom center;
+}
+
+.custom-leaflet-marker:hover svg {
+  transform: scale(1.15) translateY(-2px);
+  filter: drop-shadow(0px 4px 8px rgba(0,0,0,0.4)) !important;
+}
+
+
