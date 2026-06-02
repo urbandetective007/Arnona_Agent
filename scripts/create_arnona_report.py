@@ -31,6 +31,8 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--businesses", required=True)
 parser.add_argument("--arnona",     default="scripts/data/arnona_data.xlsx")
 parser.add_argument("--output",     required=True)
+parser.add_argument("--only-high",  action="store_true",
+                    help="Include only 'גבוה' businesses in the output Excel")
 args = parser.parse_args()
 
 # ── Load files ────────────────────────────────────────────────────────────────
@@ -152,6 +154,10 @@ order = {'גבוה': 0, 'בינוני': 1, 'לא חשוד': 2, 'דרוש בדי�
 df_out = pd.DataFrame(results)
 df_out['_sort'] = df_out['דירוג חשד'].map(order)
 df_out = df_out.sort_values('_sort').drop(columns=['_sort']).reset_index(drop=True)
+
+# ── Filter if --only-high ────────────────────────────────────────────────────
+if args.only_high:
+    df_out = df_out[df_out['דירוג חשד'] == 'גבוה'].reset_index(drop=True)
 
 # ── Build Excel ───────────────────────────────────────────────────────────────
 wb = Workbook()
