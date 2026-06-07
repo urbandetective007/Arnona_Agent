@@ -15,8 +15,13 @@ async function getExistingBusinesses() {
     method: "GET",
     headers: HEADERS,
   });
-  if (!res.ok) throw new Error(`Failed to fetch existing businesses: ${res.statusText}`);
-  return res.json();
+  const text = await res.text();
+  if (!res.ok) throw new Error(`Failed to fetch existing businesses: ${res.statusText} - ${text}`);
+  try {
+    return JSON.parse(text);
+  } catch (e) {
+    throw new Error(`JSON parse error on businesses GET: ${text.substring(0, 200)}`);
+  }
 }
 
 async function createUploadSession(sessionData) {
@@ -25,8 +30,14 @@ async function createUploadSession(sessionData) {
     headers: { ...HEADERS, "Prefer": "return=minimal" },
     body: JSON.stringify(sessionData),
   });
-  if (!res.ok) throw new Error(`Failed to create session: ${res.statusText}`);
-  return res.json();
+  const text = await res.text();
+  if (!res.ok) throw new Error(`Failed to create session: ${res.statusText} - ${text}`);
+  if (!text) return {};
+  try {
+    return JSON.parse(text);
+  } catch (e) {
+    return {};
+  }
 }
 
 async function uploadBusinessesBatch(records) {
@@ -35,8 +46,14 @@ async function uploadBusinessesBatch(records) {
     headers: { ...HEADERS, "Prefer": "return=minimal" },
     body: JSON.stringify(records),
   });
-  if (!res.ok) throw new Error(`Batch upload failed: ${res.statusText}`);
-  return res.json();
+  const text = await res.text();
+  if (!res.ok) throw new Error(`Batch upload failed: ${res.statusText} - ${text}`);
+  if (!text) return {};
+  try {
+    return JSON.parse(text);
+  } catch (e) {
+    return {};
+  }
 }
 
 export default async function handler(req, res) {
