@@ -6,6 +6,7 @@ const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 
 const HEADERS = {
   "Authorization": `Bearer ${SUPABASE_KEY}`,
+  "apikey": SUPABASE_KEY,
   "Content-Type": "application/json",
 };
 
