@@ -1,0 +1,246 @@
+name: Upload Arnona Report to Supabase
+
+on:
+  push:
+    paths:
+      - 'reports/*.xlsx'
+    branches:
+      - main
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install openpyxl requests
+
+      - name: Find latest report
+        id: find_report
+        run: |
+          REPORT=$(find reports -name "דוח נכסים חשודים*.xlsx" -type f -printf '%T@ %p\n' | sort -rn | head -1 | cut -d' ' -f2-)
+          if [ -z "$REPORT" ]; then
+            echo "No report found"
+            exit 1
+          fi
+          echo "report=$REPORT" >> $GITHUB_OUTPUT
+          echo "Found report: $REPORT"
+
+      - name: Upload to Supabase
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: |
+          python << 'EOF'
+          import sys
+          import os
+          import openpyxl
+          import requests
+          import uuid
+          from datetime import datetime, timezone
+
+          EXCEL_PATH = "${{ steps.find_report.outputs.report }}"
+          SUPABASE_URL = os.environ['SUPABASE_URL']
+          SUPABASE_KEY = os.environ['SUPABASE_KEY']
+
+          if not os.path.exists(EXCEL_PATH):
+              print(f"Error: File not found: {EXCEL_PATH}")
+              sys.exit(1)
+
+          print(f"Reading: {EXCEL_PATH}")
+
+          HEADERS = {
+              "apikey": SUPABASE_KEY,
+              "Authorization": f"Bearer {SUPABASE_KEY}",
+              "Content-Type": "application/json",
+              "Prefer": "return=representation",
+          }
+
+          def supabase_get(table, params=""):
+              url = f"{SUPABASE_URL}/rest/v1/{table}?{params}"
+              r = requests.get(url, headers=HEADERS, timeout=10)
+              r.raise_for_status()
+              return r.json()
+
+          def supabase_post(table, payload):
+              url = f"{SUPABASE_URL}/rest/v1/{table}"
+              r = requests.post(url, json=payload, headers=HEADERS, timeout=10)
+              if not r.ok:
+                  raise RuntimeError(f"Supabase error {r.status_code}: {r.text}")
+              return r.json()
+
+          def map_status(val):
+              v = (val or "").strip()
+              if v in ("גבוה", "בינוני"):
+                  return "suspicious"
+              if v == "לא חשוד":
+                  return "ok"
+              return "unknown"
+
+          def normalize_col(s):
+              return " ".join(str(s).split()) if s else ""
+
+          COL_ALIASES = {
+              "כתובת תואמת":     ["כתובת תואמת (מהעירייה)", "כתובת תואמת"],
+              "שמות בעלי נכסים": ["שמות בעלי נכסים באותה כתובת", "שמות בעלי נכסים"],
+              "מס' דירות":       ["מס' דירות בכתובת", "מספר דירות בכתובת", "מס' דירות"],
+              "מקור/URL":        ["מקור המידע (URL)", "מקור/URL", "מקור המידע"],
+          }
+
+          def resolve_col(col_map, canonical_name):
+              if canonical_name in col_map:
+                  return col_map[canonical_name]
+              for alias in COL_ALIASES.get(canonical_name, []):
+                  if normalize_col(alias) in col_map:
+                      return col_map[normalize_col(alias)]
+              return None
+
+          # Parse Excel
+          wb = openpyxl.load_workbook(EXCEL_PATH, data_only=True)
+          ws = wb.active
+
+          header_row_idx = None
+          for i, row in enumerate(ws.iter_rows(values_only=True), start=1):
+              normalized = [normalize_col(v) for v in row]
+              if "שם העסק" in normalized:
+                  header_row_idx = i
+                  col_map = {normalize_col(v): j for j, v in enumerate(row) if v}
+                  break
+
+          if header_row_idx is None:
+              raise ValueError("Header row not found")
+
+          def col(row_vals, name):
+              idx = resolve_col(col_map, name)
+              if idx is None:
+                  return None
+              v = row_vals[idx] if idx < len(row_vals) else None
+              return str(v).strip() if v is not None else None
+
+          records = []
+          for row in ws.iter_rows(min_row=header_row_idx + 1, values_only=True):
+              name = col(row, "שם העסק")
+              if not name:
+                  continue
+              records.append({
+                  "name":                name,
+                  "type":                col(row, "סוג העסק"),
+                  "address":             col(row, "כתובת"),
+                  "suspicion_rating":    col(row, "דירוג חשד"),
+                  "matched_address":     col(row, "כתובת תואמת"),
+                  "property_owners":     col(row, "שמות בעלי נכסים"),
+                  "unit_count":          col(row, "מס' דירות"),
+                  "suspicion_detail":    col(row, "פירוט החשד"),
+                  "no_suspicion_reason": col(row, "סיבת אי-חשד"),
+                  "link":                col(row, "מקור/URL"),
+                  "arnona_status":       map_status(col(row, "דירוג חשד")),
+              })
+
+          print(f"Found {len(records)} records")
+
+          if not records:
+              print("No records to upload")
+              sys.exit(0)
+
+          # Check for duplicates
+          existing_raw = supabase_get("businesses", "select=name,address")
+          existing_names_set = {r["name"].strip().lower() for r in existing_raw if r.get("name")}
+          print(f"Found {len(existing_names_set)} existing businesses in Supabase")
+
+          new_records = [r for r in records if r["name"].strip().lower() not in existing_names_set]
+          skipped = len(records) - len(new_records)
+
+          print(f"New records to upload: {len(new_records)}")
+
+          if not new_records:
+              print("All records already exist")
+              sys.exit(0)
+
+          # Create session
+          file_name = os.path.basename(EXCEL_PATH)
+          session_id = str(uuid.uuid4())
+          now_iso = datetime.now(timezone.utc).isoformat()
+
+          status_counts = {"suspicious": 0, "ok": 0, "unknown": 0}
+          for r in new_records:
+              status_counts[r["arnona_status"]] = status_counts.get(r["arnona_status"], 0) + 1
+
+          session_payload = {
+              "id":               session_id,
+              "file_name":        file_name,
+              "upload_date":      now_iso,
+              "total_count":      len(new_records),
+              "suspicious_count": status_counts["suspicious"],
+              "ok_count":         status_counts["ok"],
+              "unknown_count":    status_counts["unknown"],
+              "skipped_count":    skipped,
+              "business_ids":     [],
+          }
+          supabase_post("upload_sessions", session_payload)
+          print(f"Created session: {session_id}")
+
+          # Upload businesses
+          inserted_ids = []
+          BATCH = 50
+
+          for i in range(0, len(new_records), BATCH):
+              batch = new_records[i:i + BATCH]
+              payload = []
+              for r in batch:
+                  row_id = str(uuid.uuid4())
+                  inserted_ids.append(row_id)
+                  payload.append({
+                      "id":                  row_id,
+                      "name":                r["name"],
+                      "type":                r["type"],
+                      "address":             r["address"],
+                      "matched_address":     r["matched_address"],
+                      "property_owners":     r["property_owners"],
+                      "unit_count":          r["unit_count"],
+                      "suspicion_rating":    r["suspicion_rating"],
+                      "suspicion_detail":    r["suspicion_detail"],
+                      "no_suspicion_reason": r["no_suspicion_reason"],
+                      "link":                r["link"],
+                      "arnona_status":       r["arnona_status"],
+                      "upload_date":         now_iso,
+                      "upload_session_id":   session_id,
+                  })
+              supabase_post("businesses", payload)
+              print(f"Batch {i//BATCH + 1}: {len(batch)} records uploaded")
+
+          # Update session
+          patch_headers = {**HEADERS, "Prefer": "return=minimal"}
+          r = requests.patch(
+              f"{SUPABASE_URL}/rest/v1/upload_sessions?id=eq.{session_id}",
+              json={"business_ids": inserted_ids},
+              headers=patch_headers,
+              timeout=10,
+          )
+          r.raise_for_status()
+
+          print(f"\n✅ Upload complete!")
+          print(f"Uploaded: {len(inserted_ids)}")
+          print(f"Skipped: {skipped}")
+          print(f"Session: {session_id}")
+          EOF
+
+      - name: Commit and push (if changes)
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add -A
+          git commit -m "Auto: Uploaded report $(date +%d.%m.%Y)" || echo "No changes to commit"
+          git push || echo "Nothing to push"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
