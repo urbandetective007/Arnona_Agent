@@ -1,0 +1,6 @@
+{
+  "name": "arnona-supabase-relay",
+  "version": "1.0.0",
+  "description": "Vercel relay function for uploading to Supabase (CCR integration)",
+  "private": true
+}
