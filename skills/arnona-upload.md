@@ -96,52 +96,53 @@ def map_status(val):
 
 ---
 
-## סקריפט Python מלא
+## סקריפט Python — עם Vercel Relay
 
-הרץ את הסקריפט הבא. **התאם את `EXCEL_PATH`** לנתיב שסיפק המשתמש.
+**שימוש: ה-routine יריץ:**
+
+```bash
+python /tmp/repo/scripts/upload_to_supabase_relay.py \
+  --report <path-to-report.xlsx> \
+  --relay-url "https://arnona-agent-ks3j.vercel.app"
+```
+
+**הסקריפט עושה:**
+
+1. מנתח את קובץ Excel
+2. מעביר את הנתונים ל-Vercel relay function
+3. ה-Vercel relay בתורו:
+   - בודק כפולים מול Supabase
+   - יוצר upload_sessions record
+   - מעלה את businesses לSupabase
+
+**יתרון:** ה-Vercel relay עוקף את בעיית ה-IP allowlist של CCR - הוא רץ מ-Vercel IPs שמאושרות ב-Supabase.
 
 ```python
-import sys
+#!/usr/bin/env python3
+"""
+upload_to_supabase_relay.py
+Uploads report to Supabase via Vercel relay (CCR-friendly).
+"""
 import subprocess
+import sys
 
-# התקנת חבילות חסרות
 for pkg in ["openpyxl", "requests"]:
     try:
         __import__(pkg)
     except ImportError:
         subprocess.check_call([sys.executable, "-m", "pip", "install", pkg, "--quiet"])
 
+import argparse
 import openpyxl
 import requests
 import uuid
 import os
 from datetime import datetime, timezone
 
-# ── קונפיגורציה ──────────────────────────────────────────────────────────────
-SUPABASE_URL = "https://mcsygsqfyuaexxxwsgem.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1jc3lnc3FmeXVhZXh4eHdzZ2VtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1Njk1MTIsImV4cCI6MjA5NDE0NTUxMn0.Hu6t2PLjE_D113NMQEGvEv8QGhqN6udKNO9McqK3ST8"
-EXCEL_PATH = r"REPLACE_WITH_USER_PATH"   # ← יש להחליף
-# ─────────────────────────────────────────────────────────────────────────────
-
-HEADERS = {
-    "apikey": SUPABASE_KEY,
-    "Authorization": f"Bearer {SUPABASE_KEY}",
-    "Content-Type": "application/json",
-    "Prefer": "return=representation",
-}
-
-def supabase_get(table, params=""):
-    url = f"{SUPABASE_URL}/rest/v1/{table}?{params}"
-    r = requests.get(url, headers=HEADERS)
-    r.raise_for_status()
-    return r.json()
-
-def supabase_post(table, payload):
-    url = f"{SUPABASE_URL}/rest/v1/{table}"
-    r = requests.post(url, json=payload, headers=HEADERS)
-    if not r.ok:
-        raise RuntimeError(f"Supabase error {r.status_code}: {r.text}")
-    return r.json()
+parser = argparse.ArgumentParser()
+parser.add_argument("--report", required=True)
+parser.add_argument("--relay-url", required=True)
+args = parser.parse_args()
 
 def map_status(val):
     v = (val or "").strip()
@@ -152,19 +153,16 @@ def map_status(val):
     return "unknown"
 
 def normalize_col(s):
-    """נרמול שם עמודה: מאחד רווחים ושבירות שורה לרווח יחיד"""
     return " ".join(str(s).split()) if s else ""
 
-# מיפוי שמות קנוניים → וריאציות אפשריות בקובץ
 COL_ALIASES = {
     "כתובת תואמת":     ["כתובת תואמת (מהעירייה)", "כתובת תואמת"],
     "שמות בעלי נכסים": ["שמות בעלי נכסים באותה כתובת", "שמות בעלי נכסים"],
-    "מס' דירות":       ["מס' דירות בכתובת", "מס' דירות"],
+    "מס' דירות":       ["מס' דירות בכתובת", "מספר דירות בכתובת", "מס' דירות"],
     "מקור/URL":        ["מקור המידע (URL)", "מקור/URL", "מקור המידע"],
 }
 
 def resolve_col(col_map, canonical_name):
-    """מוצא את האינדקס של עמודה לפי שם קנוני, כולל וריאציות"""
     if canonical_name in col_map:
         return col_map[canonical_name]
     for alias in COL_ALIASES.get(canonical_name, []):
@@ -172,8 +170,8 @@ def resolve_col(col_map, canonical_name):
             return col_map[normalize_col(alias)]
     return None
 
-# ── 1. פרסור Excel ────────────────────────────────────────────────────────────
-wb = openpyxl.load_workbook(EXCEL_PATH, data_only=True)
+# Parse Excel
+wb = openpyxl.load_workbook(args.report, data_only=True)
 ws = wb.active
 
 header_row_idx = None
@@ -185,10 +183,7 @@ for i, row in enumerate(ws.iter_rows(values_only=True), start=1):
         break
 
 if header_row_idx is None:
-    raise ValueError("לא נמצאה שורת כותרת עם 'שם העסק'")
-
-print(f"📋 שורת כותרת: שורה {header_row_idx}")
-print(f"📋 עמודות שזוהו: {list(col_map.keys())}")
+    raise ValueError("Header row not found")
 
 def col(row_vals, name):
     idx = resolve_col(col_map, name)
@@ -216,105 +211,53 @@ for row in ws.iter_rows(min_row=header_row_idx + 1, values_only=True):
         "arnona_status":       map_status(col(row, "דירוג חשד")),
     })
 
-print(f"✅ נמצאו {len(records)} שורות בקובץ")
+print(f"Total records: {len(records)}")
 
-# ── 2. שליפת כפולים קיימים ───────────────────────────────────────────────────
-existing_raw = supabase_get("businesses", "select=name,address")
-# בדיקה לפי שם בלבד (normalized) — כי אותו עסק יכול להופיע עם כתובת מעט שונה
-existing_names_set = {r["name"].strip().lower() for r in existing_raw if r.get("name")}
-print(f"📦 {len(existing_names_set)} עסקים קיימים ב-Supabase")
-
-# סינון מול Supabase
-new_records = [r for r in records if r["name"].strip().lower() not in existing_names_set]
-skipped_supabase = len(records) - len(new_records)
-
-# dedup פנימי — הסר כפולים בתוך הקובץ עצמו (אם אותו שם מופיע פעמיים)
-seen = set()
-deduped = []
-for r in new_records:
-    key = r["name"].strip().lower()
-    if key not in seen:
-        seen.add(key)
-        deduped.append(r)
-skipped_internal = len(new_records) - len(deduped)
-new_records = deduped
-
-skipped = skipped_supabase + skipped_internal
-print(f"⏭  {skipped_supabase} כפולים מ-Supabase + {skipped_internal} כפולים פנימיים = {skipped} סה\"כ ידולגו")
-print(f"✅ {len(new_records)} חדשים יועלו")
-
-if not new_records:
-    print("אין מה להעלות — כל הרשומות כבר קיימות.")
+if not records:
+    print("No records to upload.")
     sys.exit(0)
 
-# ── 3. יצירת upload_session ───────────────────────────────────────────────────
-file_name = os.path.basename(EXCEL_PATH)
+# Prepare for relay
+file_name = os.path.basename(args.report)
 session_id = str(uuid.uuid4())
 now_iso = datetime.now(timezone.utc).isoformat()
 
 status_counts = {"suspicious": 0, "ok": 0, "unknown": 0}
-for r in new_records:
+for r in records:
     status_counts[r["arnona_status"]] = status_counts.get(r["arnona_status"], 0) + 1
 
-session_payload = {
-    "id":               session_id,
-    "file_name":        file_name,
-    "upload_date":      now_iso,
-    "total_count":      len(new_records),
-    "suspicious_count": status_counts["suspicious"],
-    "ok_count":         status_counts["ok"],
-    "unknown_count":    status_counts["unknown"],
-    "skipped_count":    skipped,
-    "business_ids":     [],   # נעדכן אחרי ההכנסה
-}
-supabase_post("upload_sessions", session_payload)
-print(f"📁 סשן נוצר: {session_id}")
+# Add IDs to records
+for r in records:
+    r["id"] = str(uuid.uuid4())
 
-# ── 4. העלאת businesses ───────────────────────────────────────────────────────
-inserted_ids = []
-BATCH = 50
-
-for i in range(0, len(new_records), BATCH):
-    batch = new_records[i:i + BATCH]
-    payload = []
-    for r in batch:
-        row_id = str(uuid.uuid4())
-        inserted_ids.append(row_id)
-        payload.append({
-            "id":                  row_id,
-            "name":                r["name"],
-            "type":                r["type"],
-            "address":             r["address"],
-            "matched_address":     r["matched_address"],
-            "property_owners":     r["property_owners"],
-            "unit_count":          r["unit_count"],
-            "suspicion_rating":    r["suspicion_rating"],
-            "suspicion_detail":    r["suspicion_detail"],
-            "no_suspicion_reason": r["no_suspicion_reason"],
-            "link":                r["link"],
-            "arnona_status":       r["arnona_status"],
-            "upload_date":         now_iso,
-            "upload_session_id":   session_id,
-        })
-    supabase_post("businesses", payload)
-    print(f"  ↑ batch {i//BATCH + 1}: {len(batch)} רשומות הועלו")
-
-# ── 5. עדכון business_ids בסשן ────────────────────────────────────────────────
-patch_headers = {**HEADERS, "Prefer": "return=minimal"}
-r = requests.patch(
-    f"{SUPABASE_URL}/rest/v1/upload_sessions?id=eq.{session_id}",
-    json={"business_ids": inserted_ids},
-    headers=patch_headers,
-)
-r.raise_for_status()
-
-# ── 6. סיכום ─────────────────────────────────────────────────────────────────
-print("\n══════════════════════════════════")
-print(f"✅ הועלו:    {len(inserted_ids)} רשומות חדשות")
-print(f"⏭  דולגו:    {skipped} כפולים")
-print(f"📊 suspicious: {status_counts['suspicious']} | ok: {status_counts['ok']} | unknown: {status_counts['unknown']}")
-print(f"🆔 session_id: {session_id}")
-print("══════════════════════════════════")
+# Send to relay
+print(f"Uploading {len(records)} records via relay...")
+try:
+    relay_response = requests.post(
+        f"{args.relay_url.rstrip('/')}/api/upload",
+        json={
+            "session_id": session_id,
+            "file_name": file_name,
+            "businesses": records,
+            "upload_date": now_iso,
+            "status_counts": status_counts,
+        },
+        timeout=120,
+    )
+    relay_response.raise_for_status()
+    result = relay_response.json()
+    
+    print(f"✅ Upload successful!")
+    print(f"Uploaded: {result.get('uploaded', len(records))}")
+    print(f"Skipped (duplicates): {result.get('skipped', 0)}")
+    print(f"Session ID: {session_id}")
+    print("DONE")
+    
+except requests.exceptions.RequestException as e:
+    print(f"❌ Relay error: {e}")
+    if hasattr(e, 'response') and e.response is not None:
+        print(f"Response: {e.response.text}")
+    sys.exit(1)
 ```
 
 ---
