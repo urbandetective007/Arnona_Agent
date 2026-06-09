@@ -29,26 +29,68 @@ description: >
 
 ## הוראות ל-CCR Routine
 
-**בסוף pipeline, לפני סיום, הroutine צריך לעשות:**
+**בסוף pipeline, הroutine צריך:**
 
-```bash
-# 1. סדר את הקבצים ב-repo
-mkdir -p /tmp/repo/reports
+1. **קרוא את הקובץ בתוך Python script**
+2. **שלח ל-GitHub API** עם base64 encoding
+3. **GitHub commit עדכון** יתרחש אוטומטית
+4. **GitHub Actions** יזוהה ויריץ את workflow
 
-# 2. העתק את הדוחות
-cp /tmp/report_final.xlsx "/tmp/repo/reports/דוח נכסים חשודים $(date +%d.%m.%Y).xlsx"
-cp /tmp/businesses.xlsx "/tmp/repo/reports/עסקים חשודים מהאינטרנט $(date +%d.%m.%Y).xlsx"
+**Python script:**
 
-# 3. דחוף ל-GitHub
-cd /tmp/repo
-git config user.name "CCR-Arnona-Agent"
-git config user.email "ccr@anthropic.com"
-git add reports/
-git commit -m "Auto: Arnona report $(date +%d.%m.%Y)"
-git push origin main
+```python
+import requests
+import base64
+from datetime import datetime
+
+# GitHub config
+GITHUB_TOKEN = "ghp_XXXXXXXXXXXXXXXXXXXXXXXXXXXXX"  # ← User provides this
+REPO = "urbandetective007/Arnona_Agent"
+BRANCH = "main"
+TODAY = datetime.now().strftime('%d.%m.%Y')
+
+# Read files
+with open('/tmp/report_final.xlsx', 'rb') as f:
+    report_content = base64.b64encode(f.read()).decode()
+
+with open('/tmp/businesses.xlsx', 'rb') as f:
+    businesses_content = base64.b64encode(f.read()).decode()
+
+# GitHub API headers
+headers = {
+    "Authorization": f"token {GITHUB_TOKEN}",
+    "Accept": "application/vnd.github.v3+json"
+}
+
+# Upload דוח
+report_path = f"reports/דוח נכסים חשודים {TODAY}.xlsx"
+requests.put(
+    f"https://api.github.com/repos/{REPO}/contents/{report_path}",
+    json={
+        "message": f"Auto: Arnona report {TODAY}",
+        "content": report_content,
+        "branch": BRANCH
+    },
+    headers=headers
+).raise_for_status()
+
+# Upload businesses
+businesses_path = f"reports/עסקים חשודים מהאינטרנט {TODAY}.xlsx"
+requests.put(
+    f"https://api.github.com/repos/{REPO}/contents/{businesses_path}",
+    json={
+        "message": f"Auto: Businesses list {TODAY}",
+        "content": businesses_content,
+        "branch": BRANCH
+    },
+    headers=headers
+).raise_for_status()
+
+print("✅ Files uploaded to GitHub")
+print("GitHub Actions will now upload to Supabase...")
 ```
 
-**זהו!** GitHub Actions ילכד את ה-push ויריץ את workflow `upload-arnona.yml` אוטומטית.
+**הroutine צריך להריץ את זה, ו-GitHub Actions יתעורר בעצמו!**
 
 ## מה GitHub Actions עושה
 
