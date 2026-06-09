@@ -29,71 +29,26 @@ description: >
 
 ## הוראות ל-CCR Routine
 
-**בסוף pipeline, הroutine צריך:**
+**בסוף pipeline, רק עשה את זה:**
 
-1. **קרוא את הקובץ בתוך Python script**
-2. **שלח ל-GitHub API** עם base64 encoding
-3. **GitHub commit עדכון** יתרחש אוטומטית
-4. **GitHub Actions** יזוהה ויריץ את workflow
+```bash
+# 1. סדר את תיקיית reports בתוך /tmp/repo
+mkdir -p /tmp/repo/reports
 
-**Python script:**
-
-```python
-import requests
-import base64
-import os
-from datetime import datetime
-
-# GitHub config (token will be read from environment)
-GITHUB_TOKEN = os.environ.get('GITHUBB_TOKEN_PAT')  # Note: double B due to GitHub naming restrictions
-if not GITHUB_TOKEN:
-    raise ValueError("GITHUBB_TOKEN_PAT environment variable not set")
-REPO = "urbandetective007/Arnona_Agent"
-BRANCH = "main"
-TODAY = datetime.now().strftime('%d.%m.%Y')
-
-# Read files
-with open('/tmp/report_final.xlsx', 'rb') as f:
-    report_content = base64.b64encode(f.read()).decode()
-
-with open('/tmp/businesses.xlsx', 'rb') as f:
-    businesses_content = base64.b64encode(f.read()).decode()
-
-# GitHub API headers
-headers = {
-    "Authorization": f"token {GITHUB_TOKEN}",
-    "Accept": "application/vnd.github.v3+json"
-}
-
-# Upload דוח
-report_path = f"reports/דוח נכסים חשודים {TODAY}.xlsx"
-requests.put(
-    f"https://api.github.com/repos/{REPO}/contents/{report_path}",
-    json={
-        "message": f"Auto: Arnona report {TODAY}",
-        "content": report_content,
-        "branch": BRANCH
-    },
-    headers=headers
-).raise_for_status()
-
-# Upload businesses
-businesses_path = f"reports/עסקים חשודים מהאינטרנט {TODAY}.xlsx"
-requests.put(
-    f"https://api.github.com/repos/{REPO}/contents/{businesses_path}",
-    json={
-        "message": f"Auto: Businesses list {TODAY}",
-        "content": businesses_content,
-        "branch": BRANCH
-    },
-    headers=headers
-).raise_for_status()
-
-print("✅ Files uploaded to GitHub")
-print("GitHub Actions will now upload to Supabase...")
+# 2. העתק את הדוחות לתיקיה
+cp /tmp/report_final.xlsx "/tmp/repo/reports/דוח נכסים חשודים $(date +%d.%m.%Y).xlsx"
+cp /tmp/businesses.xlsx "/tmp/repo/reports/עסקים חשודים מהאינטרנט $(date +%d.%m.%Y).xlsx"
 ```
 
-**הroutine צריך להריץ את זה, ו-GitHub Actions יתעורר בעצמו!**
+**זהו!** 
+
+GitHub Actions workflow `commit-reports.yml` **אוטומטית:**
+1. ✅ בודקה כל 10 דקות אם יש קבצים חדשים
+2. ✅ מדחיפה אותם ל-main branch
+3. ✅ `upload-arnona.yml` workflow עולה ל-Supabase
+4. ✅ Website מתעדכנת
+
+**100% אוטומטי ללא token issues!** 🤖
 
 ## מה GitHub Actions עושה
 

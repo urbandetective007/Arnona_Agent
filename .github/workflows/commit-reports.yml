@@ -1,0 +1,39 @@
+name: Commit Reports from CCR
+
+on:
+  schedule:
+    # Run every 10 minutes to check for new reports
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+jobs:
+  commit-if-new:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Check if new reports exist
+        id: check_reports
+        run: |
+          # Check if reports folder has files modified in last 15 minutes
+          FOUND=$(find reports -type f -mmin -15 2>/dev/null | wc -l)
+          if [ "$FOUND" -gt 0 ]; then
+            echo "found=true" >> $GITHUB_OUTPUT
+            echo "New reports found: $FOUND files"
+          else
+            echo "found=false" >> $GITHUB_OUTPUT
+            echo "No new reports found"
+          fi
+
+      - name: Commit and push reports
+        if: steps.check_reports.outputs.found == 'true'
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add reports/
+          git commit -m "Auto: Commit reports from CCR $(date +%d.%m.%Y\ %H:%M:%S)" || echo "No changes to commit"
+          git push || echo "Nothing to push"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
