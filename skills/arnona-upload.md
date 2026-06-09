@@ -41,10 +41,13 @@ description: >
 ```python
 import requests
 import base64
+import os
 from datetime import datetime
 
-# GitHub config
-GITHUB_TOKEN = "ghp_XXXXXXXXXXXXXXXXXXXXXXXXXXXXX"  # ← User provides this
+# GitHub config (token will be read from environment)
+GITHUB_TOKEN = os.environ.get('GITHUBB_TOKEN_PAT')  # Note: double B due to GitHub naming restrictions
+if not GITHUB_TOKEN:
+    raise ValueError("GITHUBB_TOKEN_PAT environment variable not set")
 REPO = "urbandetective007/Arnona_Agent"
 BRANCH = "main"
 TODAY = datetime.now().strftime('%d.%m.%Y')
