@@ -1,0 +1,4 @@
+last_index=169
+addresses_processed=140
+businesses_found=1
+run_date=2026-07-01
