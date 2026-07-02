@@ -1,0 +1,5 @@
+last_index=10350
+covered=30-10350
+businesses_found=72
+date=2026-07-02
+notes=addresses processed: א through ג section (ג' Arabic skipped). Streets covered up to גת. All businesses verified via d.co.il and b144.co.il direct links.
