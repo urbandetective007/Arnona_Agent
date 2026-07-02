@@ -1,0 +1,4 @@
+last_index=1035
+date=02.07.2026
+addresses_covered=330-1035
+businesses_found=25
