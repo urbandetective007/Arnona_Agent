@@ -1,0 +1,5 @@
+last_index=1883
+street_range=אבנר גרשון through איתמר בן אבי
+date=2026-07-04
+businesses_found=21
+notes=idx 1884 onward is Arabic neighborhood streets (אל-...) through idx 7205; Hebrew ב-streets resume at idx 7206
