@@ -1,0 +1,5 @@
+last_index=1034
+street_range=אבנר בן נר through אגריפס
+date=2026-07-04
+businesses_found=0
+notes=addresses idx 902-1034 searched; 0 confirmed businesses at residential arnona addresses; streets: אבנר בן נר, אבנר גרשון, אבנר חי שאקי, אברהאים בן אדהם, אברבנאל, אברהם כחילה, אברהם מסלונים, אג'יאל, אגמון, אגסי שמעון, אגרון, אגרות משה, אגריפס
