@@ -1,0 +1,5 @@
+last_index=902
+date=2026-07-05
+businesses_found=0
+addresses_scanned=0
+notes=Tavily API quota exhausted at session start — zero searches could be performed. No new addresses processed. Previous session ended at idx902. Next run should resume from idx902.
