@@ -1,5 +1,5 @@
 last_index=902
-street_range=אבן שפרוט 9 through אבנר בן נר 3
-date=2026-07-04
+street_range=אבנר בן נר 3
+date=2026-07-06
 businesses_found=0
-notes=addresses idx 901-902 searched; 0 confirmed businesses; Tavily API rate limit reached after 12 searches
+notes=ריצת DEMO (smoke test): התחדשות מ-idx 902 (הכתובת 'אבנר בן נר 3'). מכסת Tavily של התוכנית מוצתה (HTTP 432 גם ב-search וגם ב-extract) — לא ניתן היה לבצע אף חיפוש/אימות, ולכן 0 עסקים אומתו. גישה ישירה ל-Supabase חסומה ע"י מדיניות ה-egress (403), לכן ה-progress marker נרשם כקובץ במאגר לפי מוסכמת הצינור.
