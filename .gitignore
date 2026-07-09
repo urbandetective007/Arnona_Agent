@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Arnona pipeline — internal progress markers (not for repo)
+reports/__PROGRESS__*

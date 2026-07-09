@@ -1,5 +1,0 @@
-last_index=901
-street_range=אבטליון through אבן שפרוט
-date=2026-07-03
-businesses_found=4
-notes=addresses idx 593-901 searched; 4 confirmed businesses at residential arnona addresses

@@ -17,11 +17,12 @@ jobs:
       - name: Check if new reports exist
         id: check_reports
         run: |
-          # Check if reports folder has files modified in last 15 minutes
-          FOUND=$(find reports -type f -mmin -15 2>/dev/null | wc -l)
+          # Only look for actual report xlsx files (not __PROGRESS__ files)
+          FOUND=$(find reports -type f -name "*.xlsx" ! -name "__PROGRESS__*" -mmin -15 2>/dev/null | wc -l)
           if [ "$FOUND" -gt 0 ]; then
             echo "found=true" >> $GITHUB_OUTPUT
             echo "New reports found: $FOUND files"
+            find reports -type f -name "*.xlsx" ! -name "__PROGRESS__*" -mmin -15
           else
             echo "found=false" >> $GITHUB_OUTPUT
             echo "No new reports found"
@@ -32,7 +33,9 @@ jobs:
         run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
-          git add reports/
+          # Stage only actual report files — never __PROGRESS__ files
+          git add "reports/דוח נכסים חשודים"*.xlsx 2>/dev/null || true
+          git add "reports/עסקים חשודים"*.xlsx 2>/dev/null || true
           git commit -m "Auto: Commit reports from CCR $(date +%d.%m.%Y\ %H:%M:%S)" || echo "No changes to commit"
           git push || echo "Nothing to push"
         env:
