@@ -10,7 +10,7 @@ const manrope = Manrope({
 
 export const metadata: Metadata = {
   title: 'סוכן ארנונה | עיריית ירושלים',
-  description: 'מערכת לזיהוי עסקים החשודים בתשלום ארנונת מגורים',
+  description: 'מערכת לזיהוי עסקים עם אינדיקציה לתשלום ארנונת מגורים',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

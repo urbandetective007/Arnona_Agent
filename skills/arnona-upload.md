@@ -1,7 +1,7 @@
 ---
 name: arnona-upload
 description: >
-  דחיפת דוח נכסים חשודים ל-GitHub (main) כדי שGitHub Actions יעלה אותו ל-Supabase.
+  דחיפת דוח נכסים לבדיקה ל-GitHub (main) כדי שGitHub Actions יעלה אותו ל-Supabase.
   בשימוש בCCR Routine כדי למנוע בעיות עם Egress Gateway.
 ---
 
@@ -51,7 +51,7 @@ echo "NEXT_INDEX" > reports/arnona_next_index.txt
 | קובץ | תוכן |
 |------|-------|
 | `reports/arnona_next_index.txt` | המספר הבא שממנו להתחיל |
-| `reports/דוח נכסים חשודים DD.MM.YYYY.xlsx` | דוח הריצה הנוכחית |
+| `reports/דוח נכסים לבדיקה DD.MM.YYYY.xlsx` | דוח הריצה הנוכחית |
 
 **לא עולה:** `__PROGRESS__*`, קבצי txt ישנים, שום דבר אחר.
 
@@ -66,11 +66,11 @@ git pull origin main --ff-only
 echo "${NEXT_INDEX}" > reports/arnona_next_index.txt
 
 # העתק דוח
-cp /tmp/report_final.xlsx "reports/דוח נכסים חשודים $(date +%d.%m.%Y).xlsx"
+cp /tmp/report_final.xlsx "reports/דוח נכסים לבדיקה $(date +%d.%m.%Y).xlsx"
 
 # commit + push
 git add reports/arnona_next_index.txt
-git add "reports/דוח נכסים חשודים $(date +%d.%m.%Y).xlsx"
+git add "reports/דוח נכסים לבדיקה $(date +%d.%m.%Y).xlsx"
 git commit -m "pipeline: arnona idx ${NEXT_INDEX}, $(date +%d.%m.%Y)"
 git push origin main
 ```
@@ -83,7 +83,7 @@ git checkout main && git pull origin main --ff-only
 
 echo "NEXT_INDEX" > reports/arnona_next_index.txt
 git add reports/arnona_next_index.txt
-git add "reports/דוח נכסים חשודים $(date +%d.%m.%Y).xlsx"
+git add "reports/דוח נכסים לבדיקה $(date +%d.%m.%Y).xlsx"
 git commit -m "pipeline: arnona idx NEXT_INDEX, $(date +%d.%m.%Y)"
 git push origin main
 ```

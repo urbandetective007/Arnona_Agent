@@ -73,8 +73,8 @@ export default function Dashboard() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 16 }}>
           {[
             { label: 'סה״כ עסקים',   value: total,      note: 'במערכת' },
-            { label: 'חשד גבוה',     value: highRisk,   note: 'עסקים'  },
-            { label: 'שיעור חשד',    value: `${suspectPct}%`, note: 'מהעסקים' },
+            { label: 'אינדיקציה גבוהה', value: highRisk,   note: 'עסקים'  },
+            { label: 'שיעור אינדיקציה', value: `${suspectPct}%`, note: 'מהעסקים' },
             { label: 'קבצים שהועלו', value: sessions.length, note: 'מאז ההתחלה' },
           ].map(({ label, value, note }) => (
             <div key={label} style={metricCard}>
@@ -87,11 +87,11 @@ export default function Dashboard() {
       </Section>
 
       <Section bg="var(--canvas)">
-        <h2 style={{ fontSize: 32, fontWeight: 500, marginBottom: 32 }}>התפלגות דירוג חשד</h2>
+        <h2 style={{ fontSize: 32, fontWeight: 500, marginBottom: 32 }}>התפלגות דירוג אינדיקציה</h2>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, maxWidth: 720 }}>
           {[
-            { label: 'חשד גבוה',    count: highRisk,   color: '#b91c1c' },
-            { label: 'חשד בינוני',  count: midRisk,    color: '#d97706' },
+            { label: 'אינדיקציה גבוהה', count: highRisk,   color: '#b91c1c' },
+            { label: 'אינדיקציה בינונית', count: midRisk,    color: '#d97706' },
             { label: 'דרוש בדיקה', count: needsCheck, color: '#6b7280' },
             { label: 'לא חשוד',    count: notSuspect, color: '#15803d' },
           ].map(({ label, count, color }) => (
@@ -114,10 +114,10 @@ export default function Dashboard() {
           <div>
             <p style={{ ...eyebrow, color: 'var(--steel)' }}>ממצא מרכזי</p>
             <h2 style={{ fontSize: 44, fontWeight: 500, color: 'var(--on-ink)', marginBottom: 12 }}>
-              {highRisk} עסקים בחשד גבוה
+              {highRisk} עסקים באינדיקציה גבוהה
             </h2>
             <p style={{ color: 'var(--steel)', fontSize: 16, maxWidth: 480, lineHeight: 1.5 }}>
-              עסקים הפועלים בכתובות שכל יחידותיהן מסווגות כמגורים — חשד חזק לתשלום ארנונה מופחת שלא כדין.
+              עסקים הפועלים בכתובות שכל יחידותיהן מסווגות כמגורים — אינדיקציה חזקה לתשלום ארנונה מופחת שלא כדין.
             </p>
           </div>
           <Link href="/businesses" style={{ ...btnWhiteOnDark, flexShrink: 0 }}>צפה בכל העסקים</Link>
@@ -149,7 +149,7 @@ export default function Dashboard() {
               { label: 'שם הקובץ',     value: lastSession.fileName    },
               { label: 'תאריך',         value: lastSession.uploadDate  },
               { label: 'סה״כ עסקים',   value: String(lastSession.totalCount) },
-              { label: 'חשודים',        value: String(lastSession.suspiciousCount) },
+              { label: 'אינדיקציות',    value: String(lastSession.suspiciousCount) },
               { label: 'ממוצע יחידות', value: avgUnits                },
             ].map(({ label, value }) => (
               <div key={label} style={{ background: 'var(--cloud)', borderRadius: 16, padding: '16px 24px', minWidth: 140, boxShadow: '0 2px 8px rgba(26,26,26,0.08)' }}>

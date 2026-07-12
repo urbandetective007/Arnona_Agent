@@ -112,12 +112,12 @@ export default function MapPage() {
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
           <div style={statCard}>
             <span style={{ ...indicator, background: '#ef4444' }} />
-            <span style={statLabel}>חשד גבוה:</span>
+            <span style={statLabel}>אינדיקציה גבוהה:</span>
             <span style={statVal}>{highRisk}</span>
           </div>
           <div style={statCard}>
             <span style={{ ...indicator, background: '#f97316' }} />
-            <span style={statLabel}>חשד בינוני:</span>
+            <span style={statLabel}>אינדיקציה בינונית:</span>
             <span style={statVal}>{midRisk}</span>
           </div>
           <div style={statCard}>
