@@ -34,8 +34,8 @@ jobs:
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
           # Stage only actual report files — never __PROGRESS__ files
-          git add "reports/דוח נכסים חשודים"*.xlsx 2>/dev/null || true
-          git add "reports/עסקים חשודים"*.xlsx 2>/dev/null || true
+          git add "reports/דוח נכסים לבדיקה"*.xlsx 2>/dev/null || true
+          git add "reports/עסקים לבדיקה"*.xlsx 2>/dev/null || true
           git commit -m "Auto: Commit reports from CCR $(date +%d.%m.%Y\ %H:%M:%S)" || echo "No changes to commit"
           git push || echo "Nothing to push"
         env:

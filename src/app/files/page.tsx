@@ -126,7 +126,7 @@ export default function FilesPage() {
                   <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
                     <Chip label={`חדש: ${session.totalCount}`} color="#1d4ed8" bg="#eff6ff" />
                     {session.skippedCount > 0 && <Chip label={`כפול: ${session.skippedCount}`} color="#92400e" bg="#fffbeb" />}
-                    {session.suspiciousCount > 0 && <Chip label={`חשוד: ${session.suspiciousCount}`} color="#b91c1c" bg="#fef2f2" />}
+                    {session.suspiciousCount > 0 && <Chip label={`אינדיקציה: ${session.suspiciousCount}`} color="#b91c1c" bg="#fef2f2" />}
                     {session.okCount > 0 && <Chip label={`תקין: ${session.okCount}`} color="#15803d" bg="#f0fdf4" />}
                   </div>
                 </div>

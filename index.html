@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>דוח עסקים חשודים – ארנונה ירושלים</title>
+<title>דוח עסקים לבדיקה – ארנונה ירושלים</title>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -124,7 +124,7 @@ td{padding:9px 12px;vertical-align:middle}
 <div id="mainApp" style="display:none">
 
 <div class="header">
-  <h1>🏛️ דוח עסקים חשודים – ארנונה ירושלים</h1>
+  <h1>🏛️ דוח עסקים לבדיקה – ארנונה ירושלים</h1>
   <div class="stats-bar" id="statsBar"></div>
 </div>
 
@@ -160,7 +160,7 @@ td{padding:9px 12px;vertical-align:middle}
           <th onclick="sortBy(1)" data-col="1"><span class="sort-arrow">▼</span> סוג</th>
           <th onclick="sortBy(2)" data-col="2"><span class="sort-arrow">▼</span> כתובת</th>
           <th onclick="sortBy(3)" data-col="3"><span class="sort-arrow">▼</span> יחידות</th>
-          <th onclick="sortBy(4)" data-col="4"><span class="sort-arrow">▼</span> דירוג חשד</th>
+          <th onclick="sortBy(4)" data-col="4"><span class="sort-arrow">▼</span> דירוג אינדיקציה</th>
           <th>פרטים</th>
         </tr>
       </thead>
@@ -264,7 +264,7 @@ function buildStats(){
   DATA.forEach(x=>c[x.r]++);
   document.getElementById('statsBar').innerHTML=`
     <span class="stat-badge all" onclick="setFilter('all')">סה"כ <span class="count">${DATA.length}</span></span>
-    <span class="stat-badge high" onclick="setFilter('גבוה')">🔴 חשד גבוה <span class="count">${c['גבוה']}</span></span>
+    <span class="stat-badge high" onclick="setFilter('גבוה')">🔴 אינדיקציה גבוהה <span class="count">${c['גבוה']}</span></span>
     <span class="stat-badge ok" onclick="setFilter('לא חשוד')">🟢 לא חשוד <span class="count">${c['לא חשוד']}</span></span>
     <span class="stat-badge check" onclick="setFilter('דרוש בדיקה')">🔵 דרוש בדיקה <span class="count">${c['דרוש בדיקה']}</span></span>`;
 }
@@ -348,7 +348,7 @@ function closeModal(e){if(e.target===document.getElementById('modalOverlay'))clo
 function closeModalDirect(){document.getElementById('modalOverlay').classList.remove('open');}
 
 function exportCSV(){
-  const headers=['שם העסק','סוג העסק','כתובת','כתובת תואמת','מספר דירות','דירוג חשד','פירוט'];
+  const headers=['שם העסק','סוג העסק','כתובת','כתובת תואמת','מספר דירות','דירוג אינדיקציה','פירוט'];
   const rows=filtered.map(r=>[r.n,r.t,r.a,r.am,r.d,r.r,r.r==='לא חשוד'?r.nc:r.det].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(','));
   const csv='\uFEFF'+[headers.join(','),...rows].join('\n');
   const a=document.createElement('a');

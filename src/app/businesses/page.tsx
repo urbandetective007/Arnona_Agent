@@ -53,9 +53,9 @@ export default function BusinessesPage() {
       'סוג עסק':        b.type,
       'כתובת':          b.address,
       'כתובת תואמת':    b.matchedAddress,
-      'דירוג חשד':      b.suspicionRating,
-      'פירוט החשד':     b.suspicionDetail,
-      'סיבת אי-חשד':   b.noSuspicionReason,
+      'דירוג אינדיקציה':      b.suspicionRating,
+      'פירוט האינדיקציה':     b.suspicionDetail,
+      'סיבת אי-אינדיקציה':   b.noSuspicionReason,
       'מספר יחידות':   b.unitCount,
       'בעלי נכסים':    b.propertyOwners,
       'קישור':          b.link,
@@ -126,7 +126,7 @@ export default function BusinessesPage() {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
               <thead>
                 <tr style={{ background: 'var(--cloud)', borderBottom: '1px solid var(--hairline)' }}>
-                  {['', 'שם העסק', 'סוג עסק', 'כתובת', 'דירוג חשד', 'יחידות', 'תאריך', ''].map((h, i) => (
+                  {['', 'שם העסק', 'סוג עסק', 'כתובת', 'דירוג אינדיקציה', 'יחידות', 'תאריך', ''].map((h, i) => (
                     <th key={i} style={{ textAlign: 'right', padding: '12px 16px', fontSize: 12, fontWeight: 600, color: 'var(--charcoal)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{h}</th>
                   ))}
                 </tr>
@@ -169,12 +169,12 @@ export default function BusinessesPage() {
                             {[
                               b.matchedAddress    && ['כתובת תואמת', b.matchedAddress],
                               b.unitCount         && ['מספר יחידות', b.unitCount],
-                              b.suspicionDetail   && ['פירוט החשד', b.suspicionDetail],
-                              b.noSuspicionReason && ['סיבת אי-חשד', b.noSuspicionReason],
+                              b.suspicionDetail   && ['פירוט האינדיקציה', b.suspicionDetail],
+                              b.noSuspicionReason && ['סיבת אי-אינדיקציה', b.noSuspicionReason],
                               b.propertyOwners    && ['בעלי נכסים', b.propertyOwners],
                             ].filter(Boolean).map(pair => {
                               const [label, value] = pair as [string, string]
-                              const full = ['פירוט החשד','סיבת אי-חשד','בעלי נכסים'].includes(label)
+                              const full = ['פירוט האינדיקציה','סיבת אי-אינדיקציה','בעלי נכסים'].includes(label)
                               return (
                                 <div key={label} style={full ? { gridColumn: '1/-1' } : {}}>
                                   <span style={{ fontWeight: 600, color: 'var(--charcoal)' }}>{label}: </span>

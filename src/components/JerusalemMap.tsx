@@ -147,7 +147,7 @@ export default function JerusalemMap({ businesses }: JerusalemMapProps) {
             ` : ''}
             ${b.noSuspicionReason ? `
               <p style="margin: 0 0 8px 0; font-size: 11px; color: #15803d; line-height: 1.3; background: #f0fdf4; padding: 6px; border-radius: 4px;">
-                <strong>סיבה לאי-חשד:</strong> ${b.noSuspicionReason}
+                <strong>סיבה לאי-אינדיקציה:</strong> ${b.noSuspicionReason}
               </p>
             ` : ''}
             ${b.link ? `

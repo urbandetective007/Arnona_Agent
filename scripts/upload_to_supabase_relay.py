@@ -84,14 +84,14 @@ for row in ws.iter_rows(min_row=header_row_idx + 1, values_only=True):
         "name":                name,
         "type":                col(row, "סוג העסק"),
         "address":             col(row, "כתובת"),
-        "suspicion_rating":    col(row, "דירוג חשד"),
+        "suspicion_rating":    col(row, "דירוג אינדיקציה"),
         "matched_address":     col(row, "כתובת תואמת"),
         "property_owners":     col(row, "שמות בעלי נכסים"),
         "unit_count":          col(row, "מס' דירות"),
-        "suspicion_detail":    col(row, "פירוט החשד"),
-        "no_suspicion_reason": col(row, "סיבת אי-חשד"),
+        "suspicion_detail":    col(row, "פירוט האינדיקציה"),
+        "no_suspicion_reason": col(row, "סיבת אי-אינדיקציה"),
         "link":                col(row, "מקור/URL"),
-        "arnona_status":       map_status(col(row, "דירוג חשד")),
+        "arnona_status":       map_status(col(row, "דירוג אינדיקציה")),
     })
 
 print(f"Total records in report: {len(records)}")

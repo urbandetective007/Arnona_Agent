@@ -36,7 +36,7 @@ function parseFile(buffer: ArrayBuffer, sessionId: string, today: string): Busin
   return raw.slice(hIdx + 1)
     .filter(row => row.some(c => String(c).trim()))
     .map((row, i) => {
-      const rating = col(row, 'דירוג חשד')
+      const rating = col(row, 'דירוג אינדיקציה')
       return {
         id: `${sessionId}-${i}`,
         name: col(row, 'שם העסק'),
@@ -46,8 +46,8 @@ function parseFile(buffer: ArrayBuffer, sessionId: string, today: string): Busin
         propertyOwners: col(row, 'שמות בעלי נכסים'),
         unitCount: col(row, "מס' דירות"),
         suspicionRating: rating,
-        suspicionDetail: col(row, 'פירוט החשד'),
-        noSuspicionReason: col(row, 'סיבת אי-חשד'),
+        suspicionDetail: col(row, 'פירוט האינדיקציה'),
+        noSuspicionReason: col(row, 'סיבת אי-אינדיקציה'),
         link: col(row, 'מקור') || col(row, 'URL'),
         arnonaStatus: mapStatus(rating),
         uploadDate: today,
@@ -129,7 +129,7 @@ export default function UploadPage() {
         <p style={eyebrow}>ניתוח ארנונה · עיריית ירושלים</p>
         <h1 style={{ fontSize: 44, fontWeight: 500 }}>העלאת דוח חדש</h1>
         <p style={{ color: 'var(--charcoal)', marginTop: 6 }}>
-          קובץ בפורמט דוח נכסים חשודים — עמודות: שם העסק, סוג העסק, כתובת, דירוג חשד
+          קובץ בפורמט דוח נכסים לבדיקה — עמודות: שם העסק, סוג העסק, כתובת, דירוג אינדיקציה
         </p>
       </section>
 
@@ -181,7 +181,7 @@ export default function UploadPage() {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
               <thead>
                 <tr style={{ background: 'var(--cloud)', borderBottom: '1px solid var(--hairline)' }}>
-                  {['שם העסק', 'כתובת', 'דירוג חשד'].map(h => (
+                  {['שם העסק', 'כתובת', 'דירוג אינדיקציה'].map(h => (
                     <th key={h} style={{ textAlign: 'right', padding: '10px 16px', fontSize: 12, fontWeight: 600, color: 'var(--charcoal)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{h}</th>
                   ))}
                 </tr>
