@@ -152,10 +152,9 @@ export default function JerusalemMap({ businesses }: JerusalemMapProps) {
             ` : ''}
             ${[b.link1, b.link2, b.link3].filter(Boolean).length > 0 ? `
               <div style="margin-top: 8px; border-top: 1px solid var(--hairline); padding-top: 8px;">
-                <div style="font-size: 11px; color: var(--charcoal); margin-bottom: 4px;"><strong>קישורים:</strong></div>
-                <ul style="margin: 0; padding-right: 16px; list-style: disc;">
-                  ${[b.link1, b.link2, b.link3].map((link) => link ? `<li style="font-size: 11px; margin-bottom: 2px;"><a href="${link}" target="_blank" rel="noopener noreferrer" style="color: var(--hp-blue); text-decoration: none;">${link}</a></li>` : '').join('')}
-                </ul>
+                ${b.link1 ? `<div style="font-size: 11px; margin-bottom: 6px;"><strong>קישור 1:</strong> <a href="${b.link1}" target="_blank" rel="noopener noreferrer" style="color: var(--hp-blue); text-decoration: none; word-break: break-all;">${b.link1}</a></div>` : ''}
+                ${b.link2 ? `<div style="font-size: 11px; margin-bottom: 6px;"><strong>קישור 2:</strong> <a href="${b.link2}" target="_blank" rel="noopener noreferrer" style="color: var(--hp-blue); text-decoration: none; word-break: break-all;">${b.link2}</a></div>` : ''}
+                ${b.link3 ? `<div style="font-size: 11px; margin-bottom: 0;"><strong>קישור 3:</strong> <a href="${b.link3}" target="_blank" rel="noopener noreferrer" style="color: var(--hp-blue); text-decoration: none; word-break: break-all;">${b.link3}</a></div>` : ''}
               </div>
             ` : ''}
           </div>

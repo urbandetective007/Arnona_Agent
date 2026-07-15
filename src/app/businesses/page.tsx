@@ -186,16 +186,30 @@ export default function BusinessesPage() {
                             })}
                             {[b.link1, b.link2, b.link3].filter(Boolean).length > 0 && (
                               <div style={{ gridColumn: '1/-1' }}>
-                                <span style={{ fontWeight: 600, color: 'var(--charcoal)' }}>קישורים:</span>
-                                <ul style={{ marginTop: 8, paddingRight: 20, color: 'var(--ink)' }}>
-                                  {[b.link1, b.link2, b.link3].map((link, idx) => link && (
-                                    <li key={idx} style={{ marginBottom: 6 }}>
-                                      <a href={link} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--hp-blue)', textDecoration: 'none', wordBreak: 'break-all' }}>
-                                        {link}
-                                      </a>
-                                    </li>
-                                  ))}
-                                </ul>
+                                {b.link1 && (
+                                  <div style={{ marginBottom: 8 }}>
+                                    <span style={{ fontWeight: 600, color: 'var(--charcoal)' }}>קישור 1: </span>
+                                    <a href={b.link1} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--hp-blue)', textDecoration: 'none', wordBreak: 'break-all' }}>
+                                      {b.link1}
+                                    </a>
+                                  </div>
+                                )}
+                                {b.link2 && (
+                                  <div style={{ marginBottom: 8 }}>
+                                    <span style={{ fontWeight: 600, color: 'var(--charcoal)' }}>קישור 2: </span>
+                                    <a href={b.link2} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--hp-blue)', textDecoration: 'none', wordBreak: 'break-all' }}>
+                                      {b.link2}
+                                    </a>
+                                  </div>
+                                )}
+                                {b.link3 && (
+                                  <div>
+                                    <span style={{ fontWeight: 600, color: 'var(--charcoal)' }}>קישור 3: </span>
+                                    <a href={b.link3} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--hp-blue)', textDecoration: 'none', wordBreak: 'break-all' }}>
+                                      {b.link3}
+                                    </a>
+                                  </div>
+                                )}
                               </div>
                             )}
                           </div>
