@@ -150,11 +150,12 @@ export default function JerusalemMap({ businesses }: JerusalemMapProps) {
                 <strong>סיבה לאי-אינדיקציה:</strong> ${b.noSuspicionReason}
               </p>
             ` : ''}
-            ${b.link ? `
+            ${[b.link1, b.link2, b.link3].filter(Boolean).length > 0 ? `
               <div style="margin-top: 8px; border-top: 1px solid var(--hairline); padding-top: 8px;">
-                <a href="${b.link}" target="_blank" rel="noopener noreferrer" style="color: var(--hp-blue); text-decoration: none; font-size: 12px; font-weight: 500;">
-                  מעבר למקור המידע ↗
-                </a>
+                <div style="font-size: 11px; color: var(--charcoal); margin-bottom: 4px;"><strong>קישורים:</strong></div>
+                <ul style="margin: 0; padding-right: 16px; list-style: disc;">
+                  ${[b.link1, b.link2, b.link3].map((link) => link ? `<li style="font-size: 11px; margin-bottom: 2px;"><a href="${link}" target="_blank" rel="noopener noreferrer" style="color: var(--hp-blue); text-decoration: none;">${link}</a></li>` : '').join('')}
+                </ul>
               </div>
             ` : ''}
           </div>
