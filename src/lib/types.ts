@@ -9,7 +9,9 @@ export interface Business {
   suspicionRating: string
   suspicionDetail: string
   noSuspicionReason: string
-  link: string
+  link1: string
+  link2: string
+  link3: string
   arnonaStatus: 'suspicious' | 'ok' | 'unknown'
   uploadDate: string
   uploadSessionId: string

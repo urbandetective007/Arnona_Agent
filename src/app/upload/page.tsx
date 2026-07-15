@@ -40,7 +40,7 @@ function parseFile(buffer: ArrayBuffer, sessionId: string, today: string): Busin
       return {
         id: `${sessionId}-${i}`,
         name: col(row, 'שם העסק'),
-        type: col(row, 'סוג העסק') || col(row, 'סוג עסק'),
+        type: col(row, 'סוג עסק'),
         address: col(row, 'כתובת'),
         matchedAddress: col(row, 'כתובת תואמת'),
         propertyOwners: col(row, 'שמות בעלי נכסים'),
@@ -48,7 +48,9 @@ function parseFile(buffer: ArrayBuffer, sessionId: string, today: string): Busin
         suspicionRating: rating,
         suspicionDetail: col(row, 'פירוט האינדיקציה'),
         noSuspicionReason: col(row, 'סיבת אי-אינדיקציה'),
-        link: col(row, 'מקור') || col(row, 'URL'),
+        link1: col(row, 'קישור 1'),
+        link2: col(row, 'קישור 2'),
+        link3: col(row, 'קישור 3'),
         arnonaStatus: mapStatus(rating),
         uploadDate: today,
         uploadSessionId: sessionId,
@@ -129,7 +131,7 @@ export default function UploadPage() {
         <p style={eyebrow}>ניתוח ארנונה · עיריית ירושלים</p>
         <h1 style={{ fontSize: 44, fontWeight: 500 }}>העלאת דוח חדש</h1>
         <p style={{ color: 'var(--charcoal)', marginTop: 6 }}>
-          קובץ בפורמט דוח נכסים לבדיקה — עמודות: שם העסק, סוג העסק, כתובת, דירוג אינדיקציה
+          קובץ בפורמט דוח נכסים לבדיקה — עמודות: שם העסק, כתובת, סוג עסק, דירוג אינדיקציה, קישורים
         </p>
       </section>
 

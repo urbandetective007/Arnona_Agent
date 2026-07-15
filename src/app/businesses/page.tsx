@@ -53,12 +53,14 @@ export default function BusinessesPage() {
       'סוג עסק':        b.type,
       'כתובת':          b.address,
       'כתובת תואמת':    b.matchedAddress,
-      'דירוג אינדיקציה':      b.suspicionRating,
-      'פירוט האינדיקציה':     b.suspicionDetail,
-      'סיבת אי-אינדיקציה':   b.noSuspicionReason,
+      'דירוג אינדיקציה': b.suspicionRating,
+      'פירוט האינדיקציה': b.suspicionDetail,
+      'סיבת אי-אינדיקציה': b.noSuspicionReason,
       'מספר יחידות':   b.unitCount,
       'בעלי נכסים':    b.propertyOwners,
-      'קישור':          b.link,
+      'קישור 1':       b.link1,
+      'קישור 2':       b.link2,
+      'קישור 3':       b.link3,
       'תאריך העלאה':   b.uploadDate,
     }))
     const ws = XLSX.utils.json_to_sheet(rows)
@@ -182,10 +184,18 @@ export default function BusinessesPage() {
                                 </div>
                               )
                             })}
-                            {b.link && (
+                            {[b.link1, b.link2, b.link3].filter(Boolean).length > 0 && (
                               <div style={{ gridColumn: '1/-1' }}>
-                                <span style={{ fontWeight: 600, color: 'var(--charcoal)' }}>קישור: </span>
-                                <a href={b.link} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--hp-blue)', textDecoration: 'none' }}>{b.link}</a>
+                                <span style={{ fontWeight: 600, color: 'var(--charcoal)' }}>קישורים:</span>
+                                <ul style={{ marginTop: 8, paddingRight: 20, color: 'var(--ink)' }}>
+                                  {[b.link1, b.link2, b.link3].map((link, idx) => link && (
+                                    <li key={idx} style={{ marginBottom: 6 }}>
+                                      <a href={link} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--hp-blue)', textDecoration: 'none', wordBreak: 'break-all' }}>
+                                        {link}
+                                      </a>
+                                    </li>
+                                  ))}
+                                </ul>
                               </div>
                             )}
                           </div>
