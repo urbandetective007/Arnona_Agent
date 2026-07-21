@@ -6,7 +6,7 @@ import * as XLSX from 'xlsx'
 import AppLayout from '@/components/AppLayout'
 import { useRequireAuth } from '@/lib/useAuth'
 import type { Business } from '@/lib/types'
-import { supabase, dbToBusiness } from '@/lib/supabase'
+import { supabase, dbToBusiness, businessToDb } from '@/lib/supabase'
 import { getCache, setCache, clearCache } from '@/lib/cache'
 
 const BADGE: Record<string, React.CSSProperties> = {
@@ -26,6 +26,7 @@ export default function BusinessesPage() {
   const [typeFilter,   setTypeFilter]   = useState('הכל')
   const [expanded,     setExpanded]     = useState<string | null>(null)
   const [loading,      setLoading]      = useState(true)
+  const [updating,     setUpdating]     = useState<string | null>(null)
 
   useEffect(() => {
     const cached = getCache<Business[]>('businesses')
@@ -62,11 +63,28 @@ export default function BusinessesPage() {
       'קישור 2':       b.link2,
       'קישור 3':       b.link3,
       'תאריך העלאה':   b.uploadDate,
+      'נשלח לסוקר':    b.sentToInspector ?? '',
     }))
     const ws = XLSX.utils.json_to_sheet(rows)
     const wb = XLSX.utils.book_new()
     XLSX.utils.book_append_sheet(wb, ws, 'נתונים')
     XLSX.writeFile(wb, 'נתוני_עסקים.xlsx')
+  }
+
+
+  async function updateInspectorStatus(id: string, status: 'נשלח לסוקר' | 'לא נשלח לסוקר') {
+    setUpdating(id)
+    try {
+      const business = businesses.find(b => b.id === id)
+      if (!business) return
+      business.sentToInspector = status
+      await supabase.from('businesses').update(businessToDb(business)).eq('id', id)
+      setBusinesses(prev => [...prev])
+      setCache('businesses', businesses)
+    } catch (error) {
+      console.error('Error updating inspector status:', error)
+    }
+    setUpdating(null)
   }
 
   async function deleteBusiness(id: string) {
