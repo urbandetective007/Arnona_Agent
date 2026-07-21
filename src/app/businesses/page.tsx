@@ -63,7 +63,7 @@ export default function BusinessesPage() {
       'קישור 2':       b.link2,
       'קישור 3':       b.link3,
       'תאריך העלאה':   b.uploadDate,
-      'נשלח לסוקר':    b.sentToInspector ?? '',
+      'נשלח לסוקר':    b.sentToInspector ?? 'לא נשלח לסוקר',
     }))
     const ws = XLSX.utils.json_to_sheet(rows)
     const wb = XLSX.utils.book_new()
@@ -174,6 +174,26 @@ export default function BusinessesPage() {
                       </td>
                       <td style={{ padding: '14px 16px', color: 'var(--graphite)' }}>{b.unitCount || '—'}</td>
                       <td style={{ padding: '14px 16px', color: 'var(--graphite)', fontSize: 12 }}>{b.uploadDate}</td>
+                      <td style={{ padding: '14px 16px' }} onClick={e => e.stopPropagation()}>
+                        <select
+                          value={b.sentToInspector ?? 'לא נשלח לסוקר'}
+                          onChange={e => updateInspectorStatus(b.id, e.target.value as 'נשלח לסוקר' | 'לא נשלח לסוקר')}
+                          disabled={updating === b.id}
+                          style={{
+                            padding: '5px 10px',
+                            borderRadius: 6,
+                            border: '1px solid var(--hairline)',
+                            fontSize: 13,
+                            fontWeight: 600,
+                            cursor: updating === b.id ? 'wait' : 'pointer',
+                            background: (b.sentToInspector ?? 'לא נשלח לסוקר') === 'נשלח לסוקר' ? '#f0fdf4' : '#fef2f2',
+                            color: (b.sentToInspector ?? 'לא נשלח לסוקר') === 'נשלח לסוקר' ? '#15803d' : '#b91c1c',
+                          }}
+                        >
+                          <option value='נשלח לסוקר'>נשלח לסוקר</option>
+                          <option value='לא נשלח לסוקר'>לא נשלח לסוקר</option>
+                        </select>
+                      </td>
                       <td style={{ padding: '14px 16px' }}>
                         <button onClick={e => { e.stopPropagation(); deleteBusiness(b.id) }}
                           style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--steel)', fontSize: 18, lineHeight: 1 }}>
