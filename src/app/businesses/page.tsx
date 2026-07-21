@@ -146,14 +146,14 @@ export default function BusinessesPage() {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
               <thead>
                 <tr style={{ background: 'var(--cloud)', borderBottom: '1px solid var(--hairline)' }}>
-                  {['', 'שם העסק', 'סוג עסק', 'כתובת', 'דירוג אינדיקציה', 'יחידות', 'תאריך', ''].map((h, i) => (
+                  {['', 'שם העסק', 'סוג עסק', 'כתובת', 'דירוג אינדיקציה', 'יחידות', 'תאריך', 'סוקר', ''].map((h, i) => (
                     <th key={i} style={{ textAlign: 'right', padding: '12px 16px', fontSize: 12, fontWeight: 600, color: 'var(--charcoal)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {filtered.length === 0 ? (
-                  <tr><td colSpan={8} style={{ textAlign: 'center', padding: '48px 0', color: 'var(--graphite)' }}>לא נמצאו תוצאות</td></tr>
+                  <tr><td colSpan={9} style={{ textAlign: 'center', padding: '48px 0', color: 'var(--graphite)' }}>לא נמצאו תוצאות</td></tr>
                 ) : filtered.map(b => (
                   <>
                     <tr
@@ -184,7 +184,7 @@ export default function BusinessesPage() {
 
                     {expanded === b.id && (
                       <tr key={`${b.id}-d`} style={{ background: 'var(--cloud)', borderBottom: '1px solid var(--hairline)' }}>
-                        <td colSpan={8} style={{ padding: '20px 48px' }}>
+                        <td colSpan={9} style={{ padding: '20px 48px' }}>
                           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 48px', fontSize: 14 }}>
                             {[
                               b.matchedAddress    && ['כתובת תואמת', b.matchedAddress],
