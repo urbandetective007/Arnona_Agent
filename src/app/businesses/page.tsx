@@ -19,6 +19,12 @@ const BADGE: Record<string, React.CSSProperties> = {
 
 const ALL_RATINGS = ['גבוה', 'בינוני', 'דרוש בדיקה', 'לא חשוד']
 
+const INSPECTOR_STATUS: Record<string, React.CSSProperties> = {
+  'נשלח לסוקר':              { background: '#f0fdf4', color: '#15803d' },
+  'לא נשלח לסוקר':           { background: '#fef2f2', color: '#b91c1c' },
+  'הוחלט לא לשלוח לסקר':     { background: '#fff7ed', color: '#c2410c' },
+}
+
 function EditField({ label, value, onChange, full }: { label: string, value: string, onChange: (v: string) => void, full?: boolean }) {
   return (
     <div style={full ? { gridColumn: '1/-1' } : {}}>
@@ -99,7 +105,7 @@ export default function BusinessesPage() {
     XLSX.writeFile(wb, 'נתוני_עסקים.xlsx')
   }
 
-  async function updateInspectorStatus(id: string, status: 'נשלח לסוקר' | 'לא נשלח לסוקר') {
+  async function updateInspectorStatus(id: string, status: 'נשלח לסוקר' | 'לא נשלח לסוקר' | 'הוחלט לא לשלוח לסקר') {
     setUpdating(id)
     try {
       const business = businesses.find(b => b.id === id)
@@ -255,7 +261,7 @@ export default function BusinessesPage() {
                       <td style={{ padding: '14px 16px' }} onClick={e => e.stopPropagation()}>
                         <select
                           value={b.sentToInspector ?? 'לא נשלח לסוקר'}
-                          onChange={e => updateInspectorStatus(b.id, e.target.value as 'נשלח לסוקר' | 'לא נשלח לסוקר')}
+                          onChange={e => updateInspectorStatus(b.id, e.target.value as 'נשלח לסוקר' | 'לא נשלח לסוקר' | 'הוחלט לא לשלוח לסקר')}
                           disabled={updating === b.id}
                           style={{
                             padding: '5px 10px',
@@ -264,12 +270,12 @@ export default function BusinessesPage() {
                             fontSize: 13,
                             fontWeight: 600,
                             cursor: updating === b.id ? 'wait' : 'pointer',
-                            background: (b.sentToInspector ?? 'לא נשלח לסוקר') === 'נשלח לסוקר' ? '#f0fdf4' : '#fef2f2',
-                            color: (b.sentToInspector ?? 'לא נשלח לסוקר') === 'נשלח לסוקר' ? '#15803d' : '#b91c1c',
+                            ...(INSPECTOR_STATUS[b.sentToInspector ?? 'לא נשלח לסוקר'] ?? INSPECTOR_STATUS['לא נשלח לסוקר']),
                           }}
                         >
                           <option value='נשלח לסוקר'>נשלח לסוקר</option>
                           <option value='לא נשלח לסוקר'>לא נשלח לסוקר</option>
+                          <option value='הוחלט לא לשלוח לסקר'>הוחלט לא לשלוח לסקר</option>
                         </select>
                       </td>
                       <td style={{ padding: '14px 16px', whiteSpace: 'nowrap' }}>
