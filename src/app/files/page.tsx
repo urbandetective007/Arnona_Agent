@@ -7,6 +7,7 @@ import { useRequireAuth } from '@/lib/useAuth'
 import type { Business, UploadSession } from '@/lib/types'
 import { supabase, dbToBusiness, dbToSession, sessionToDb } from '@/lib/supabase'
 import { getCache, setCache } from '@/lib/cache'
+import { formatDate } from '@/lib/dateUtils'
 
 const BADGE: Record<string, React.CSSProperties> = {
   'גבוה':        { background: '#fef2f2', color: '#b91c1c' },
@@ -116,7 +117,7 @@ export default function FilesPage() {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <div style={{ minWidth: 0 }}>
                       <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{session.fileName}</p>
-                      <p style={{ fontSize: 12, color: 'var(--graphite)', marginTop: 3 }}>{session.uploadDate}</p>
+                      <p style={{ fontSize: 12, color: 'var(--graphite)', marginTop: 3 }}>{formatDate(session.uploadDate)}</p>
                     </div>
                     <button onClick={e => { e.stopPropagation(); deleteSession(session.id) }}
                       style={{ background: 'none', border: 'none', color: 'var(--steel)', cursor: 'pointer', fontSize: 20, lineHeight: 1, flexShrink: 0 }}>

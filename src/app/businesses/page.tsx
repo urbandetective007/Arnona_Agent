@@ -9,6 +9,7 @@ import type { Business } from '@/lib/types'
 import { mapSuspicionRatingToStatus } from '@/lib/types'
 import { supabase, dbToBusiness, businessToDb } from '@/lib/supabase'
 import { getCache, setCache, clearCache } from '@/lib/cache'
+import { formatDate } from '@/lib/dateUtils'
 
 const BADGE: Record<string, React.CSSProperties> = {
   'גבוה':        { background: '#fef2f2', color: '#b91c1c' },
@@ -110,7 +111,7 @@ export default function BusinessesPage() {
       'קישור 1':       b.link1,
       'קישור 2':       b.link2,
       'קישור 3':       b.link3,
-      'תאריך העלאה':   b.uploadDate,
+      'תאריך העלאה':   formatDate(b.uploadDate),
       'נשלח לסוקר':    b.sentToInspector ?? 'לא נשלח לסוקר',
       'פירוט תוצאות הסקר': b.surveyResultDetail ?? '',
     }))
@@ -291,7 +292,7 @@ export default function BusinessesPage() {
                         ) : '—'}
                       </td>
                       <td style={{ padding: '14px 16px', color: 'var(--graphite)' }}>{b.unitCount || '—'}</td>
-                      <td style={{ padding: '14px 16px', color: 'var(--graphite)', fontSize: 12 }}>{b.uploadDate}</td>
+                      <td style={{ padding: '14px 16px', color: 'var(--graphite)', fontSize: 12 }}>{formatDate(b.uploadDate)}</td>
                       <td style={{ padding: '14px 16px' }} onClick={e => e.stopPropagation()}>
                         <select
                           value={b.sentToInspector ?? 'לא נשלח לסוקר'}

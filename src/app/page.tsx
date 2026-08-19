@@ -7,6 +7,7 @@ import { useRequireAuth } from '@/lib/useAuth'
 import type { Business, UploadSession } from '@/lib/types'
 import { supabase, dbToBusiness, dbToSession } from '@/lib/supabase'
 import { getCache, setCache } from '@/lib/cache'
+import { formatDate } from '@/lib/dateUtils'
 
 export default function Dashboard() {
   const ready = useRequireAuth()
@@ -147,7 +148,7 @@ export default function Dashboard() {
           <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
             {[
               { label: 'שם הקובץ',     value: lastSession.fileName    },
-              { label: 'תאריך',         value: lastSession.uploadDate  },
+              { label: 'תאריך',         value: formatDate(lastSession.uploadDate)  },
               { label: 'סה״כ עסקים',   value: String(lastSession.totalCount) },
               { label: 'אינדיקציות',    value: String(lastSession.suspiciousCount) },
               { label: 'ממוצע יחידות', value: avgUnits                },
