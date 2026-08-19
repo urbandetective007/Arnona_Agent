@@ -16,6 +16,7 @@ export interface Business {
   arnonaStatus: 'suspicious' | 'ok' | 'unknown'
   uploadDate: string
   uploadSessionId: string
+  sentToInspector: 'נשלח לסוקר' | 'לא נשלח לסוקר' | null
 }
 
 export interface UploadSession {

@@ -26,6 +26,7 @@ export function dbToBusiness(row: any): Business {
     arnonaStatus: row.arnona_status ?? 'unknown',
     uploadDate: row.upload_date ?? '',
     uploadSessionId: row.upload_session_id ?? '',
+    sentToInspector: row.sent_to_inspector ?? null,
   }
 }
 
@@ -48,6 +49,7 @@ export function businessToDb(b: Business) {
     arnona_status: b.arnonaStatus,
     upload_date: b.uploadDate,
     upload_session_id: b.uploadSessionId,
+    sent_to_inspector: b.sentToInspector,
   }
 }
 

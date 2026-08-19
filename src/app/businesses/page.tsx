@@ -48,6 +48,7 @@ export default function BusinessesPage() {
   const [editingId,    setEditingId]    = useState<string | null>(null)
   const [editForm,     setEditForm]     = useState<Partial<Business>>({})
   const [loading,      setLoading]      = useState(true)
+  const [updating,     setUpdating]     = useState<string | null>(null)
 
   useEffect(() => {
     const cached = getCache<Business[]>('businesses')
@@ -90,11 +91,30 @@ export default function BusinessesPage() {
       'קישור 2':       b.link2,
       'קישור 3':       b.link3,
       'תאריך העלאה':   b.uploadDate,
+      'נשלח לסוקר':    b.sentToInspector ?? 'לא נשלח לסוקר',
     }))
     const ws = XLSX.utils.json_to_sheet(rows)
     const wb = XLSX.utils.book_new()
     XLSX.utils.book_append_sheet(wb, ws, 'נתונים')
     XLSX.writeFile(wb, 'נתוני_עסקים.xlsx')
+  }
+
+  async function updateInspectorStatus(id: string, status: 'נשלח לסוקר' | 'לא נשלח לסוקר') {
+    setUpdating(id)
+    try {
+      const business = businesses.find(b => b.id === id)
+      if (!business) return
+      const updated = { ...business, sentToInspector: status }
+      await supabase.from('businesses').update(businessToDb(updated)).eq('id', id)
+      setBusinesses(prev => {
+        const next = prev.map(b => b.id === id ? updated : b)
+        setCache('businesses', next)
+        return next
+      })
+    } catch (error) {
+      console.error('Error updating inspector status:', error)
+    }
+    setUpdating(null)
   }
 
   async function deleteBusiness(id: string) {
@@ -203,14 +223,14 @@ export default function BusinessesPage() {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
               <thead>
                 <tr style={{ background: 'var(--cloud)', borderBottom: '1px solid var(--hairline)' }}>
-                  {['', 'שם העסק', 'סוג עסק', 'כתובת', 'שכונה', 'דירוג אינדיקציה', 'יחידות', 'תאריך', ''].map((h, i) => (
+                  {['', 'שם העסק', 'סוג עסק', 'כתובת', 'שכונה', 'דירוג אינדיקציה', 'יחידות', 'תאריך', 'סוקר', ''].map((h, i) => (
                     <th key={i} style={{ textAlign: 'right', padding: '12px 16px', fontSize: 12, fontWeight: 600, color: 'var(--charcoal)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {filtered.length === 0 ? (
-                  <tr><td colSpan={9} style={{ textAlign: 'center', padding: '48px 0', color: 'var(--graphite)' }}>לא נמצאו תוצאות</td></tr>
+                  <tr><td colSpan={10} style={{ textAlign: 'center', padding: '48px 0', color: 'var(--graphite)' }}>לא נמצאו תוצאות</td></tr>
                 ) : filtered.map(b => (
                   <>
                     <tr
@@ -232,6 +252,26 @@ export default function BusinessesPage() {
                       </td>
                       <td style={{ padding: '14px 16px', color: 'var(--graphite)' }}>{b.unitCount || '—'}</td>
                       <td style={{ padding: '14px 16px', color: 'var(--graphite)', fontSize: 12 }}>{b.uploadDate}</td>
+                      <td style={{ padding: '14px 16px' }} onClick={e => e.stopPropagation()}>
+                        <select
+                          value={b.sentToInspector ?? 'לא נשלח לסוקר'}
+                          onChange={e => updateInspectorStatus(b.id, e.target.value as 'נשלח לסוקר' | 'לא נשלח לסוקר')}
+                          disabled={updating === b.id}
+                          style={{
+                            padding: '5px 10px',
+                            borderRadius: 6,
+                            border: '1px solid var(--hairline)',
+                            fontSize: 13,
+                            fontWeight: 600,
+                            cursor: updating === b.id ? 'wait' : 'pointer',
+                            background: (b.sentToInspector ?? 'לא נשלח לסוקר') === 'נשלח לסוקר' ? '#f0fdf4' : '#fef2f2',
+                            color: (b.sentToInspector ?? 'לא נשלח לסוקר') === 'נשלח לסוקר' ? '#15803d' : '#b91c1c',
+                          }}
+                        >
+                          <option value='נשלח לסוקר'>נשלח לסוקר</option>
+                          <option value='לא נשלח לסוקר'>לא נשלח לסוקר</option>
+                        </select>
+                      </td>
                       <td style={{ padding: '14px 16px', whiteSpace: 'nowrap' }}>
                         <button onClick={e => { e.stopPropagation(); startEdit(b) }}
                           style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--steel)', fontSize: 14, lineHeight: 1, marginLeft: 10 }}
@@ -248,7 +288,7 @@ export default function BusinessesPage() {
 
                     {expanded === b.id && (
                       <tr key={`${b.id}-d`} style={{ background: 'var(--cloud)', borderBottom: '1px solid var(--hairline)' }}>
-                        <td colSpan={9} style={{ padding: '20px 48px' }}>
+                        <td colSpan={10} style={{ padding: '20px 48px' }}>
                           {editingId === b.id ? (
                             <div>
                               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px 48px', fontSize: 14 }}>

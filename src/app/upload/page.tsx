@@ -49,6 +49,7 @@ function parseFile(buffer: ArrayBuffer, sessionId: string, today: string): Busin
         arnonaStatus: mapSuspicionRatingToStatus(rating),
         uploadDate: today,
         uploadSessionId: sessionId,
+        sentToInspector: null,
       }
     })
     .filter(b => b.name)
