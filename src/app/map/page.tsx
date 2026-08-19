@@ -82,9 +82,7 @@ export default function MapPage() {
 
   // Mapped counts
   const highRisk = filtered.filter(b => b.suspicionRating === 'גבוה').length
-  const midRisk = filtered.filter(b => b.suspicionRating === 'בינוני').length
   const needsCheck = filtered.filter(b => b.suspicionRating === 'דרוש בדיקה').length
-  const notSuspect = filtered.filter(b => b.suspicionRating === 'לא חשוד').length
 
   return (
     <AppLayout>
@@ -132,19 +130,9 @@ export default function MapPage() {
             <span style={statVal}>{highRisk}</span>
           </div>
           <div style={statCard}>
-            <span style={{ ...indicator, background: '#f97316' }} />
-            <span style={statLabel}>אינדיקציה בינונית:</span>
-            <span style={statVal}>{midRisk}</span>
-          </div>
-          <div style={statCard}>
             <span style={{ ...indicator, background: '#3b82f6' }} />
             <span style={statLabel}>דרוש בדיקה:</span>
             <span style={statVal}>{needsCheck}</span>
-          </div>
-          <div style={statCard}>
-            <span style={{ ...indicator, background: '#22c55e' }} />
-            <span style={statLabel}>לא חשוד:</span>
-            <span style={statVal}>{notSuspect}</span>
           </div>
         </div>
       </section>
