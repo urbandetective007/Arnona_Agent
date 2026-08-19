@@ -83,6 +83,10 @@ export default function BusinessesPage() {
     [...new Set(businesses.map(b => b.neighborhood).filter(Boolean))].sort()
   , [businesses])
 
+  const ratingsInUse = useMemo(() =>
+    ALL_RATINGS.filter(r => businesses.some(b => b.suspicionRating === r))
+  , [businesses])
+
   const filtered = useMemo(() => businesses.filter(b => {
     const q = search.toLowerCase()
     const ms = !q || [b.name, b.address, b.type, b.neighborhood ?? '', b.propertyOwners ?? ''].some(s => s.toLowerCase().includes(q))
@@ -224,7 +228,7 @@ export default function BusinessesPage() {
         />
         <select value={ratingFilter} onChange={e => setRatingFilter(e.target.value)} style={inputStyle}>
           <option value="הכל">כל הדירוגים</option>
-          {ALL_RATINGS.map(r => <option key={r} value={r}>{r}</option>)}
+          {ratingsInUse.map(r => <option key={r} value={r}>{r}</option>)}
         </select>
         <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)} style={inputStyle}>
           <option value="הכל">כל סוגי העסק</option>

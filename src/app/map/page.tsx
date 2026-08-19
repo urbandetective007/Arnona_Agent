@@ -63,6 +63,11 @@ export default function MapPage() {
     [...new Set(businesses.map(b => b.neighborhood).filter(Boolean))].sort()
   , [businesses])
 
+  // Only offer ratings that at least one current business actually has
+  const ratingsInUse = useMemo(() =>
+    ALL_RATINGS.filter(r => businesses.some(b => b.suspicionRating === r))
+  , [businesses])
+
   // Filter businesses
   const filtered = useMemo(() => businesses.filter(b => {
     const q = search.toLowerCase()
@@ -98,7 +103,7 @@ export default function MapPage() {
         />
         <select value={ratingFilter} onChange={e => setRatingFilter(e.target.value)} style={inputStyle}>
           <option value="הכל">כל הדירוגים</option>
-          {ALL_RATINGS.map(r => <option key={r} value={r}>{r}</option>)}
+          {ratingsInUse.map(r => <option key={r} value={r}>{r}</option>)}
         </select>
         <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)} style={inputStyle}>
           <option value="הכל">כל סוגי העסק</option>
