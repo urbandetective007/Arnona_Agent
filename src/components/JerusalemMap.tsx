@@ -124,6 +124,11 @@ export default function JerusalemMap({ businesses }: JerusalemMapProps) {
             <p style="margin: 0 0 4px 0; font-size: 12px; color: var(--charcoal);">
               <strong>כתובת:</strong> ${b.address}
             </p>
+            ${b.neighborhood ? `
+            <p style="margin: 0 0 4px 0; font-size: 12px; color: var(--charcoal);">
+              <strong>שכונה:</strong> ${b.neighborhood}
+            </p>
+            ` : ''}
             <p style="margin: 0 0 6px 0; font-size: 12px; color: var(--charcoal);">
               <strong>כתובת עירייה:</strong> ${b.matchedAddress || 'לא נמצאה'}
             </p>

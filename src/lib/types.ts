@@ -3,6 +3,7 @@ export interface Business {
   name: string
   type: string
   address: string
+  neighborhood: string
   matchedAddress: string
   propertyOwners: string
   unitCount: string
@@ -27,4 +28,11 @@ export interface UploadSession {
   unknownCount: number
   skippedCount: number
   businessIds: string[]
+}
+
+export function mapSuspicionRatingToStatus(rating: string): Business['arnonaStatus'] {
+  const r = rating.trim()
+  if (r === 'גבוה' || r === 'בינוני') return 'suspicious'
+  if (r === 'לא חשוד') return 'ok'
+  return 'unknown'
 }

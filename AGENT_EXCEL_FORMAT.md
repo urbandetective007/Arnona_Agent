@@ -17,26 +17,31 @@ Your Excel file **MUST** have these columns in this order:
    - The physical address of the business location
    - Example: "אבא אחימאיר 11, ירושלים"
 
-3. **סוג עסק** (Business Type/Category) - *Optional*
+3. **שכונה** (Neighborhood) - *Optional*
+   - The Jerusalem neighborhood the business is located in, if known
+   - Example: "בית וגן", "נווה יעקב", "רחביה"
+   - Leave empty if unknown — do not guess
+
+4. **סוג עסק** (Business Type/Category) - *Optional*
    - The business category or sector
    - Example: "מרכז לימודים", "קפה", "משרד עו״ד"
 
-4. **דירוג אינדיקציה** (Suspicion Rating) - *Required - ALWAYS "גבוה"*
+5. **דירוג אינדיקציה** (Suspicion Rating) - *Required - ALWAYS "גבוה"*
    - **This field is mandatory and MUST always be "גבוה"** (High)
    - Do NOT use "בינוני", "לא חשוד", or "דרוש בדיקה"
    - The system requires this value to be present in every row
    - Example: "גבוה"
 
-5. **קישור 1** (Link 1) - *Optional*
+6. **קישור 1** (Link 1) - *Optional*
    - First source link (URL)
    - Can be any source that mentions the business
    - Example: "https://zips.co.il/עסקים/ירושלים"
 
-6. **קישור 2** (Link 2) - *Optional*
+7. **קישור 2** (Link 2) - *Optional*
    - Second source link (URL)
    - Example: "https://prog.co.il/threads/אספקט"
 
-7. **קישור 3** (Link 3) - *Optional*
+8. **קישור 3** (Link 3) - *Optional*
    - Third source link (URL)
    - Leave empty if not available
 
@@ -79,11 +84,11 @@ These fields are not parsed from the Excel file.
 
 ## Example Excel Structure
 
-| שם העסק | כתובת | סוג עסק | דירוג אינדיקציה | קישור 1 | קישור 2 | קישור 3 |
-|---------|-------|--------|-----------------|---------|---------|---------|
-| אספקט לימודי איור | אבא אחימאיר 11, ירושלים | מרכז לימודים | גבוה | https://zips.co.il/עסקים | https://prog.co.il/threads | |
-| קפה גורדון | דרך כעגל 5, ירושלים | קפה וברים | גבוה | https://waze.com/go/cafe | https://google.com/maps | https://example.com |
-| משרד נ. כהן | הטיבי 2, ירושלים | משרד עו״ד | גבוה | https://linkedin.com/company | | |
+| שם העסק | כתובת | שכונה | סוג עסק | דירוג אינדיקציה | קישור 1 | קישור 2 | קישור 3 |
+|---------|-------|-------|--------|-----------------|---------|---------|---------|
+| אספקט לימודי איור | אבא אחימאיר 11, ירושלים | קטמון | מרכז לימודים | גבוה | https://zips.co.il/עסקים | https://prog.co.il/threads | |
+| קפה גורדון | דרך כעגל 5, ירושלים | בקעה | קפה וברים | גבוה | https://waze.com/go/cafe | https://google.com/maps | https://example.com |
+| משרד נ. כהן | הטיבי 2, ירושלים | | משרד עו״ד | גבוה | https://linkedin.com/company | | |
 
 ---
 
@@ -94,7 +99,7 @@ These fields are not parsed from the Excel file.
 3. **Upload Method:** Go to https://urbandetective007.github.io/Arnona_Agent/businesses → Upload page
 4. **Validation:** The system will:
    - Check for "שם העסק" header
-   - Parse all 7 columns
+   - Parse all 8 columns
    - Validate that every row has a business name and address
    - Deduplicate by name + address combination
 
@@ -112,7 +117,7 @@ These fields are not parsed from the Excel file.
 - "https://example.com" ✓ | "example.com" ✗
 
 ❌ **Wrong:** Extra columns that break parsing
-- Create only the 7 columns above, no more
+- Create only the 8 columns above, no more
 
 ❌ **Wrong:** Blank rows in the middle
 - The system stops parsing when it hits an empty row

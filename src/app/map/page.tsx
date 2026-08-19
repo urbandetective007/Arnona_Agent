@@ -32,6 +32,7 @@ export default function MapPage() {
   const [search,       setSearch]       = useState('')
   const [ratingFilter, setRatingFilter] = useState('הכל')
   const [typeFilter,   setTypeFilter]   = useState('הכל')
+  const [neighborhoodFilter, setNeighborhoodFilter] = useState('הכל')
   const [loading,      setLoading]      = useState(true)
 
   // Load from cache or Supabase
@@ -57,13 +58,19 @@ export default function MapPage() {
     [...new Set(businesses.map(b => b.type).filter(Boolean))].sort()
   , [businesses])
 
+  // Extract unique neighborhoods
+  const neighborhoods = useMemo(() =>
+    [...new Set(businesses.map(b => b.neighborhood).filter(Boolean))].sort()
+  , [businesses])
+
   // Filter businesses
   const filtered = useMemo(() => businesses.filter(b => {
     const q = search.toLowerCase()
-    const ms = !q || [b.name, b.address, b.type, b.propertyOwners ?? ''].some(s => s.toLowerCase().includes(q))
+    const ms = !q || [b.name, b.address, b.type, b.neighborhood ?? '', b.propertyOwners ?? ''].some(s => s.toLowerCase().includes(q))
     return ms && (ratingFilter === 'הכל' || b.suspicionRating === ratingFilter)
               && (typeFilter   === 'הכל' || b.type === typeFilter)
-  }), [businesses, search, ratingFilter, typeFilter])
+              && (neighborhoodFilter === 'הכל' || b.neighborhood === neighborhoodFilter)
+  }), [businesses, search, ratingFilter, typeFilter, neighborhoodFilter])
 
   if (!ready) return null
   if (loading) return <AppLayout><Spinner /></AppLayout>
@@ -97,8 +104,12 @@ export default function MapPage() {
           <option value="הכל">כל סוגי העסק</option>
           {types.map(t => <option key={t} value={t}>{t}</option>)}
         </select>
-        {(search || ratingFilter !== 'הכל' || typeFilter !== 'הכל') && (
-          <button onClick={() => { setSearch(''); setRatingFilter('הכל'); setTypeFilter('הכל') }} style={btnOutlineInk}>
+        <select value={neighborhoodFilter} onChange={e => setNeighborhoodFilter(e.target.value)} style={inputStyle}>
+          <option value="הכל">כל השכונות</option>
+          {neighborhoods.map(n => <option key={n} value={n}>{n}</option>)}
+        </select>
+        {(search || ratingFilter !== 'הכל' || typeFilter !== 'הכל' || neighborhoodFilter !== 'הכל') && (
+          <button onClick={() => { setSearch(''); setRatingFilter('הכל'); setTypeFilter('הכל'); setNeighborhoodFilter('הכל') }} style={btnOutlineInk}>
             נקה סינון
           </button>
         )}

@@ -6,7 +6,8 @@ import * as XLSX from 'xlsx'
 import AppLayout from '@/components/AppLayout'
 import { useRequireAuth } from '@/lib/useAuth'
 import type { Business } from '@/lib/types'
-import { supabase, dbToBusiness } from '@/lib/supabase'
+import { mapSuspicionRatingToStatus } from '@/lib/types'
+import { supabase, dbToBusiness, businessToDb } from '@/lib/supabase'
 import { getCache, setCache, clearCache } from '@/lib/cache'
 
 const BADGE: Record<string, React.CSSProperties> = {
@@ -18,13 +19,34 @@ const BADGE: Record<string, React.CSSProperties> = {
 
 const ALL_RATINGS = ['גבוה', 'בינוני', 'דרוש בדיקה', 'לא חשוד']
 
+function EditField({ label, value, onChange, full }: { label: string, value: string, onChange: (v: string) => void, full?: boolean }) {
+  return (
+    <div style={full ? { gridColumn: '1/-1' } : {}}>
+      <label style={editLabel}>{label}</label>
+      <input value={value} onChange={e => onChange(e.target.value)} style={editInput} />
+    </div>
+  )
+}
+
+function EditTextArea({ label, value, onChange }: { label: string, value: string, onChange: (v: string) => void }) {
+  return (
+    <div style={{ gridColumn: '1/-1' }}>
+      <label style={editLabel}>{label}</label>
+      <textarea value={value} onChange={e => onChange(e.target.value)} rows={2} style={{ ...editInput, resize: 'vertical' as const }} />
+    </div>
+  )
+}
+
 export default function BusinessesPage() {
   const ready = useRequireAuth()
   const [businesses,   setBusinesses]   = useState<Business[]>([])
   const [search,       setSearch]       = useState('')
   const [ratingFilter, setRatingFilter] = useState('הכל')
   const [typeFilter,   setTypeFilter]   = useState('הכל')
+  const [neighborhoodFilter, setNeighborhoodFilter] = useState('הכל')
   const [expanded,     setExpanded]     = useState<string | null>(null)
+  const [editingId,    setEditingId]    = useState<string | null>(null)
+  const [editForm,     setEditForm]     = useState<Partial<Business>>({})
   const [loading,      setLoading]      = useState(true)
 
   useEffect(() => {
@@ -40,18 +62,24 @@ export default function BusinessesPage() {
     [...new Set(businesses.map(b => b.type).filter(Boolean))].sort()
   , [businesses])
 
+  const neighborhoods = useMemo(() =>
+    [...new Set(businesses.map(b => b.neighborhood).filter(Boolean))].sort()
+  , [businesses])
+
   const filtered = useMemo(() => businesses.filter(b => {
     const q = search.toLowerCase()
-    const ms = !q || [b.name, b.address, b.type, b.propertyOwners ?? ''].some(s => s.toLowerCase().includes(q))
+    const ms = !q || [b.name, b.address, b.type, b.neighborhood ?? '', b.propertyOwners ?? ''].some(s => s.toLowerCase().includes(q))
     return ms && (ratingFilter === 'הכל' || b.suspicionRating === ratingFilter)
               && (typeFilter   === 'הכל' || b.type === typeFilter)
-  }), [businesses, search, ratingFilter, typeFilter])
+              && (neighborhoodFilter === 'הכל' || b.neighborhood === neighborhoodFilter)
+  }), [businesses, search, ratingFilter, typeFilter, neighborhoodFilter])
 
   function exportToExcel() {
     const rows = filtered.map(b => ({
       'שם העסק':        b.name,
       'סוג עסק':        b.type,
       'כתובת':          b.address,
+      'שכונה':          b.neighborhood,
       'כתובת תואמת':    b.matchedAddress,
       'דירוג אינדיקציה': b.suspicionRating,
       'פירוט האינדיקציה': b.suspicionDetail,
@@ -78,6 +106,49 @@ export default function BusinessesPage() {
       return next
     })
     if (expanded === id) setExpanded(null)
+    if (editingId === id) { setEditingId(null); setEditForm({}) }
+  }
+
+  function startEdit(b: Business) {
+    setEditForm({ ...b })
+    setEditingId(b.id)
+    setExpanded(b.id)
+  }
+
+  function cancelEdit() {
+    setEditingId(null)
+    setEditForm({})
+  }
+
+  async function saveEdit() {
+    if (!editingId) return
+    const name = (editForm.name ?? '').trim()
+    const address = (editForm.address ?? '').trim()
+    if (!name || !address) {
+      alert('שם העסק וכתובת הם שדות חובה')
+      return
+    }
+    const original = businesses.find(b => b.id === editingId)
+    if (!original) return
+
+    const updated: Business = {
+      ...original,
+      ...editForm,
+      name,
+      address,
+      arnonaStatus: mapSuspicionRatingToStatus(editForm.suspicionRating ?? original.suspicionRating),
+    }
+
+    const { error } = await supabase.from('businesses').update(businessToDb(updated)).eq('id', editingId)
+    if (error) { alert(`שגיאה בשמירה: ${error.message}`); return }
+
+    setBusinesses(prev => {
+      const next = prev.map(b => b.id === editingId ? updated : b)
+      setCache('businesses', next)
+      return next
+    })
+    setEditingId(null)
+    setEditForm({})
   }
 
   if (!ready) return null
@@ -92,7 +163,7 @@ export default function BusinessesPage() {
 
       <section style={{ background: 'var(--cloud)', padding: '20px 48px', display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
         <input
-          type="text" placeholder="חיפוש לפי שם, כתובת, סוג עסק..."
+          type="text" placeholder="חיפוש לפי שם, כתובת, סוג עסק, שכונה..."
           value={search} onChange={e => setSearch(e.target.value)}
           style={{ ...inputStyle, flex: 1, minWidth: 200 }}
         />
@@ -104,8 +175,12 @@ export default function BusinessesPage() {
           <option value="הכל">כל סוגי העסק</option>
           {types.map(t => <option key={t} value={t}>{t}</option>)}
         </select>
-        {(search || ratingFilter !== 'הכל' || typeFilter !== 'הכל') && (
-          <button onClick={() => { setSearch(''); setRatingFilter('הכל'); setTypeFilter('הכל') }} style={btnOutlineInk}>
+        <select value={neighborhoodFilter} onChange={e => setNeighborhoodFilter(e.target.value)} style={inputStyle}>
+          <option value="הכל">כל השכונות</option>
+          {neighborhoods.map(n => <option key={n} value={n}>{n}</option>)}
+        </select>
+        {(search || ratingFilter !== 'הכל' || typeFilter !== 'הכל' || neighborhoodFilter !== 'הכל') && (
+          <button onClick={() => { setSearch(''); setRatingFilter('הכל'); setTypeFilter('הכל'); setNeighborhoodFilter('הכל') }} style={btnOutlineInk}>
             נקה סינון
           </button>
         )}
@@ -128,14 +203,14 @@ export default function BusinessesPage() {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
               <thead>
                 <tr style={{ background: 'var(--cloud)', borderBottom: '1px solid var(--hairline)' }}>
-                  {['', 'שם העסק', 'סוג עסק', 'כתובת', 'דירוג אינדיקציה', 'יחידות', 'תאריך', ''].map((h, i) => (
+                  {['', 'שם העסק', 'סוג עסק', 'כתובת', 'שכונה', 'דירוג אינדיקציה', 'יחידות', 'תאריך', ''].map((h, i) => (
                     <th key={i} style={{ textAlign: 'right', padding: '12px 16px', fontSize: 12, fontWeight: 600, color: 'var(--charcoal)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {filtered.length === 0 ? (
-                  <tr><td colSpan={8} style={{ textAlign: 'center', padding: '48px 0', color: 'var(--graphite)' }}>לא נמצאו תוצאות</td></tr>
+                  <tr><td colSpan={9} style={{ textAlign: 'center', padding: '48px 0', color: 'var(--graphite)' }}>לא נמצאו תוצאות</td></tr>
                 ) : filtered.map(b => (
                   <>
                     <tr
@@ -147,6 +222,7 @@ export default function BusinessesPage() {
                       <td style={{ padding: '14px 16px', fontWeight: 500, color: 'var(--ink)' }}>{b.name}</td>
                       <td style={{ padding: '14px 16px', color: 'var(--charcoal)' }}>{b.type}</td>
                       <td style={{ padding: '14px 16px', color: 'var(--charcoal)' }}>{b.address}</td>
+                      <td style={{ padding: '14px 16px', color: 'var(--charcoal)' }}>{b.neighborhood || '—'}</td>
                       <td style={{ padding: '14px 16px' }}>
                         {b.suspicionRating ? (
                           <span style={{ ...badge, ...(BADGE[b.suspicionRating] ?? { background: 'var(--cloud)', color: 'var(--charcoal)' }) }}>
@@ -156,9 +232,15 @@ export default function BusinessesPage() {
                       </td>
                       <td style={{ padding: '14px 16px', color: 'var(--graphite)' }}>{b.unitCount || '—'}</td>
                       <td style={{ padding: '14px 16px', color: 'var(--graphite)', fontSize: 12 }}>{b.uploadDate}</td>
-                      <td style={{ padding: '14px 16px' }}>
+                      <td style={{ padding: '14px 16px', whiteSpace: 'nowrap' }}>
+                        <button onClick={e => { e.stopPropagation(); startEdit(b) }}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--steel)', fontSize: 14, lineHeight: 1, marginLeft: 10 }}
+                          title="ערוך">
+                          ✎
+                        </button>
                         <button onClick={e => { e.stopPropagation(); deleteBusiness(b.id) }}
-                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--steel)', fontSize: 18, lineHeight: 1 }}>
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--steel)', fontSize: 18, lineHeight: 1 }}
+                          title="מחק">
                           ×
                         </button>
                       </td>
@@ -166,53 +248,91 @@ export default function BusinessesPage() {
 
                     {expanded === b.id && (
                       <tr key={`${b.id}-d`} style={{ background: 'var(--cloud)', borderBottom: '1px solid var(--hairline)' }}>
-                        <td colSpan={8} style={{ padding: '20px 48px' }}>
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 48px', fontSize: 14 }}>
-                            {[
-                              b.matchedAddress    && ['כתובת תואמת', b.matchedAddress],
-                              b.unitCount         && ['מספר יחידות', b.unitCount],
-                              b.suspicionDetail   && ['פירוט האינדיקציה', b.suspicionDetail],
-                              b.noSuspicionReason && ['סיבת אי-אינדיקציה', b.noSuspicionReason],
-                              b.propertyOwners    && ['בעלי נכסים', b.propertyOwners],
-                            ].filter(Boolean).map(pair => {
-                              const [label, value] = pair as [string, string]
-                              const full = ['פירוט האינדיקציה','סיבת אי-אינדיקציה','בעלי נכסים'].includes(label)
-                              return (
-                                <div key={label} style={full ? { gridColumn: '1/-1' } : {}}>
-                                  <span style={{ fontWeight: 600, color: 'var(--charcoal)' }}>{label}: </span>
-                                  <span style={{ color: 'var(--ink)' }}>{value}</span>
+                        <td colSpan={9} style={{ padding: '20px 48px' }}>
+                          {editingId === b.id ? (
+                            <div>
+                              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px 48px', fontSize: 14 }}>
+                                <EditField label="שם העסק"      value={editForm.name ?? ''}      onChange={v => setEditForm(f => ({ ...f, name: v }))} />
+                                <EditField label="סוג עסק"      value={editForm.type ?? ''}      onChange={v => setEditForm(f => ({ ...f, type: v }))} />
+                                <EditField label="כתובת"        value={editForm.address ?? ''}   onChange={v => setEditForm(f => ({ ...f, address: v }))} />
+                                <EditField label="שכונה"        value={editForm.neighborhood ?? ''} onChange={v => setEditForm(f => ({ ...f, neighborhood: v }))} />
+                                <EditField label="כתובת תואמת"  value={editForm.matchedAddress ?? ''} onChange={v => setEditForm(f => ({ ...f, matchedAddress: v }))} />
+                                <EditField label="מספר יחידות"  value={editForm.unitCount ?? ''} onChange={v => setEditForm(f => ({ ...f, unitCount: v }))} />
+                                <div>
+                                  <label style={editLabel}>דירוג אינדיקציה</label>
+                                  <select
+                                    value={editForm.suspicionRating ?? ''}
+                                    onChange={e => setEditForm(f => ({ ...f, suspicionRating: e.target.value }))}
+                                    style={editInput}
+                                  >
+                                    <option value="">—</option>
+                                    {ALL_RATINGS.map(r => <option key={r} value={r}>{r}</option>)}
+                                  </select>
                                 </div>
-                              )
-                            })}
-                            {[b.link1, b.link2, b.link3].filter(Boolean).length > 0 && (
-                              <div style={{ gridColumn: '1/-1' }}>
-                                {b.link1 && (
-                                  <div style={{ marginBottom: 8 }}>
-                                    <span style={{ fontWeight: 600, color: 'var(--charcoal)' }}>קישור 1: </span>
-                                    <a href={b.link1} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--hp-blue)', textDecoration: 'none', wordBreak: 'break-all' }}>
-                                      {b.link1}
-                                    </a>
-                                  </div>
-                                )}
-                                {b.link2 && (
-                                  <div style={{ marginBottom: 8 }}>
-                                    <span style={{ fontWeight: 600, color: 'var(--charcoal)' }}>קישור 2: </span>
-                                    <a href={b.link2} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--hp-blue)', textDecoration: 'none', wordBreak: 'break-all' }}>
-                                      {b.link2}
-                                    </a>
-                                  </div>
-                                )}
-                                {b.link3 && (
-                                  <div>
-                                    <span style={{ fontWeight: 600, color: 'var(--charcoal)' }}>קישור 3: </span>
-                                    <a href={b.link3} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--hp-blue)', textDecoration: 'none', wordBreak: 'break-all' }}>
-                                      {b.link3}
-                                    </a>
-                                  </div>
-                                )}
+                                <EditField label="קישור 1" value={editForm.link1 ?? ''} onChange={v => setEditForm(f => ({ ...f, link1: v }))} />
+                                <EditField label="קישור 2" value={editForm.link2 ?? ''} onChange={v => setEditForm(f => ({ ...f, link2: v }))} />
+                                <EditField label="קישור 3" value={editForm.link3 ?? ''} onChange={v => setEditForm(f => ({ ...f, link3: v }))} />
+                                <EditTextArea label="בעלי נכסים"      value={editForm.propertyOwners ?? ''}    onChange={v => setEditForm(f => ({ ...f, propertyOwners: v }))} />
+                                <EditTextArea label="פירוט האינדיקציה" value={editForm.suspicionDetail ?? ''}   onChange={v => setEditForm(f => ({ ...f, suspicionDetail: v }))} />
+                                <EditTextArea label="סיבת אי-אינדיקציה" value={editForm.noSuspicionReason ?? ''} onChange={v => setEditForm(f => ({ ...f, noSuspicionReason: v }))} />
                               </div>
-                            )}
-                          </div>
+                              <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+                                <button onClick={saveEdit} style={btnBlue2}>שמור</button>
+                                <button onClick={cancelEdit} style={btnOutlineInk}>ביטול</button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 48px', fontSize: 14 }}>
+                              {[
+                                b.neighborhood       && ['שכונה', b.neighborhood],
+                                b.matchedAddress    && ['כתובת תואמת', b.matchedAddress],
+                                b.unitCount         && ['מספר יחידות', b.unitCount],
+                                b.suspicionDetail   && ['פירוט האינדיקציה', b.suspicionDetail],
+                                b.noSuspicionReason && ['סיבת אי-אינדיקציה', b.noSuspicionReason],
+                                b.propertyOwners    && ['בעלי נכסים', b.propertyOwners],
+                              ].filter(Boolean).map(pair => {
+                                const [label, value] = pair as [string, string]
+                                const full = ['פירוט האינדיקציה','סיבת אי-אינדיקציה','בעלי נכסים'].includes(label)
+                                return (
+                                  <div key={label} style={full ? { gridColumn: '1/-1' } : {}}>
+                                    <span style={{ fontWeight: 600, color: 'var(--charcoal)' }}>{label}: </span>
+                                    <span style={{ color: 'var(--ink)' }}>{value}</span>
+                                  </div>
+                                )
+                              })}
+                              {[b.link1, b.link2, b.link3].filter(Boolean).length > 0 && (
+                                <div style={{ gridColumn: '1/-1' }}>
+                                  {b.link1 && (
+                                    <div style={{ marginBottom: 8 }}>
+                                      <span style={{ fontWeight: 600, color: 'var(--charcoal)' }}>קישור 1: </span>
+                                      <a href={b.link1} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--hp-blue)', textDecoration: 'none', wordBreak: 'break-all' }}>
+                                        {b.link1}
+                                      </a>
+                                    </div>
+                                  )}
+                                  {b.link2 && (
+                                    <div style={{ marginBottom: 8 }}>
+                                      <span style={{ fontWeight: 600, color: 'var(--charcoal)' }}>קישור 2: </span>
+                                      <a href={b.link2} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--hp-blue)', textDecoration: 'none', wordBreak: 'break-all' }}>
+                                        {b.link2}
+                                      </a>
+                                    </div>
+                                  )}
+                                  {b.link3 && (
+                                    <div>
+                                      <span style={{ fontWeight: 600, color: 'var(--charcoal)' }}>קישור 3: </span>
+                                      <a href={b.link3} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--hp-blue)', textDecoration: 'none', wordBreak: 'break-all' }}>
+                                        {b.link3}
+                                      </a>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                              <div style={{ gridColumn: '1/-1' }}>
+                                <button onClick={() => startEdit(b)} style={btnOutlineInk}>ערוך פרטי עסק</button>
+                              </div>
+                            </div>
+                          )}
                         </td>
                       </tr>
                     )}
@@ -242,5 +362,8 @@ const eyebrow: React.CSSProperties = { fontSize: 13, fontWeight: 500, color: 'va
 const badge:   React.CSSProperties = { borderRadius: 4, padding: '3px 10px', fontSize: 12, fontWeight: 600 }
 const inputStyle: React.CSSProperties = { height: 44, padding: '0 14px', border: '1px solid var(--steel)', borderRadius: 4, fontSize: 14, color: 'var(--ink)', background: 'var(--canvas)', outline: 'none' }
 const btnBlue: React.CSSProperties = { display: 'inline-block', height: 44, padding: '0 24px', lineHeight: '44px', background: 'var(--hp-blue)', color: '#fff', borderRadius: 4, fontSize: 14, fontWeight: 600, letterSpacing: '0.7px', textTransform: 'uppercase', textDecoration: 'none' }
+const btnBlue2: React.CSSProperties = { height: 40, padding: '0 20px', background: 'var(--hp-blue)', color: '#fff', border: 'none', borderRadius: 4, fontSize: 14, fontWeight: 600, letterSpacing: '0.7px', textTransform: 'uppercase', cursor: 'pointer', whiteSpace: 'nowrap' }
 const btnOutlineInk: React.CSSProperties = { height: 44, padding: '0 16px', background: 'var(--canvas)', color: 'var(--ink)', border: '1px solid var(--ink)', borderRadius: 4, fontSize: 14, fontWeight: 600, letterSpacing: '0.7px', textTransform: 'uppercase', cursor: 'pointer', whiteSpace: 'nowrap' }
 const btnExport: React.CSSProperties = { height: 44, padding: '0 18px', background: '#16a34a', color: '#fff', border: 'none', borderRadius: 4, fontSize: 14, fontWeight: 600, letterSpacing: '0.5px', cursor: 'pointer', whiteSpace: 'nowrap' }
+const editLabel: React.CSSProperties = { display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--charcoal)', marginBottom: 4 }
+const editInput: React.CSSProperties = { width: '100%', padding: '8px 10px', border: '1px solid var(--steel)', borderRadius: 4, fontSize: 14, color: 'var(--ink)', background: 'var(--canvas)', outline: 'none', boxSizing: 'border-box' as const }

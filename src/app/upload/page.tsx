@@ -8,16 +8,10 @@ import * as XLSX from 'xlsx'
 import { useRequireAuth } from '@/lib/useAuth'
 import AppLayout from '@/components/AppLayout'
 import type { Business, UploadSession } from '@/lib/types'
+import { mapSuspicionRatingToStatus } from '@/lib/types'
 import { supabase, businessToDb, sessionToDb } from '@/lib/supabase'
 
 type Status = 'idle' | 'processing' | 'done' | 'error'
-
-function mapStatus(rating: string): Business['arnonaStatus'] {
-  const r = rating.trim()
-  if (r === 'גבוה' || r === 'בינוני') return 'suspicious'
-  if (r === 'לא חשוד') return 'ok'
-  return 'unknown'
-}
 
 function parseFile(buffer: ArrayBuffer, sessionId: string, today: string): Business[] {
   const wb  = XLSX.read(buffer)
@@ -42,6 +36,7 @@ function parseFile(buffer: ArrayBuffer, sessionId: string, today: string): Busin
         name: col(row, 'שם העסק'),
         type: col(row, 'סוג עסק'),
         address: col(row, 'כתובת'),
+        neighborhood: col(row, 'שכונה'),
         matchedAddress: col(row, 'כתובת תואמת'),
         propertyOwners: col(row, 'שמות בעלי נכסים'),
         unitCount: col(row, "מס' דירות"),
@@ -51,7 +46,7 @@ function parseFile(buffer: ArrayBuffer, sessionId: string, today: string): Busin
         link1: col(row, 'קישור 1'),
         link2: col(row, 'קישור 2'),
         link3: col(row, 'קישור 3'),
-        arnonaStatus: mapStatus(rating),
+        arnonaStatus: mapSuspicionRatingToStatus(rating),
         uploadDate: today,
         uploadSessionId: sessionId,
       }
@@ -131,7 +126,7 @@ export default function UploadPage() {
         <p style={eyebrow}>ניתוח ארנונה · עיריית ירושלים</p>
         <h1 style={{ fontSize: 44, fontWeight: 500 }}>העלאת דוח חדש</h1>
         <p style={{ color: 'var(--charcoal)', marginTop: 6 }}>
-          קובץ בפורמט דוח נכסים לבדיקה — עמודות: שם העסק, כתובת, סוג עסק, דירוג אינדיקציה, קישורים
+          קובץ בפורמט דוח נכסים לבדיקה — עמודות: שם העסק, כתובת, שכונה, סוג עסק, דירוג אינדיקציה, קישורים
         </p>
       </section>
 
