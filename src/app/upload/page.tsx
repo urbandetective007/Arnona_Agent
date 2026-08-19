@@ -50,6 +50,7 @@ function parseFile(buffer: ArrayBuffer, sessionId: string, today: string): Busin
         uploadDate: today,
         uploadSessionId: sessionId,
         sentToInspector: null,
+        surveyResultDetail: null,
       }
     })
     .filter(b => b.name)

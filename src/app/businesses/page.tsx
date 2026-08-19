@@ -25,6 +25,16 @@ const INSPECTOR_STATUS: Record<string, React.CSSProperties> = {
   'הוחלט לא לשלוח לסקר':     { background: '#fff7ed', color: '#c2410c' },
 }
 
+const SURVEY_RESULT_OPTIONS = ['נמצא פער בסיווג', 'נמצא פער שטח + סיווג', 'נמצא פער שטח', 'לא נמצא עסק/פער שטח']
+
+const SURVEY_RESULT_STATUS: Record<string, React.CSSProperties> = {
+  '':                          { background: 'var(--cloud)', color: 'var(--charcoal)' },
+  'נמצא פער בסיווג':          { background: '#fff7ed', color: '#c2410c' },
+  'נמצא פער שטח + סיווג':     { background: '#fef2f2', color: '#b91c1c' },
+  'נמצא פער שטח':             { background: '#fefce8', color: '#a16207' },
+  'לא נמצא עסק/פער שטח':      { background: '#f0fdf4', color: '#15803d' },
+}
+
 function EditField({ label, value, onChange, full }: { label: string, value: string, onChange: (v: string) => void, full?: boolean }) {
   return (
     <div style={full ? { gridColumn: '1/-1' } : {}}>
@@ -98,6 +108,7 @@ export default function BusinessesPage() {
       'קישור 3':       b.link3,
       'תאריך העלאה':   b.uploadDate,
       'נשלח לסוקר':    b.sentToInspector ?? 'לא נשלח לסוקר',
+      'פירוט תוצאות הסקר': b.surveyResultDetail ?? '',
     }))
     const ws = XLSX.utils.json_to_sheet(rows)
     const wb = XLSX.utils.book_new()
@@ -119,6 +130,24 @@ export default function BusinessesPage() {
       })
     } catch (error) {
       console.error('Error updating inspector status:', error)
+    }
+    setUpdating(null)
+  }
+
+  async function updateSurveyResult(id: string, value: string) {
+    setUpdating(id)
+    try {
+      const business = businesses.find(b => b.id === id)
+      if (!business) return
+      const updated = { ...business, surveyResultDetail: (value || null) as Business['surveyResultDetail'] }
+      await supabase.from('businesses').update(businessToDb(updated)).eq('id', id)
+      setBusinesses(prev => {
+        const next = prev.map(b => b.id === id ? updated : b)
+        setCache('businesses', next)
+        return next
+      })
+    } catch (error) {
+      console.error('Error updating survey result:', error)
     }
     setUpdating(null)
   }
@@ -226,17 +255,18 @@ export default function BusinessesPage() {
           </div>
         ) : (
           <div style={{ border: '1px solid var(--hairline)', borderRadius: 16, overflow: 'hidden', boxShadow: '0 2px 8px rgba(26,26,26,0.08)' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+            <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+            <table style={{ width: '100%', minWidth: 'max-content', borderCollapse: 'collapse', fontSize: 14 }}>
               <thead>
                 <tr style={{ background: 'var(--cloud)', borderBottom: '1px solid var(--hairline)' }}>
-                  {['', 'שם העסק', 'סוג עסק', 'כתובת', 'שכונה', 'דירוג אינדיקציה', 'יחידות', 'תאריך', 'סוקר', ''].map((h, i) => (
-                    <th key={i} style={{ textAlign: 'right', padding: '12px 16px', fontSize: 12, fontWeight: 600, color: 'var(--charcoal)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{h}</th>
+                  {['', 'שם העסק', 'סוג עסק', 'כתובת', 'שכונה', 'דירוג אינדיקציה', 'יחידות', 'תאריך', 'סוקר', 'פירוט תוצאות הסקר', ''].map((h, i) => (
+                    <th key={i} style={{ textAlign: 'right', padding: '12px 16px', fontSize: 12, fontWeight: 600, color: 'var(--charcoal)', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap' }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {filtered.length === 0 ? (
-                  <tr><td colSpan={10} style={{ textAlign: 'center', padding: '48px 0', color: 'var(--graphite)' }}>לא נמצאו תוצאות</td></tr>
+                  <tr><td colSpan={11} style={{ textAlign: 'center', padding: '48px 0', color: 'var(--graphite)' }}>לא נמצאו תוצאות</td></tr>
                 ) : filtered.map(b => (
                   <>
                     <tr
@@ -278,6 +308,25 @@ export default function BusinessesPage() {
                           <option value='הוחלט לא לשלוח לסקר'>הוחלט לא לשלוח לסקר</option>
                         </select>
                       </td>
+                      <td style={{ padding: '14px 16px' }} onClick={e => e.stopPropagation()}>
+                        <select
+                          value={b.surveyResultDetail ?? ''}
+                          onChange={e => updateSurveyResult(b.id, e.target.value)}
+                          disabled={updating === b.id}
+                          style={{
+                            padding: '5px 10px',
+                            borderRadius: 6,
+                            border: '1px solid var(--hairline)',
+                            fontSize: 13,
+                            fontWeight: 600,
+                            cursor: updating === b.id ? 'wait' : 'pointer',
+                            ...(SURVEY_RESULT_STATUS[b.surveyResultDetail ?? ''] ?? SURVEY_RESULT_STATUS['']),
+                          }}
+                        >
+                          <option value=''>—</option>
+                          {SURVEY_RESULT_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+                        </select>
+                      </td>
                       <td style={{ padding: '14px 16px', whiteSpace: 'nowrap' }}>
                         <button onClick={e => { e.stopPropagation(); startEdit(b) }}
                           style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--steel)', fontSize: 14, lineHeight: 1, marginLeft: 10 }}
@@ -294,7 +343,7 @@ export default function BusinessesPage() {
 
                     {expanded === b.id && (
                       <tr key={`${b.id}-d`} style={{ background: 'var(--cloud)', borderBottom: '1px solid var(--hairline)' }}>
-                        <td colSpan={10} style={{ padding: '20px 48px' }}>
+                        <td colSpan={11} style={{ padding: '20px 48px' }}>
                           {editingId === b.id ? (
                             <div>
                               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px 48px', fontSize: 14 }}>
@@ -386,6 +435,7 @@ export default function BusinessesPage() {
                 ))}
               </tbody>
             </table>
+            </div>
             <div style={{ padding: '12px 24px', background: 'var(--cloud)', borderTop: '1px solid var(--hairline)', fontSize: 13, color: 'var(--graphite)' }}>
               מציג {filtered.length} מתוך {businesses.length} עסקים
             </div>
