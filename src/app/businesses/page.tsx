@@ -36,6 +36,33 @@ const SURVEY_RESULT_STATUS: Record<string, React.CSSProperties> = {
   'לא נמצא עסק/פער שטח':      { background: '#f0fdf4', color: '#15803d' },
 }
 
+function linkCount(b: Business): number {
+  return [b.link1, b.link2, b.link3].filter(Boolean).length
+}
+
+type SortKey = 'name' | 'type' | 'address' | 'neighborhood' | 'suspicionRating' | 'unitCount' | 'linksCount' | 'uploadDate' | 'sentToInspector' | 'surveyResultDetail'
+type SortDir = 'asc' | 'desc'
+
+const COLUMNS: { key: SortKey | null, label: string, accessor?: (b: Business) => string | number }[] = [
+  { key: null, label: '' },
+  { key: 'name', label: 'שם העסק', accessor: b => b.name },
+  { key: 'type', label: 'סוג עסק', accessor: b => b.type },
+  { key: 'address', label: 'כתובת', accessor: b => b.address },
+  { key: 'neighborhood', label: 'שכונה', accessor: b => b.neighborhood },
+  { key: 'linksCount', label: 'קישורים', accessor: b => linkCount(b) },
+  { key: 'suspicionRating', label: 'דירוג אינדיקציה', accessor: b => ALL_RATINGS.indexOf(b.suspicionRating) },
+  { key: 'unitCount', label: 'יחידות', accessor: b => parseFloat(b.unitCount) || 0 },
+  { key: 'uploadDate', label: 'תאריך', accessor: b => b.uploadDate },
+  { key: 'sentToInspector', label: 'סוקר', accessor: b => b.sentToInspector ?? '' },
+  { key: 'surveyResultDetail', label: 'פירוט תוצאות הסקר', accessor: b => b.surveyResultDetail ?? '' },
+  { key: null, label: '' },
+]
+
+function compareValues(a: string | number, b: string | number): number {
+  if (typeof a === 'number' && typeof b === 'number') return a - b
+  return String(a).localeCompare(String(b), 'he')
+}
+
 function EditField({ label, value, onChange, full }: { label: string, value: string, onChange: (v: string) => void, full?: boolean }) {
   return (
     <div style={full ? { gridColumn: '1/-1' } : {}}>
@@ -66,6 +93,8 @@ export default function BusinessesPage() {
   const [editForm,     setEditForm]     = useState<Partial<Business>>({})
   const [loading,      setLoading]      = useState(true)
   const [updating,     setUpdating]     = useState<string | null>(null)
+  const [sortKey,      setSortKey]      = useState<SortKey | null>(null)
+  const [sortDir,      setSortDir]      = useState<SortDir>('asc')
 
   useEffect(() => {
     const cached = getCache<Business[]>('businesses')
@@ -95,6 +124,25 @@ export default function BusinessesPage() {
               && (typeFilter   === 'הכל' || b.type === typeFilter)
               && (neighborhoodFilter === 'הכל' || b.neighborhood === neighborhoodFilter)
   }), [businesses, search, ratingFilter, typeFilter, neighborhoodFilter])
+
+  const sorted = useMemo(() => {
+    if (!sortKey) return filtered
+    const col = COLUMNS.find(c => c.key === sortKey)
+    if (!col?.accessor) return filtered
+    const accessor = col.accessor
+    const result = [...filtered].sort((a, b) => compareValues(accessor(a), accessor(b)))
+    if (sortDir === 'desc') result.reverse()
+    return result
+  }, [filtered, sortKey, sortDir])
+
+  function toggleSort(key: SortKey) {
+    if (sortKey === key) {
+      setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortKey(key)
+      setSortDir('asc')
+    }
+  }
 
   function exportToExcel() {
     const rows = filtered.map(b => ({
@@ -264,15 +312,25 @@ export default function BusinessesPage() {
             <table style={{ width: '100%', minWidth: 'max-content', borderCollapse: 'collapse', fontSize: 14 }}>
               <thead>
                 <tr style={{ background: 'var(--cloud)', borderBottom: '1px solid var(--hairline)' }}>
-                  {['', 'שם העסק', 'סוג עסק', 'כתובת', 'שכונה', 'דירוג אינדיקציה', 'יחידות', 'תאריך', 'סוקר', 'פירוט תוצאות הסקר', ''].map((h, i) => (
-                    <th key={i} style={{ textAlign: 'right', padding: '12px 16px', fontSize: 12, fontWeight: 600, color: 'var(--charcoal)', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap' }}>{h}</th>
+                  {COLUMNS.map((c, i) => (
+                    <th
+                      key={i}
+                      onClick={c.key ? () => toggleSort(c.key as SortKey) : undefined}
+                      style={{
+                        textAlign: 'right', padding: '12px 16px', fontSize: 12, fontWeight: 600, color: 'var(--charcoal)',
+                        textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap',
+                        cursor: c.key ? 'pointer' : 'default', userSelect: 'none',
+                      }}
+                    >
+                      {c.label}{sortKey === c.key && c.key && (sortDir === 'asc' ? ' ▲' : ' ▼')}
+                    </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {filtered.length === 0 ? (
-                  <tr><td colSpan={11} style={{ textAlign: 'center', padding: '48px 0', color: 'var(--graphite)' }}>לא נמצאו תוצאות</td></tr>
-                ) : filtered.map(b => (
+                {sorted.length === 0 ? (
+                  <tr><td colSpan={12} style={{ textAlign: 'center', padding: '48px 0', color: 'var(--graphite)' }}>לא נמצאו תוצאות</td></tr>
+                ) : sorted.map(b => (
                   <>
                     <tr
                       key={b.id}
@@ -284,6 +342,7 @@ export default function BusinessesPage() {
                       <td style={{ padding: '14px 16px', color: 'var(--charcoal)' }}>{b.type}</td>
                       <td style={{ padding: '14px 16px', color: 'var(--charcoal)' }}>{b.address}</td>
                       <td style={{ padding: '14px 16px', color: 'var(--charcoal)' }}>{b.neighborhood || '—'}</td>
+                      <td style={{ padding: '14px 16px', color: 'var(--graphite)' }}>{linkCount(b)}</td>
                       <td style={{ padding: '14px 16px' }}>
                         {b.suspicionRating ? (
                           <span style={{ ...badge, ...(BADGE[b.suspicionRating] ?? { background: 'var(--cloud)', color: 'var(--charcoal)' }) }}>
@@ -348,7 +407,7 @@ export default function BusinessesPage() {
 
                     {expanded === b.id && (
                       <tr key={`${b.id}-d`} style={{ background: 'var(--cloud)', borderBottom: '1px solid var(--hairline)' }}>
-                        <td colSpan={11} style={{ padding: '20px 48px' }}>
+                        <td colSpan={12} style={{ padding: '20px 48px' }}>
                           {editingId === b.id ? (
                             <div>
                               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px 48px', fontSize: 14 }}>
