@@ -10,6 +10,7 @@ import AppLayout from '@/components/AppLayout'
 import type { Business, UploadSession } from '@/lib/types'
 import { mapSuspicionRatingToStatus } from '@/lib/types'
 import { supabase, businessToDb, sessionToDb } from '@/lib/supabase'
+import { normalizeNeighborhood } from '@/lib/neighborhoods'
 
 type Status = 'idle' | 'processing' | 'done' | 'error'
 
@@ -36,7 +37,7 @@ function parseFile(buffer: ArrayBuffer, sessionId: string, today: string): Busin
         name: col(row, 'שם העסק'),
         type: col(row, 'סוג עסק'),
         address: col(row, 'כתובת'),
-        neighborhood: col(row, 'שכונה'),
+        neighborhood: normalizeNeighborhood(col(row, 'שכונה')) ?? '',
         matchedAddress: col(row, 'כתובת תואמת'),
         propertyOwners: col(row, 'שמות בעלי נכסים'),
         unitCount: col(row, "מס' דירות"),

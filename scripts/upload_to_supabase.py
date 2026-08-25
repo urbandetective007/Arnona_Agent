@@ -15,11 +15,27 @@ for pkg in ["openpyxl", "requests"]:
         subprocess.check_call([sys.executable, "-m", "pip", "install", pkg, "--quiet"])
 
 import argparse
+import json
 import openpyxl
 import requests
 import uuid
 import os
 from datetime import datetime, timezone
+
+_NEIGHBORHOODS_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "jerusalem_neighborhoods.json")
+with open(_NEIGHBORHOODS_PATH, encoding="utf-8") as _f:
+    _NEIGHBORHOOD_REGISTRY = json.load(_f)
+_CANONICAL_NEIGHBORHOODS = set(_NEIGHBORHOOD_REGISTRY["neighborhoods"])
+_NEIGHBORHOOD_ALIASES = _NEIGHBORHOOD_REGISTRY["aliases"]
+_NEIGHBORHOOD_CLEAR_VALUES = set(_NEIGHBORHOOD_REGISTRY["clearValues"])
+
+def normalize_neighborhood(raw):
+    v = (raw or "").strip()
+    if not v or v in _NEIGHBORHOOD_CLEAR_VALUES:
+        return None
+    if v in _CANONICAL_NEIGHBORHOODS:
+        return v
+    return _NEIGHBORHOOD_ALIASES.get(v)
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--report", required=True)
@@ -102,6 +118,7 @@ for row in ws.iter_rows(min_row=header_row_idx + 1, values_only=True):
         "name":                name,
         "type":                col(row, "סוג העסק"),
         "address":             col(row, "כתובת"),
+        "neighborhood":        normalize_neighborhood(col(row, "שכונה")),
         "suspicion_rating":    col(row, "דירוג אינדיקציה"),
         "matched_address":     col(row, "כתובת תואמת"),
         "property_owners":     col(row, "שמות בעלי נכסים"),
@@ -157,6 +174,7 @@ for i in range(0, len(new_records), BATCH):
             "name":                r["name"],
             "type":                r["type"],
             "address":             r["address"],
+            "neighborhood":        r["neighborhood"],
             "matched_address":     r["matched_address"],
             "property_owners":     r["property_owners"],
             "unit_count":          r["unit_count"],
