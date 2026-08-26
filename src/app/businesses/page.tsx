@@ -442,11 +442,10 @@ export default function BusinessesPage() {
                                 <div>
                                   <label style={editLabel}>דירוג אינדיקציה</label>
                                   <select
-                                    value={editForm.suspicionRating ?? ''}
+                                    value={editForm.suspicionRating || 'דרוש בדיקה'}
                                     onChange={e => setEditForm(f => ({ ...f, suspicionRating: e.target.value }))}
                                     style={editInput}
                                   >
-                                    <option value="">—</option>
                                     {ALL_RATINGS.map(r => <option key={r} value={r}>{r}</option>)}
                                   </select>
                                 </div>

@@ -31,7 +31,7 @@ function parseFile(buffer: ArrayBuffer, sessionId: string, today: string): Busin
   return raw.slice(hIdx + 1)
     .filter(row => row.some(c => String(c).trim()))
     .map((row, i) => {
-      const rating = col(row, 'דירוג אינדיקציה')
+      const rating = col(row, 'דירוג אינדיקציה') || 'דרוש בדיקה'
       return {
         id: `${sessionId}-${i}`,
         name: col(row, 'שם העסק'),
