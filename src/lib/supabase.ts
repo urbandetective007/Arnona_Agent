@@ -17,7 +17,7 @@ export function dbToBusiness(row: any): Business {
     matchedAddress: row.matched_address ?? '',
     propertyOwners: row.property_owners ?? '',
     unitCount: row.unit_count ?? '',
-    suspicionRating: row.suspicion_rating ?? '',
+    suspicionRating: row.suspicion_rating || 'דרוש בדיקה',
     suspicionDetail: row.suspicion_detail ?? '',
     noSuspicionReason: row.no_suspicion_reason ?? '',
     link1: row.link1 ?? '',
