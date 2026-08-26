@@ -28,6 +28,8 @@ const INSPECTOR_STATUS: Record<string, React.CSSProperties> = {
 
 const SURVEY_RESULT_OPTIONS = ['נמצא פער בסיווג', 'נמצא פער שטח + סיווג', 'נמצא פער שטח', 'לא נמצא עסק/פער שטח']
 
+const INSPECTOR_STATUS_OPTIONS = ['נשלח לסוקר', 'לא נשלח לסוקר', 'הוחלט לא לשלוח לסקר']
+
 const SURVEY_RESULT_STATUS: Record<string, React.CSSProperties> = {
   '':                          { background: 'var(--cloud)', color: 'var(--charcoal)' },
   'נמצא פער בסיווג':          { background: '#fff7ed', color: '#c2410c' },
@@ -88,6 +90,8 @@ export default function BusinessesPage() {
   const [ratingFilter, setRatingFilter] = useState('הכל')
   const [typeFilter,   setTypeFilter]   = useState('הכל')
   const [neighborhoodFilter, setNeighborhoodFilter] = useState('הכל')
+  const [inspectorFilter, setInspectorFilter] = useState('הכל')
+  const [filtersOpen,  setFiltersOpen]  = useState(false)
   const [expanded,     setExpanded]     = useState<string | null>(null)
   const [editingId,    setEditingId]    = useState<string | null>(null)
   const [editForm,     setEditForm]     = useState<Partial<Business>>({})
@@ -123,7 +127,10 @@ export default function BusinessesPage() {
     return ms && (ratingFilter === 'הכל' || b.suspicionRating === ratingFilter)
               && (typeFilter   === 'הכל' || b.type === typeFilter)
               && (neighborhoodFilter === 'הכל' || b.neighborhood === neighborhoodFilter)
-  }), [businesses, search, ratingFilter, typeFilter, neighborhoodFilter])
+              && (inspectorFilter === 'הכל' || (b.sentToInspector ?? 'לא נשלח לסוקר') === inspectorFilter)
+  }), [businesses, search, ratingFilter, typeFilter, neighborhoodFilter, inspectorFilter])
+
+  const activeFilterCount = [ratingFilter, typeFilter, neighborhoodFilter, inspectorFilter].filter(f => f !== 'הכל').length
 
   const sorted = useMemo(() => {
     if (!sortKey) return filtered
@@ -269,35 +276,50 @@ export default function BusinessesPage() {
         <h1 style={{ fontSize: 44, fontWeight: 500 }}>כלל הנתונים</h1>
       </section>
 
-      <section style={{ background: 'var(--cloud)', padding: '20px 48px', display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
-        <input
-          type="text" placeholder="חיפוש לפי שם, כתובת, סוג עסק, שכונה..."
-          value={search} onChange={e => setSearch(e.target.value)}
-          style={{ ...inputStyle, flex: 1, minWidth: 200 }}
-        />
-        <select value={ratingFilter} onChange={e => setRatingFilter(e.target.value)} style={inputStyle}>
-          <option value="הכל">כל הדירוגים</option>
-          {ratingsInUse.map(r => <option key={r} value={r}>{r}</option>)}
-        </select>
-        <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)} style={inputStyle}>
-          <option value="הכל">כל סוגי העסק</option>
-          {types.map(t => <option key={t} value={t}>{t}</option>)}
-        </select>
-        <select value={neighborhoodFilter} onChange={e => setNeighborhoodFilter(e.target.value)} style={inputStyle}>
-          <option value="הכל">כל השכונות</option>
-          {neighborhoods.map(n => <option key={n} value={n}>{n}</option>)}
-        </select>
-        {(search || ratingFilter !== 'הכל' || typeFilter !== 'הכל' || neighborhoodFilter !== 'הכל') && (
-          <button onClick={() => { setSearch(''); setRatingFilter('הכל'); setTypeFilter('הכל'); setNeighborhoodFilter('הכל') }} style={btnOutlineInk}>
-            נקה סינון
+      <section style={{ background: 'var(--cloud)', padding: '20px 48px', borderBottom: filtersOpen ? 'none' : undefined }}>
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+          <input
+            type="text" placeholder="חיפוש לפי שם, כתובת, סוג עסק, שכונה..."
+            value={search} onChange={e => setSearch(e.target.value)}
+            style={{ ...inputStyle, flex: 1, minWidth: 200 }}
+          />
+          <button onClick={() => setFiltersOpen(o => !o)} style={{ ...btnOutlineInk, display: 'flex', alignItems: 'center', gap: 6 }}>
+            בחר סננים{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
+            <span style={{ fontSize: 10, transition: 'transform 0.15s', transform: filtersOpen ? 'rotate(180deg)' : 'none' }}>▾</span>
           </button>
+          <span style={{ marginRight: 'auto', fontSize: 13, color: 'var(--graphite)', whiteSpace: 'nowrap' }}>
+            {filtered.length} מתוך {businesses.length} עסקים
+          </span>
+          <button onClick={exportToExcel} style={btnExport} title={`ייצוא ${filtered.length} עסקים לאקסל`}>
+            ייצוא לאקסל ↓
+          </button>
+        </div>
+
+        {filtersOpen && (
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center', marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--hairline)' }}>
+            <select value={ratingFilter} onChange={e => setRatingFilter(e.target.value)} style={inputStyle}>
+              <option value="הכל">כל הדירוגים</option>
+              {ratingsInUse.map(r => <option key={r} value={r}>{r}</option>)}
+            </select>
+            <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)} style={inputStyle}>
+              <option value="הכל">כל סוגי העסק</option>
+              {types.map(t => <option key={t} value={t}>{t}</option>)}
+            </select>
+            <select value={neighborhoodFilter} onChange={e => setNeighborhoodFilter(e.target.value)} style={inputStyle}>
+              <option value="הכל">כל השכונות</option>
+              {neighborhoods.map(n => <option key={n} value={n}>{n}</option>)}
+            </select>
+            <select value={inspectorFilter} onChange={e => setInspectorFilter(e.target.value)} style={inputStyle}>
+              <option value="הכל">כל סטטוסי הסוקר</option>
+              {INSPECTOR_STATUS_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+            {(search || activeFilterCount > 0) && (
+              <button onClick={() => { setSearch(''); setRatingFilter('הכל'); setTypeFilter('הכל'); setNeighborhoodFilter('הכל'); setInspectorFilter('הכל') }} style={btnOutlineInk}>
+                נקה סינון
+              </button>
+            )}
+          </div>
         )}
-        <span style={{ marginRight: 'auto', fontSize: 13, color: 'var(--graphite)', whiteSpace: 'nowrap' }}>
-          {filtered.length} מתוך {businesses.length} עסקים
-        </span>
-        <button onClick={exportToExcel} style={btnExport} title={`ייצוא ${filtered.length} עסקים לאקסל`}>
-          ייצוא לאקסל ↓
-        </button>
       </section>
 
       <section style={{ background: 'var(--canvas)', padding: '32px 48px 80px' }}>

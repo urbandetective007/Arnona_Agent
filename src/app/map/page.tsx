@@ -33,6 +33,7 @@ export default function MapPage() {
   const [ratingFilter, setRatingFilter] = useState('הכל')
   const [typeFilter,   setTypeFilter]   = useState('הכל')
   const [neighborhoodFilter, setNeighborhoodFilter] = useState('הכל')
+  const [filtersOpen,  setFiltersOpen]  = useState(false)
   const [loading,      setLoading]      = useState(true)
 
   // Load from cache or Supabase
@@ -77,6 +78,8 @@ export default function MapPage() {
               && (neighborhoodFilter === 'הכל' || b.neighborhood === neighborhoodFilter)
   }), [businesses, search, ratingFilter, typeFilter, neighborhoodFilter])
 
+  const activeFilterCount = [ratingFilter, typeFilter, neighborhoodFilter].filter(f => f !== 'הכל').length
+
   if (!ready) return null
   if (loading) return <AppLayout><Spinner /></AppLayout>
 
@@ -93,32 +96,43 @@ export default function MapPage() {
       </section>
 
       {/* Filter Section */}
-      <section style={{ background: 'var(--cloud)', padding: '20px 48px', display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
-        <input
-          type="text" placeholder="חיפוש לפי שם, כתובת, סוג עסק..."
-          value={search} onChange={e => setSearch(e.target.value)}
-          style={{ ...inputStyle, flex: 1, minWidth: 200 }}
-        />
-        <select value={ratingFilter} onChange={e => setRatingFilter(e.target.value)} style={inputStyle}>
-          <option value="הכל">כל הדירוגים</option>
-          {ratingsInUse.map(r => <option key={r} value={r}>{r}</option>)}
-        </select>
-        <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)} style={inputStyle}>
-          <option value="הכל">כל סוגי העסק</option>
-          {types.map(t => <option key={t} value={t}>{t}</option>)}
-        </select>
-        <select value={neighborhoodFilter} onChange={e => setNeighborhoodFilter(e.target.value)} style={inputStyle}>
-          <option value="הכל">כל השכונות</option>
-          {neighborhoods.map(n => <option key={n} value={n}>{n}</option>)}
-        </select>
-        {(search || ratingFilter !== 'הכל' || typeFilter !== 'הכל' || neighborhoodFilter !== 'הכל') && (
-          <button onClick={() => { setSearch(''); setRatingFilter('הכל'); setTypeFilter('הכל'); setNeighborhoodFilter('הכל') }} style={btnOutlineInk}>
-            נקה סינון
+      <section style={{ background: 'var(--cloud)', padding: '20px 48px' }}>
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+          <input
+            type="text" placeholder="חיפוש לפי שם, כתובת, סוג עסק..."
+            value={search} onChange={e => setSearch(e.target.value)}
+            style={{ ...inputStyle, flex: 1, minWidth: 200 }}
+          />
+          <button onClick={() => setFiltersOpen(o => !o)} style={{ ...btnOutlineInk, display: 'flex', alignItems: 'center', gap: 6 }}>
+            בחר סננים{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
+            <span style={{ fontSize: 10, transition: 'transform 0.15s', transform: filtersOpen ? 'rotate(180deg)' : 'none' }}>▾</span>
           </button>
+          <span style={{ marginRight: 'auto', fontSize: 13, color: 'var(--graphite)', whiteSpace: 'nowrap' }}>
+            מציג {filtered.length} מתוך {businesses.length} עסקים
+          </span>
+        </div>
+
+        {filtersOpen && (
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center', marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--hairline)' }}>
+            <select value={ratingFilter} onChange={e => setRatingFilter(e.target.value)} style={inputStyle}>
+              <option value="הכל">כל הדירוגים</option>
+              {ratingsInUse.map(r => <option key={r} value={r}>{r}</option>)}
+            </select>
+            <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)} style={inputStyle}>
+              <option value="הכל">כל סוגי העסק</option>
+              {types.map(t => <option key={t} value={t}>{t}</option>)}
+            </select>
+            <select value={neighborhoodFilter} onChange={e => setNeighborhoodFilter(e.target.value)} style={inputStyle}>
+              <option value="הכל">כל השכונות</option>
+              {neighborhoods.map(n => <option key={n} value={n}>{n}</option>)}
+            </select>
+            {(search || activeFilterCount > 0) && (
+              <button onClick={() => { setSearch(''); setRatingFilter('הכל'); setTypeFilter('הכל'); setNeighborhoodFilter('הכל') }} style={btnOutlineInk}>
+                נקה סינון
+              </button>
+            )}
+          </div>
         )}
-        <span style={{ marginRight: 'auto', fontSize: 13, color: 'var(--graphite)', whiteSpace: 'nowrap' }}>
-          מציג {filtered.length} מתוך {businesses.length} עסקים
-        </span>
       </section>
 
       {/* Stats Summary Grid */}
