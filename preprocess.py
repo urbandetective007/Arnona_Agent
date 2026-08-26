@@ -17,7 +17,7 @@ HEADERS = {
     "Content-Type": "application/json",
 }
 
-PUBLIC_DIR = r"C:\Users\LENOVO\Desktop\שגרה ניסיונית\my-app\public"
+PUBLIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "public")
 CACHE_FILE = os.path.join(PUBLIC_DIR, "geocoded_addresses.json")
 
 PREFIXES = ['רחוב ', 'רח\' ', 'שדרות ', 'שד\' ', 'שד ', 'סמטת ', 'כיכר ', 'גן ', 'מעלה ', 'מורד ']

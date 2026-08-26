@@ -18,6 +18,47 @@ function getCleanAddress(address: string): string {
   return norm.replace(/\s+(דירה|דיר|דר|יח'|יחידה|קומה)\s+\d+.*/i, '').trim()
 }
 
+// Fallback for addresses missing from the static geocoded_addresses.json cache —
+// geocode live via Nominatim and remember the result in this browser, so the
+// map never silently drops a business just because the static cache is stale.
+const LIVE_GEOCODE_CACHE_KEY = 'arnona_live_geocode_cache_v1'
+const NOMINATIM_DELAY_MS = 1100 // respect Nominatim's ~1 req/sec usage policy
+
+type Coords = { lat: number; lon: number }
+
+function loadLiveGeocodeCache(): Record<string, Coords | null> {
+  if (typeof window === 'undefined') return {}
+  try {
+    const raw = localStorage.getItem(LIVE_GEOCODE_CACHE_KEY)
+    return raw ? JSON.parse(raw) : {}
+  } catch {
+    return {}
+  }
+}
+
+function saveLiveGeocodeCache(cache: Record<string, Coords | null>) {
+  if (typeof window === 'undefined') return
+  try { localStorage.setItem(LIVE_GEOCODE_CACHE_KEY, JSON.stringify(cache)) } catch {}
+}
+
+async function geocodeLive(cleanAddress: string): Promise<Coords | null> {
+  const query = cleanAddress.includes('ירושלים') ? cleanAddress : `${cleanAddress}, ירושלים`
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(query)}`,
+      { headers: { 'Accept-Language': 'he,en;q=0.9' } }
+    )
+    if (!res.ok) return null
+    const data = await res.json()
+    if (Array.isArray(data) && data[0]) {
+      return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) }
+    }
+    return null
+  } catch {
+    return null
+  }
+}
+
 // Suspicion colors mapping
 const SUSPICION_COLORS: Record<string, string> = {
   'גבוה': '#ef4444',      // Red
@@ -50,6 +91,50 @@ export default function JerusalemMap({ businesses }: JerusalemMapProps) {
   
   const [coordsCache, setCoordsCache] = useState<Record<string, { lat: number; lon: number } | null>>({})
   const [cacheLoaded, setCacheLoaded] = useState(false)
+  const [liveCache, setLiveCache] = useState<Record<string, Coords | null>>({})
+  const geocodingQueueRef = useRef<Set<string>>(new Set())
+  const hasFitBoundsRef = useRef(false)
+
+  // Load any previously live-geocoded addresses remembered in this browser
+  useEffect(() => {
+    setLiveCache(loadLiveGeocodeCache())
+  }, [])
+
+  // Fallback: geocode any address missing from BOTH the static cache and the
+  // live cache, one at a time (Nominatim rate limit), so no business is ever
+  // silently dropped just because the static geocoded_addresses.json is stale.
+  useEffect(() => {
+    if (!cacheLoaded) return
+
+    const toQueue: string[] = []
+    businesses.forEach(b => {
+      const cleanAddr = getCleanAddress(b.address)
+      if (!cleanAddr) return
+      if (cleanAddr in coordsCache) return
+      if (cleanAddr in liveCache) return
+      if (geocodingQueueRef.current.has(cleanAddr)) return
+      toQueue.push(cleanAddr)
+    })
+    if (toQueue.length === 0) return
+    toQueue.forEach(a => geocodingQueueRef.current.add(a))
+
+    let cancelled = false
+    ;(async () => {
+      for (const addr of toQueue) {
+        if (cancelled) break
+        const result = await geocodeLive(addr)
+        if (cancelled) break
+        setLiveCache(prev => {
+          const next = { ...prev, [addr]: result }
+          saveLiveGeocodeCache(next)
+          return next
+        })
+        await new Promise(r => setTimeout(r, NOMINATIM_DELAY_MS))
+      }
+    })()
+
+    return () => { cancelled = true }
+  }, [businesses, coordsCache, liveCache, cacheLoaded])
 
   // Load coordinates cache once on mount
   useEffect(() => {
@@ -109,7 +194,7 @@ export default function JerusalemMap({ businesses }: JerusalemMapProps) {
 
     businesses.forEach(b => {
       const cleanAddr = getCleanAddress(b.address)
-      const coords = coordsCache[cleanAddr]
+      const coords = coordsCache[cleanAddr] ?? liveCache[cleanAddr]
 
       if (coords && coords.lat && coords.lon) {
         const color = SUSPICION_COLORS[b.suspicionRating] || DEFAULT_COLOR
@@ -173,14 +258,16 @@ export default function JerusalemMap({ businesses }: JerusalemMapProps) {
       }
     })
 
-    // Auto fit map bounds if we have markers
-    if (bounds.length > 0 && mapInstanceRef.current) {
+    // Auto fit map bounds once, the first time we have markers — avoid
+    // re-zooming every time a straggling live-geocoded marker trickles in
+    if (bounds.length > 0 && mapInstanceRef.current && !hasFitBoundsRef.current) {
       mapInstanceRef.current.fitBounds(L.latLngBounds(bounds), {
         padding: [50, 50],
         maxZoom: 16,
       })
+      hasFitBoundsRef.current = true
     }
-  }, [businesses, coordsCache, cacheLoaded])
+  }, [businesses, coordsCache, liveCache, cacheLoaded])
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%', minHeight: '500px' }}>
