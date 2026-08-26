@@ -3,9 +3,10 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { login, isAuthenticated } from '@/lib/auth'
+import { ROLES, type RoleId } from '@/lib/roles'
 
 export default function LoginPage() {
-  const [email,    setEmail]    = useState('')
+  const [roleId,   setRoleId]   = useState<RoleId>(ROLES[0].id)
   const [password, setPassword] = useState('')
   const [error,    setError]    = useState<string | null>(null)
   const [loading,  setLoading]  = useState(false)
@@ -16,6 +17,7 @@ export default function LoginPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
+    const email = ROLES.find(r => r.id === roleId)!.email
     const errorMessage = await login(email, password)
     setLoading(false)
     if (!errorMessage) router.push('/')
@@ -38,21 +40,20 @@ export default function LoginPage() {
         <form onSubmit={handleSubmit}>
           <div style={{ marginBottom: 16 }}>
             <label style={{ display: 'block', fontSize: 14, fontWeight: 500, color: 'var(--charcoal)', marginBottom: 6 }}>
-              אימייל
+              סוג משתמש
             </label>
-            <input
-              type="email"
-              value={email}
-              onChange={e => { setEmail(e.target.value); setError(null) }}
-              placeholder="הכנס אימייל"
-              autoFocus
+            <select
+              value={roleId}
+              onChange={e => { setRoleId(e.target.value as RoleId); setError(null) }}
               style={{
                 width: '100%', height: 44, padding: '0 14px',
                 border: `1px solid ${error ? 'var(--coral)' : 'var(--steel)'}`,
                 borderRadius: 4, fontSize: 16, color: 'var(--ink)',
                 background: 'var(--canvas)', outline: 'none',
               }}
-            />
+            >
+              {ROLES.map(r => <option key={r.id} value={r.id}>{r.label}</option>)}
+            </select>
           </div>
 
           <div style={{ marginBottom: 16 }}>
