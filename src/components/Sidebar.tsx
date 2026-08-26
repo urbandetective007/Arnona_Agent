@@ -48,7 +48,7 @@ export default function Sidebar() {
 
       {/* Logout */}
       <div style={{ padding: '12px 8px 20px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
-        <button onClick={() => { logout(); router.push('/login') }} style={{
+        <button onClick={async () => { await logout(); router.push('/login') }} style={{
           width: '100%', textAlign: 'right', padding: '10px 12px',
           background: 'none', border: 'none', borderRadius: 4,
           color: 'var(--graphite)', fontSize: 14, cursor: 'pointer',

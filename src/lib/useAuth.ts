@@ -2,17 +2,28 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { isAuthenticated } from './auth'
+import { supabase } from './supabase'
 
 export function useRequireAuth(): boolean {
   const router = useRouter()
   const [ready, setReady] = useState(false)
 
   useEffect(() => {
-    if (!isAuthenticated()) {
-      router.replace('/login')
-    } else {
-      setReady(true)
+    let active = true
+
+    supabase.auth.getSession().then(({ data }) => {
+      if (!active) return
+      if (data.session) setReady(true)
+      else router.replace('/login')
+    })
+
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!session) router.replace('/login')
+    })
+
+    return () => {
+      active = false
+      sub.subscription.unsubscribe()
     }
   }, [router])
 

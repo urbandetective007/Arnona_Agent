@@ -1,19 +1,15 @@
-const PASSWORD = 'אשכול הידע'
-const AUTH_KEY = 'arnona_auth'
+import { supabase } from './supabase'
 
-export function isAuthenticated(): boolean {
-  if (typeof window === 'undefined') return false
-  return sessionStorage.getItem(AUTH_KEY) === '1'
+export async function isAuthenticated(): Promise<boolean> {
+  const { data } = await supabase.auth.getSession()
+  return data.session !== null
 }
 
-export function login(password: string): boolean {
-  if (password.trim() === PASSWORD) {
-    sessionStorage.setItem(AUTH_KEY, '1')
-    return true
-  }
-  return false
+export async function login(email: string, password: string): Promise<string | null> {
+  const { error } = await supabase.auth.signInWithPassword({ email, password })
+  return error ? error.message : null
 }
 
-export function logout(): void {
-  sessionStorage.removeItem(AUTH_KEY)
+export async function logout(): Promise<void> {
+  await supabase.auth.signOut()
 }

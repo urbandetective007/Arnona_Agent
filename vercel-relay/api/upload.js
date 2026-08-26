@@ -1,8 +1,17 @@
 // Vercel Function: Supabase Upload Relay
 // Receives business data from CCR and uploads to Supabase (bypasses IP allowlist issue)
+//
+// Uses the service_role key (server-side only, never exposed to a browser) because
+// RLS on the `businesses`/`upload_sessions` tables only grants access to the
+// `authenticated` role — this relay runs as a trusted backend process and needs to
+// bypass RLS, unlike the browser client which authenticates as a real user.
 
-const SUPABASE_URL = "https://mcsygsqfyuaexxxwsgem.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1jc3lnc3FmeXVhZXh4eHdzZ2VtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1Njk1MTIsImV4cCI6MjA5NDE0NTUxMn0.Hu6t2PLjE_D113NMQEGvEv8QGhqN6udKNO9McqK3ST8";
+const SUPABASE_URL = process.env.SUPABASE_URL || "https://mcsygsqfyuaexxxwsgem.supabase.co";
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!SUPABASE_KEY) {
+  throw new Error("SUPABASE_SERVICE_ROLE_KEY environment variable is not set");
+}
 
 const HEADERS = {
   "Authorization": `Bearer ${SUPABASE_KEY}`,
