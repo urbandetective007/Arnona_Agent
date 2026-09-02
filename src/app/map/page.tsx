@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from 'react'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
 import AppLayout from '@/components/AppLayout'
-import { useRequireAuth } from '@/lib/useAuth'
+import { useRequireRole } from '@/lib/useRequireRole'
 import type { Business } from '@/lib/types'
 import { supabase, dbToBusiness } from '@/lib/supabase'
 import { getCache, setCache } from '@/lib/cache'
@@ -27,7 +27,7 @@ const JerusalemMap = dynamic(() => import('@/components/JerusalemMap'), {
 const ALL_RATINGS = ['גבוה', 'בינוני', 'דרוש בדיקה', 'לא חשוד']
 
 export default function MapPage() {
-  const ready = useRequireAuth()
+  const ready = useRequireRole(['employee', 'manager'])
   const [businesses,   setBusinesses]   = useState<Business[]>([])
   const [search,       setSearch]       = useState('')
   const [ratingFilter, setRatingFilter] = useState('הכל')

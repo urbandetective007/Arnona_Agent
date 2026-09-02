@@ -3,14 +3,17 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import AppLayout from '@/components/AppLayout'
-import { useRequireAuth } from '@/lib/useAuth'
+import { useRequireRole } from '@/lib/useRequireRole'
+import { useRole } from '@/lib/useRole'
 import type { Business, UploadSession } from '@/lib/types'
 import { supabase, dbToBusiness, dbToSession } from '@/lib/supabase'
 import { getCache, setCache } from '@/lib/cache'
 import { formatDate } from '@/lib/dateUtils'
 
 export default function Dashboard() {
-  const ready = useRequireAuth()
+  const ready = useRequireRole(['employee', 'manager'])
+  const role  = useRole()
+  const canEdit = role === 'employee'
   const [businesses, setBusinesses] = useState<Business[]>([])
   const [sessions,   setSessions]   = useState<UploadSession[]>([])
   const [loading,    setLoading]    = useState(true)
@@ -54,8 +57,8 @@ export default function Dashboard() {
     <AppLayout>
       <Section bg="var(--canvas)" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', gap: 16 }}>
         <h1 style={{ fontSize: 44, fontWeight: 500 }}>דשבורד</h1>
-        <p style={{ color: 'var(--charcoal)', fontSize: 16 }}>אין נתונים — העלה דוח יומי כדי להתחיל</p>
-        <Link href="/upload" style={btnBlue}>העלאת דוח חדש</Link>
+        <p style={{ color: 'var(--charcoal)', fontSize: 16 }}>אין נתונים {canEdit ? '— העלה דוח יומי כדי להתחיל' : ''}</p>
+        {canEdit && <Link href="/upload" style={btnBlue}>העלאת דוח חדש</Link>}
       </Section>
     </AppLayout>
   )
@@ -121,7 +124,7 @@ export default function Dashboard() {
               עסקים הפועלים בכתובות שכל יחידותיהן מסווגות כמגורים — אינדיקציה חזקה לתשלום ארנונה מופחת שלא כדין.
             </p>
           </div>
-          <Link href="/businesses" style={{ ...btnWhiteOnDark, flexShrink: 0 }}>צפה בכל העסקים</Link>
+          {canEdit && <Link href="/businesses" style={{ ...btnWhiteOnDark, flexShrink: 0 }}>צפה בכל העסקים</Link>}
         </div>
       </Section>
 
@@ -162,13 +165,15 @@ export default function Dashboard() {
         </Section>
       )}
 
-      <Section bg="var(--ink)" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 32 }}>
-        <div>
-          <h2 style={{ fontSize: 32, fontWeight: 500, color: 'var(--on-ink)', marginBottom: 8 }}>מוכן להעלאת דוח חדש?</h2>
-          <p style={{ color: 'var(--steel)', fontSize: 16 }}>הוסף נתונים חדשים למערכת בקלות</p>
-        </div>
-        <Link href="/upload" style={{ ...btnBlue, flexShrink: 0 }}>העלאת דוח חדש</Link>
-      </Section>
+      {canEdit && (
+        <Section bg="var(--ink)" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 32 }}>
+          <div>
+            <h2 style={{ fontSize: 32, fontWeight: 500, color: 'var(--on-ink)', marginBottom: 8 }}>מוכן להעלאת דוח חדש?</h2>
+            <p style={{ color: 'var(--steel)', fontSize: 16 }}>הוסף נתונים חדשים למערכת בקלות</p>
+          </div>
+          <Link href="/upload" style={{ ...btnBlue, flexShrink: 0 }}>העלאת דוח חדש</Link>
+        </Section>
+      )}
     </AppLayout>
   )
 }

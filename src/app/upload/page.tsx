@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { clearCache } from '@/lib/cache'
 import * as XLSX from 'xlsx'
-import { useRequireAuth } from '@/lib/useAuth'
+import { useRequireRole } from '@/lib/useRequireRole'
 import AppLayout from '@/components/AppLayout'
 import type { Business, UploadSession } from '@/lib/types'
 import { mapSuspicionRatingToStatus } from '@/lib/types'
@@ -65,7 +65,7 @@ const RATING_STYLE: Record<string, React.CSSProperties> = {
 }
 
 export default function UploadPage() {
-  const ready   = useRequireAuth()
+  const ready   = useRequireRole(['employee'])
   const [status,  setStatus]  = useState<Status>('idle')
   const [message, setMessage] = useState('')
   const [preview, setPreview] = useState<Business[]>([])

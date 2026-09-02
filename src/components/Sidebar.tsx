@@ -3,18 +3,14 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { logout } from '@/lib/auth'
-
-const NAV_LINKS = [
-  { href: '/',           label: 'דשבורד'        },
-  { href: '/businesses', label: 'כלל הנתונים'    },
-  { href: '/map',        label: 'מפת נכסים'     },
-  { href: '/files',      label: 'קבצים שהועלו'  },
-  { href: '/upload',     label: 'העלאת דוח חדש' },
-]
+import { useRoleContext } from './RoleContext'
+import { NAV_BY_ROLE } from '@/lib/access'
 
 export default function Sidebar() {
   const pathname = usePathname()
   const router   = useRouter()
+  const role     = useRoleContext()
+  const NAV_LINKS = role ? NAV_BY_ROLE[role] : []
 
   return (
     <aside style={{ width: 208, flexShrink: 0, background: 'var(--ink)', display: 'flex', flexDirection: 'column', minHeight: '100vh', position: 'sticky', top: 0 }}>

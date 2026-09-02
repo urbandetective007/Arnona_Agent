@@ -2,8 +2,11 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { login, isAuthenticated } from '@/lib/auth'
+import { login } from '@/lib/auth'
+import { supabase } from '@/lib/supabase'
 import { ROLES, type RoleId } from '@/lib/roles'
+import { HOME_ROUTE_BY_ROLE } from '@/lib/access'
+import { roleFromEmail } from '@/lib/useRole'
 
 export default function LoginPage() {
   const [roleId,   setRoleId]   = useState<RoleId>(ROLES[0].id)
@@ -12,7 +15,12 @@ export default function LoginPage() {
   const [loading,  setLoading]  = useState(false)
   const router = useRouter()
 
-  useEffect(() => { isAuthenticated().then(ok => { if (ok) router.replace('/') }) }, [router])
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      const role = roleFromEmail(data.session?.user.email)
+      if (role) router.replace(HOME_ROUTE_BY_ROLE[role])
+    })
+  }, [router])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -20,7 +28,7 @@ export default function LoginPage() {
     const email = ROLES.find(r => r.id === roleId)!.email
     const errorMessage = await login(email, password)
     setLoading(false)
-    if (!errorMessage) router.push('/')
+    if (!errorMessage) router.push(HOME_ROUTE_BY_ROLE[roleId])
     else { setError(errorMessage); setPassword('') }
   }
 

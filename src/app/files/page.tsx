@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import AppLayout from '@/components/AppLayout'
-import { useRequireAuth } from '@/lib/useAuth'
+import { useRequireRole } from '@/lib/useRequireRole'
 import type { Business, UploadSession } from '@/lib/types'
 import { supabase, dbToBusiness, dbToSession, sessionToDb } from '@/lib/supabase'
 import { getCache, setCache } from '@/lib/cache'
@@ -17,7 +17,7 @@ const BADGE: Record<string, React.CSSProperties> = {
 }
 
 export default function FilesPage() {
-  const ready = useRequireAuth()
+  const ready = useRequireRole(['employee'])
   const [sessions,   setSessions]   = useState<UploadSession[]>([])
   const [businesses, setBusinesses] = useState<Business[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)

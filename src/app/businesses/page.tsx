@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from 'react'
 import Link from 'next/link'
 import * as XLSX from 'xlsx'
 import AppLayout from '@/components/AppLayout'
-import { useRequireAuth } from '@/lib/useAuth'
+import { useRequireRole } from '@/lib/useRequireRole'
 import type { Business } from '@/lib/types'
 import { mapSuspicionRatingToStatus } from '@/lib/types'
 import { supabase, dbToBusiness, businessToDb } from '@/lib/supabase'
@@ -84,7 +84,7 @@ function EditTextArea({ label, value, onChange }: { label: string, value: string
 }
 
 export default function BusinessesPage() {
-  const ready = useRequireAuth()
+  const ready = useRequireRole(['employee'])
   const [businesses,   setBusinesses]   = useState<Business[]>([])
   const [search,       setSearch]       = useState('')
   const [ratingFilter, setRatingFilter] = useState('הכל')
