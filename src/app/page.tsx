@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { Building2, Flame, Send, ClipboardCheck, ArrowUpRight, TrendingUp, Upload, FileText, Download } from 'lucide-react'
+import { Building2, Flame, Send, ClipboardCheck, ArrowUpRight, TrendingUp, Upload, FileText, Download, HelpCircle } from 'lucide-react'
 import { AppShell } from '@/components/AppShell'
 import { useRequireRole } from '@/lib/useRequireRole'
 import { useRole } from '@/lib/useRole'
@@ -18,7 +18,7 @@ const RANGE_OPTIONS = [
   { label: 'רבעון', days: 90 },
 ] as const
 
-function downloadBusinessesCsv(businesses: Business[]) {
+function downloadBusinessesCsv(businesses: Business[], rangeLabel: string) {
   const headers = ['שם העסק', 'סוג', 'כתובת', 'שכונה', 'דירוג אינדיקציה', 'סטטוס סוקר', 'תוצאת סקר']
   const rows = businesses.map(b => [
     b.name, b.type, b.address, b.neighborhood, b.suspicionRating,
@@ -31,7 +31,7 @@ function downloadBusinessesCsv(businesses: Business[]) {
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = `נכסים-${new Date().toISOString().slice(0, 10)}.csv`
+  a.download = `נכסים-${rangeLabel}-${new Date().toISOString().slice(0, 10)}.csv`
   a.click()
   URL.revokeObjectURL(url)
 }
@@ -44,6 +44,10 @@ export default function Dashboard() {
   const [sessions, setSessions] = useState<UploadSession[]>(() => getCache<UploadSession[]>('sessions') ?? [])
   const [loading, setLoading] = useState(() => !(getCache<Business[]>('businesses') && getCache<UploadSession[]>('sessions')))
   const [rangeDays, setRangeDays] = useState<number>(30)
+  // Captured once per page load rather than read fresh on every render —
+  // avoids calling the impure Date.now() during render, and a dashboard
+  // doesn't need to reclassify "in range" mid-session anyway.
+  const [now] = useState(() => Date.now())
 
   useEffect(() => {
     Promise.all([
@@ -56,46 +60,54 @@ export default function Dashboard() {
     })
   }, [])
 
+  // The range control is meant to actually filter the whole page, not just
+  // one footer line — so every metric below is computed from this
+  // range-scoped set, not from the full `businesses` array.
+  const businessesInRange = useMemo(() => {
+    const cutoff = now - rangeDays * 86400000
+    return businesses.filter(b => {
+      const d = new Date(b.uploadDate)
+      return !Number.isNaN(d.getTime()) && d.getTime() >= cutoff
+    })
+  }, [businesses, rangeDays, now])
+
   const stats = useMemo(() => {
-    const total = businesses.length
-    const byRating = (r: string) => businesses.filter(b => b.suspicionRating === r).length
+    const total = businessesInRange.length
+    const byRating = (r: string) => businessesInRange.filter(b => b.suspicionRating === r).length
     const high = byRating('גבוה')
     const mid = byRating('בינוני')
-    const needsCheck = byRating('דרוש בדיקה')
-    const notSuspect = byRating('לא חשוד')
     const indication = high + mid
 
-    const sent = businesses.filter(b => b.sentToInspector === 'נשלח לסוקר')
-    const declined = businesses.filter(b => b.sentToInspector === 'הוחלט לא לשלוח לסקר')
+    const sent = businessesInRange.filter(b => b.sentToInspector === 'נשלח לסוקר')
+    const declined = businessesInRange.filter(b => b.sentToInspector === 'הוחלט לא לשלוח לסקר')
     const reported = sent.filter(b => b.surveyResultDetail)
     const gapFound = reported.filter(b => b.surveyResultDetail !== 'לא נמצא עסק/פער שטח')
-    const pendingAssignment = businesses.filter(b =>
+    const pendingAssignment = businessesInRange.filter(b =>
       (b.suspicionRating === 'גבוה' || b.suspicionRating === 'בינוני') &&
       b.sentToInspector !== 'נשלח לסוקר' && b.sentToInspector !== 'הוחלט לא לשלוח לסקר'
     )
 
-    const now = new Date()
-    const addedInRange = businesses.filter(b => {
-      const d = new Date(b.uploadDate)
-      return !Number.isNaN(d.getTime()) && (now.getTime() - d.getTime()) / 86400000 <= rangeDays
-    }).length
+    // The workflow only ever acts on 'גבוה' properties going forward, so a
+    // breakdown of survey-pipeline stage (of those) is the meaningful
+    // "distribution" chart here — a rating breakdown would just be one
+    // giant slice forever. Real fields, no invented categories.
+    const highIndication = businessesInRange.filter(b => b.suspicionRating === 'גבוה' || b.suspicionRating === 'בינוני')
+    const notSentYet = highIndication.filter(b => b.sentToInspector !== 'נשלח לסוקר')
+    const awaitingReport = sent.filter(b => !b.surveyResultDetail)
+    const noGap = reported.filter(b => b.surveyResultDetail === 'לא נמצא עסק/פער שטח')
 
-    // Rate per neighborhood (indication ÷ all properties there), not raw
-    // count — a real, currently-computable ratio, unlike a trend or a ₪
-    // figure. A minimum sample size keeps a single-property neighborhood
-    // at 100% from outranking one with a real, sizeable problem.
-    const byNeighborhood = new Map<string, { total: number; indication: number }>()
-    businesses.forEach(b => {
+    // Raw count per neighborhood — not a rate. With only one indication
+    // tier in real use, "% of neighborhood that's high" degenerates to a
+    // meaningless ~100% everywhere; a plain count still tells you where
+    // the actionable properties actually are.
+    const byNeighborhood = new Map<string, number>()
+    highIndication.forEach(b => {
       if (!b.neighborhood) return
-      const entry = byNeighborhood.get(b.neighborhood) ?? { total: 0, indication: 0 }
-      entry.total += 1
-      if (b.suspicionRating === 'גבוה' || b.suspicionRating === 'בינוני') entry.indication += 1
-      byNeighborhood.set(b.neighborhood, entry)
+      byNeighborhood.set(b.neighborhood, (byNeighborhood.get(b.neighborhood) ?? 0) + 1)
     })
     const hotNeighborhoods = [...byNeighborhood.entries()]
-      .map(([name, e]) => ({ name, count: e.indication, total: e.total, pct: Math.round((e.indication / e.total) * 100) }))
-      .filter(n => n.total >= 3 && n.count > 0)
-      .sort((a, b) => b.pct - a.pct || b.count - a.count)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count)
       .slice(0, 6)
     const topThreeShare = indication > 0
       ? Math.round((hotNeighborhoods.slice(0, 3).reduce((sum, n) => sum + n.count, 0) / indication) * 100)
@@ -104,7 +116,7 @@ export default function Dashboard() {
     // Cumulative history from each business's own upload date — a real
     // series (not an invented ±% trend) usable for the KPI sparklines.
     const byDay = new Map<string, { total: number; indication: number }>()
-    businesses.forEach(b => {
+    businessesInRange.forEach(b => {
       const day = (b.uploadDate || '').slice(0, 10)
       if (!day) return
       const entry = byDay.get(day) ?? { total: 0, indication: 0 }
@@ -126,11 +138,12 @@ export default function Dashboard() {
     })
 
     return {
-      total, high, mid, needsCheck, notSuspect, indication,
+      total, high, mid, indication,
       sent, declined, reported, gapFound, pendingAssignment,
-      addedInRange, hotNeighborhoods, topThreeShare, totalHistory, indicationHistory,
+      notSentYet, awaitingReport, noGap,
+      hotNeighborhoods, topThreeShare, totalHistory, indicationHistory,
     }
-  }, [businesses, rangeDays])
+  }, [businessesInRange])
 
   const lastUpdated = useMemo(() => {
     const dates = sessions.map(s => s.uploadDate).filter(Boolean).sort()
@@ -152,7 +165,7 @@ export default function Dashboard() {
     )
   }
 
-  if (stats.total === 0) {
+  if (businesses.length === 0) {
     return (
       <AppShell title="מרכז בקרה" subtitle="נתוני אמת מ-Supabase">
         <Card>
@@ -167,6 +180,8 @@ export default function Dashboard() {
     )
   }
 
+  const rangeLabel = RANGE_OPTIONS.find(o => o.days === rangeDays)?.label ?? ''
+
   const funnelStages = [
     { label: 'נסרקו', value: stats.total, tone: 'brand' as const },
     { label: 'אינדיקציה', value: stats.indication, tone: 'brand' as const },
@@ -176,16 +191,20 @@ export default function Dashboard() {
   ]
   const funnelMax = Math.max(stats.total, 1)
 
-  const donutSegments = [
-    { key: 'high', label: 'גבוה', count: stats.high, color: '#c8102e' },
-    { key: 'mid', label: 'בינוני', count: stats.mid, color: '#c2410c' },
-    { key: 'check', label: 'דרוש בדיקה', count: stats.needsCheck, color: '#7c8ba0' },
-    { key: 'clear', label: 'לא חשוד', count: stats.notSuspect, color: '#0f7a4a' },
+  // Survey-pipeline breakdown of the high-indication properties in range —
+  // real, varied, and relevant now that "rating" itself is no longer a
+  // meaningful axis (every property this team works is 'גבוה').
+  const pipelineSegments = [
+    { key: 'notSent', label: 'טרם נשלח לסוקר', count: stats.notSentYet.length, color: '#7c8ba0' },
+    { key: 'awaiting', label: 'נשלח, ממתין לדיווח', count: stats.awaitingReport.length, color: '#296ef9' },
+    { key: 'noGap', label: 'דווח, לא נמצא פער', count: stats.noGap.length, color: '#0f7a4a' },
+    { key: 'gap', label: 'דווח, נמצא פער', count: stats.gapFound.length, color: '#c8102e' },
   ]
+  const pipelineTotal = pipelineSegments.reduce((sum, s) => sum + s.count, 0)
   const circumference = 100
   let offset = 0
-  const donutArcs = donutSegments.map(seg => {
-    const pct = stats.total > 0 ? (seg.count / stats.total) * circumference : 0
+  const pipelineArcs = pipelineSegments.map(seg => {
+    const pct = pipelineTotal > 0 ? (seg.count / pipelineTotal) * circumference : 0
     const arc = { ...seg, pct, dashoffset: -offset }
     offset += pct
     return arc
@@ -204,9 +223,17 @@ export default function Dashboard() {
               </Pill>
             ))}
           </div>
-          <Button variant="secondary" icon={<Download size={15} strokeWidth={1.9} />} onClick={() => downloadBusinessesCsv(businesses)}>
-            ייצוא דוח
-          </Button>
+          <div className="flex items-center gap-1.5">
+            <Button variant="secondary" icon={<Download size={15} strokeWidth={1.9} />} onClick={() => downloadBusinessesCsv(businessesInRange, rangeLabel)}>
+              ייצוא דוח
+            </Button>
+            <span
+              className="text-subtle cursor-help"
+              title={`הקובץ יכלול את ${stats.total.toLocaleString('he')} הנכסים המוצגים כרגע בדשבורד (מסוננים לפי "${rangeLabel}" שנבחר למעלה): שם, סוג, כתובת, שכונה, דירוג אינדיקציה, סטטוס סוקר ותוצאת סקר.`}
+            >
+              <HelpCircle size={16} strokeWidth={1.8} />
+            </span>
+          </div>
         </>
       }
     >
@@ -219,11 +246,10 @@ export default function Dashboard() {
             value={<span className="num">{stats.total.toLocaleString('he')}</span>}
             icon={<Building2 size={16} className="text-subtle" strokeWidth={1.8} />}
             sparkline={<Sparkline values={stats.totalHistory} color="#296ef9" />}
-            footer={stats.addedInRange > 0 && (
-              <div className="flex items-center gap-1 text-[12px] text-clear font-semibold">
-                <ArrowUpRight size={13} strokeWidth={2.4} />
-                <span className="num">{stats.addedInRange}</span>
-                <span className="text-subtle font-normal">ב{RANGE_OPTIONS.find(o => o.days === rangeDays)?.label}</span>
+            footer={businesses.length !== stats.total && (
+              <div className="flex items-center gap-1 text-[12px] text-subtle">
+                <ArrowUpRight size={13} strokeWidth={2.4} className="text-clear" />
+                <span>מתוך <span className="num font-semibold text-charcoal">{businesses.length.toLocaleString('he')}</span> סה״כ במערכת</span>
               </div>
             )}
           />
@@ -316,32 +342,32 @@ export default function Dashboard() {
           <Card className="flex flex-col">
             <div className="flex items-center justify-between mb-3.5">
               <span className="text-[14.5px] font-bold text-ink">שכונות חמות</span>
-              <span className="text-[11.5px] text-graphite">לפי שיעור אינדיקציה מתוך נכסי השכונה</span>
+              <span className="text-[11.5px] text-graphite">לפי מספר נכסים באינדיקציה</span>
             </div>
             {stats.hotNeighborhoods.length === 0 ? (
-              <p className="text-sm text-graphite py-6">אין עדיין מספיק נכסים לשכונה כדי לחשב שיעור אמין.</p>
+              <p className="text-sm text-graphite py-6">אין עדיין נכסים עם אינדיקציה משויכים לשכונה בטווח שנבחר.</p>
             ) : (
               <div className="flex flex-col gap-3">
                 {stats.hotNeighborhoods.map((n, i) => {
-                  const [gradient, textColor] = i < 2
-                    ? ['linear-gradient(90deg, #c8102e 0%, #e04a5f 100%)', 'text-high']
+                  const gradient = i < 2
+                    ? 'linear-gradient(90deg, #c8102e 0%, #e04a5f 100%)'
                     : i < 4
-                      ? ['linear-gradient(90deg, #c2410c 0%, #e07a44 100%)', 'text-mid']
-                      : ['linear-gradient(90deg, #a16207 0%, #d0a24a 100%)', 'text-[#a16207]']
+                      ? 'linear-gradient(90deg, #c2410c 0%, #e07a44 100%)'
+                      : 'linear-gradient(90deg, #a16207 0%, #d0a24a 100%)'
+                  const max = stats.hotNeighborhoods[0].count
                   return (
                     <div key={n.name} className="flex items-center gap-3">
                       <span className="w-24 shrink-0 text-[13px] font-semibold text-ink truncate">{n.name}</span>
-                      {/* justify-end anchors the bar to the same side as the values, so a
-                          short bar still sits next to its numbers instead of stranding them
+                      {/* justify-end anchors the bar to the same side as the count, so a
+                          short bar still sits next to its number instead of stranding it
                           across an empty track. */}
                       <div className="flex-1 h-[22px] bg-canvas rounded-md overflow-hidden flex justify-end">
                         <span
                           className="block h-full rounded-md min-w-[10px]"
-                          style={{ width: `${n.pct}%`, background: gradient }}
+                          style={{ width: `${(n.count / max) * 100}%`, background: gradient }}
                         />
                       </div>
-                      <span className={`num w-9 shrink-0 text-start text-[13px] font-bold ${textColor}`}>{n.pct}%</span>
-                      <span className="num w-6 shrink-0 text-start text-[12px] text-subtle">{n.count}</span>
+                      <span className="num w-8 shrink-0 text-start text-[13px] font-bold text-high">{n.count}</span>
                     </div>
                   )
                 })}
@@ -360,11 +386,11 @@ export default function Dashboard() {
           {/* Donut + activity */}
           <div className="flex flex-col gap-5 min-h-0">
             <Card>
-              <div className="text-[14.5px] font-bold text-ink mb-3">התפלגות דירוג</div>
+              <div className="text-[14.5px] font-bold text-ink mb-3">פילוח סקר — נכסים באינדיקציה</div>
               <div className="flex items-center gap-4">
                 <svg width="104" height="104" viewBox="0 0 42 42" className="shrink-0">
                   <circle cx="21" cy="21" r="15.9" fill="none" stroke="#f1f3f6" strokeWidth="6" />
-                  {donutArcs.filter(a => a.pct > 0).map(arc => (
+                  {pipelineArcs.filter(a => a.pct > 0).map(arc => (
                     <circle
                       key={arc.key}
                       cx="21" cy="21" r="15.9" fill="none"
@@ -374,11 +400,11 @@ export default function Dashboard() {
                       transform="rotate(-90 21 21)"
                     />
                   ))}
-                  <text x="21" y="20.4" textAnchor="middle" style={{ font: "700 6px var(--font-num)", fill: '#0f1a28' }}>{stats.total}</text>
+                  <text x="21" y="20.4" textAnchor="middle" style={{ font: "700 6px var(--font-num)", fill: '#0f1a28' }}>{pipelineTotal}</text>
                   <text x="21" y="25" textAnchor="middle" style={{ font: "400 2.9px var(--font-sans)", fill: '#7c8ba0' }}>נכסים</text>
                 </svg>
                 <div className="flex flex-col gap-2">
-                  {donutSegments.map(seg => (
+                  {pipelineSegments.map(seg => (
                     <div key={seg.key} className="flex items-center gap-2.5">
                       <span className="w-2 h-2 rounded-sm shrink-0" style={{ background: seg.color }} />
                       <span className="text-[12.5px] text-charcoal">{seg.label}</span>
