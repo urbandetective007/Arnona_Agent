@@ -254,13 +254,16 @@ export default function Dashboard() {
                   return (
                     <div key={name} className="flex items-center gap-3">
                       <span className="w-24 shrink-0 text-[13px] font-semibold text-ink truncate">{name}</span>
-                      <div className="flex-1 h-[22px] bg-canvas rounded-md overflow-hidden">
+                      {/* justify-end anchors the bar to the same side as the count, so a
+                          short bar still sits next to its number instead of stranding it
+                          across an empty track. */}
+                      <div className="flex-1 h-[22px] bg-canvas rounded-md overflow-hidden flex justify-end">
                         <span
-                          className="block h-full rounded-md"
+                          className="block h-full rounded-md min-w-[10px]"
                           style={{ width: `${(count / max) * 100}%`, background: 'linear-gradient(90deg, #c8102e 0%, #e04a5f 100%)' }}
                         />
                       </div>
-                      <span className="num w-8 text-start text-[13px] font-bold text-high">{count}</span>
+                      <span className="num w-8 shrink-0 text-start text-[13px] font-bold text-high">{count}</span>
                     </div>
                   )
                 })}
@@ -296,11 +299,11 @@ export default function Dashboard() {
                   <text x="21" y="20.4" textAnchor="middle" style={{ font: "700 6px var(--font-num)", fill: '#0f1a28' }}>{stats.total}</text>
                   <text x="21" y="25" textAnchor="middle" style={{ font: "400 2.9px var(--font-sans)", fill: '#7c8ba0' }}>נכסים</text>
                 </svg>
-                <div className="flex-1 flex flex-col gap-2">
+                <div className="flex flex-col gap-2">
                   {donutSegments.map(seg => (
-                    <div key={seg.key} className="flex items-center gap-2">
+                    <div key={seg.key} className="flex items-center gap-2.5">
                       <span className="w-2 h-2 rounded-sm shrink-0" style={{ background: seg.color }} />
-                      <span className="text-[12.5px] flex-1 text-charcoal">{seg.label}</span>
+                      <span className="text-[12.5px] text-charcoal">{seg.label}</span>
                       <span className="num text-[12.5px] font-bold text-ink">{seg.count}</span>
                     </div>
                   ))}
