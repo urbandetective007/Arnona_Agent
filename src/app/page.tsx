@@ -44,7 +44,7 @@ export default function Dashboard() {
   const [businesses, setBusinesses] = useState<Business[]>(() => getCache<Business[]>('businesses') ?? [])
   const [sessions, setSessions] = useState<UploadSession[]>(() => getCache<UploadSession[]>('sessions') ?? [])
   const [loading, setLoading] = useState(() => !(getCache<Business[]>('businesses') && getCache<UploadSession[]>('sessions')))
-  const [rangeDays, setRangeDays] = useState<number>(90)
+  const [rangeDays, setRangeDays] = useState<number>(Infinity)
   // Captured once per page load rather than read fresh on every render —
   // avoids calling the impure Date.now() during render, and a dashboard
   // doesn't need to reclassify "in range" mid-session anyway.
