@@ -43,7 +43,7 @@ export default function Dashboard() {
   const [businesses, setBusinesses] = useState<Business[]>(() => getCache<Business[]>('businesses') ?? [])
   const [sessions, setSessions] = useState<UploadSession[]>(() => getCache<UploadSession[]>('sessions') ?? [])
   const [loading, setLoading] = useState(() => !(getCache<Business[]>('businesses') && getCache<UploadSession[]>('sessions')))
-  const [rangeDays, setRangeDays] = useState<number>(30)
+  const [rangeDays, setRangeDays] = useState<number>(90)
   // Captured once per page load rather than read fresh on every render —
   // avoids calling the impure Date.now() during render, and a dashboard
   // doesn't need to reclassify "in range" mid-session anyway.
@@ -348,26 +348,21 @@ export default function Dashboard() {
               <p className="text-sm text-graphite py-6">אין עדיין נכסים עם אינדיקציה משויכים לשכונה בטווח שנבחר.</p>
             ) : (
               <div className="flex flex-col gap-3">
-                {stats.hotNeighborhoods.map((n, i) => {
-                  const gradient = i < 2
-                    ? 'linear-gradient(90deg, #c8102e 0%, #e04a5f 100%)'
-                    : i < 4
-                      ? 'linear-gradient(90deg, #c2410c 0%, #e07a44 100%)'
-                      : 'linear-gradient(90deg, #a16207 0%, #d0a24a 100%)'
+                {stats.hotNeighborhoods.map(n => {
                   const max = stats.hotNeighborhoods[0].count
                   return (
                     <div key={n.name} className="flex items-center gap-3">
                       <span className="w-24 shrink-0 text-[13px] font-semibold text-ink truncate">{n.name}</span>
-                      {/* justify-end anchors the bar to the same side as the count, so a
-                          short bar still sits next to its number instead of stranding it
-                          across an empty track. */}
-                      <div className="flex-1 h-[22px] bg-canvas rounded-md overflow-hidden flex justify-end">
+                      {/* A plain block width aligns to the row's own start edge (right,
+                          under RTL) by default — bars read the same direction as the
+                          text around them, growing from the right like the label does. */}
+                      <div className="flex-1 h-[22px] bg-canvas rounded-md overflow-hidden">
                         <span
                           className="block h-full rounded-md min-w-[10px]"
-                          style={{ width: `${(n.count / max) * 100}%`, background: gradient }}
+                          style={{ width: `${(n.count / max) * 100}%`, background: 'linear-gradient(90deg, #a9c8ff 0%, #024ad8 100%)' }}
                         />
                       </div>
-                      <span className="num w-8 shrink-0 text-start text-[13px] font-bold text-high">{n.count}</span>
+                      <span className="num w-8 shrink-0 text-start text-[13px] font-bold text-brand">{n.count}</span>
                     </div>
                   )
                 })}
