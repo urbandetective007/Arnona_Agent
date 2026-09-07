@@ -1,107 +1,193 @@
 'use client'
 
-import { useEffect, useState, useMemo } from 'react'
-import AppLayout from '@/components/AppLayout'
+import { useEffect, useMemo, useState } from 'react'
+import Link from 'next/link'
+import { Send, Clock, ClipboardCheck, CheckCircle2 } from 'lucide-react'
+import { AppShell } from '@/components/AppShell'
 import { useRequireRole } from '@/lib/useRequireRole'
 import type { Business } from '@/lib/types'
 import { supabase, dbToBusiness } from '@/lib/supabase'
 import { getCache, setCache } from '@/lib/cache'
+import { Card, StatCard, Badge, Table, Thead, Tbody, Tr, Th, Td, Spinner, EmptyState } from '@/components/ui'
+import type { BadgeTone } from '@/components/ui'
 
-const RESULT_STYLE: Record<string, React.CSSProperties> = {
-  'נמצא פער בסיווג':      { background: '#fff7ed', color: '#c2410c' },
-  'נמצא פער שטח + סיווג': { background: '#fef2f2', color: '#b91c1c' },
-  'נמצא פער שטח':         { background: '#fefce8', color: '#a16207' },
-  'לא נמצא עסק/פער שטח':  { background: '#f0fdf4', color: '#15803d' },
+const RESULT_LABELS: Record<string, string> = {
+  'נמצא פער שטח + סיווג': 'פער שטח + סיווג',
+  'נמצא פער בסיווג': 'פער בסיווג',
+  'נמצא פער שטח': 'פער שטח',
+  'לא נמצא עסק/פער שטח': 'לא נמצא עסק / פער',
 }
+const RESULT_COLORS: Record<string, string> = {
+  'נמצא פער שטח + סיווג': '#c8102e',
+  'נמצא פער בסיווג': '#c2410c',
+  'נמצא פער שטח': '#a16207',
+  'לא נמצא עסק/פער שטח': '#0f7a4a',
+}
+const RATING_TONE: Record<string, BadgeTone> = { 'גבוה': 'high', 'בינוני': 'mid' }
 
 export default function SurveyTrackingPage() {
   const ready = useRequireRole(['employee', 'manager'])
+  // Reading sessionStorage in a lazy useState initializer would give the
+  // server (build-time prerender) and the client's first paint different
+  // values, since sessionStorage doesn't exist on the server — a hydration
+  // mismatch. Starting empty on both sides and hydrating from cache inside
+  // an effect (client-only) keeps the very first render identical.
   const [businesses, setBusinesses] = useState<Business[]>([])
-  const [loading,    setLoading]    = useState(true)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const cached = getCache<Business[]>('businesses')
-    if (cached) { setBusinesses(cached); setLoading(false) }
+    if (cached) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time cache hydration on mount, not a cascading update
+      setBusinesses(cached)
+      setLoading(false)
+    }
     supabase.from('businesses').select('*').then(({ data }) => {
       if (data) { const b = data.map(dbToBusiness); setBusinesses(b); setCache('businesses', b) }
       setLoading(false)
     })
   }, [])
 
-  const sent = useMemo(() => businesses.filter(b => b.sentToInspector === 'נשלח לסוקר'), [businesses])
-  const declined = useMemo(() => businesses.filter(b => b.sentToInspector === 'הוחלט לא לשלוח לסקר'), [businesses])
-  const withResult = useMemo(() => sent.filter(b => b.surveyResultDetail), [sent])
-  const pending = useMemo(() => sent.filter(b => !b.surveyResultDetail), [sent])
-  const completionPct = sent.length > 0 ? Math.round((withResult.length / sent.length) * 100) : 0
+  const stats = useMemo(() => {
+    const sent = businesses.filter(b => b.sentToInspector === 'נשלח לסוקר')
+    const reported = sent.filter(b => b.surveyResultDetail)
+    const pending = sent.filter(b => !b.surveyResultDetail)
+    const gapFound = reported.filter(b => b.surveyResultDetail !== 'לא נמצא עסק/פער שטח')
+    const completionPct = sent.length > 0 ? Math.round((reported.length / sent.length) * 100) : 0
+    const accuracyPct = reported.length > 0 ? Math.round((gapFound.length / reported.length) * 100) : 0
 
-  const resultBreakdown = useMemo(() => {
-    const counts = new Map<string, number>()
-    withResult.forEach(b => {
+    const breakdown = new Map<string, number>()
+    reported.forEach(b => {
       const key = b.surveyResultDetail as string
-      counts.set(key, (counts.get(key) ?? 0) + 1)
+      breakdown.set(key, (breakdown.get(key) ?? 0) + 1)
     })
-    return [...counts.entries()].sort((a, b) => b[1] - a[1])
-  }, [withResult])
+    const resultSegments = [...breakdown.entries()]
+      .map(([key, count]) => ({ key, count, label: RESULT_LABELS[key] ?? key, color: RESULT_COLORS[key] ?? '#7c8ba0' }))
+      .sort((a, b) => b.count - a.count)
+
+    return { sent, reported, pending, gapFound, completionPct, accuracyPct, resultSegments }
+  }, [businesses])
+
+  const arcs = stats.resultSegments.reduce<{ list: (typeof stats.resultSegments[number] & { pct: number; dashoffset: number })[]; offset: number }>(
+    (acc, seg) => {
+      const pct = stats.reported.length > 0 ? (seg.count / stats.reported.length) * 100 : 0
+      acc.list.push({ ...seg, pct, dashoffset: -acc.offset })
+      acc.offset += pct
+      return acc
+    },
+    { list: [], offset: 0 }
+  ).list
 
   if (!ready) return null
-  if (loading) return <AppLayout><Spinner /></AppLayout>
+
+  if (loading) {
+    return (
+      <AppShell title="מעקב תוצאות סקר">
+        <Spinner fullHeight />
+      </AppShell>
+    )
+  }
 
   return (
-    <AppLayout>
-      <section style={{ background: 'var(--canvas)', padding: '48px 48px 32px' }}>
-        <p style={eyebrow}>ניתוח ארנונה · עיריית ירושלים</p>
-        <h1 style={{ fontSize: 44, fontWeight: 500 }}>מעקב תוצאות סקר</h1>
-        <p style={{ color: 'var(--charcoal)', marginTop: 6 }}>
-          מה קרה עם הנכסים שנשלחו לסוקר השטח — כמה טופלו וכמה עדיין ממתינים
-        </p>
-      </section>
+    <AppShell title="מעקב תוצאות סקר" subtitle="מה קרה עם הנכסים שנשלחו לשטח">
+      <div className="flex flex-col gap-5">
 
-      <section style={{ background: 'var(--cloud)', padding: '32px 48px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 16 }}>
-          {[
-            { label: 'נשלחו לסוקר',     value: sent.length,         note: 'סה״כ' },
-            { label: 'התקבלה תוצאה',    value: withResult.length,   note: `${completionPct}% מהנשלחים` },
-            { label: 'ממתינים לתוצאה',  value: pending.length,      note: 'טרם דווח' },
-            { label: 'הוחלט לא לשלוח',  value: declined.length,     note: 'לא נשלחו לסקר' },
-          ].map(({ label, value, note }) => (
-            <div key={label} style={metricCard}>
-              <p style={{ fontSize: 13, fontWeight: 500, color: 'var(--charcoal)', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{label}</p>
-              <p style={{ fontSize: 40, fontWeight: 500, color: 'var(--ink)', lineHeight: 1 }}>{value}</p>
-              <p style={{ fontSize: 13, color: 'var(--graphite)', marginTop: 6 }}>{note}</p>
-            </div>
-          ))}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatCard
+            label="נשלחו לסוקר"
+            value={<span className="num">{stats.sent.length.toLocaleString('he')}</span>}
+            icon={<Send size={16} className="text-subtle" strokeWidth={1.8} />}
+          />
+          <StatCard
+            label="ממתינים לדיווח"
+            value={<span className="num text-mid">{stats.pending.length.toLocaleString('he')}</span>}
+            icon={<Clock size={16} className="text-subtle" strokeWidth={1.8} />}
+          />
+          <StatCard
+            label="דווחו מהשטח"
+            value={<span className="num">{stats.reported.length.toLocaleString('he')}</span>}
+            icon={<ClipboardCheck size={16} className="text-subtle" strokeWidth={1.8} />}
+            footer={<span className="text-[12px] text-subtle"><span className="num">{stats.completionPct}%</span> שיעור השלמה</span>}
+          />
+          <StatCard
+            tone="brand"
+            label="דיוק האינדיקציה"
+            value={<span className="num">{stats.accuracyPct}%</span>}
+            icon={<CheckCircle2 size={16} className="text-[#b9cdf7]" strokeWidth={1.8} />}
+            footer={stats.reported.length > 0 && (
+              <span className="text-[12px] text-[#a9c1f4]">
+                <span className="num">{stats.gapFound.length}</span> מתוך <span className="num">{stats.reported.length}</span> חשדות אומתו בשטח
+              </span>
+            )}
+          />
         </div>
-      </section>
 
-      <section style={{ background: 'var(--canvas)', padding: '32px 48px 80px' }}>
-        <h2 style={{ fontSize: 32, fontWeight: 500, marginBottom: 24 }}>פילוח ממצאי הסקר</h2>
-        {resultBreakdown.length === 0 ? (
-          <p style={{ color: 'var(--graphite)' }}>עדיין אין תוצאות סקר שדווחו</p>
-        ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, maxWidth: 720 }}>
-            {resultBreakdown.map(([result, count]) => (
-              <div key={result} style={{ background: 'var(--cloud)', borderRadius: 16, padding: 20, boxShadow: '0 2px 8px rgba(26,26,26,0.08)' }}>
-                <span style={{ ...(RESULT_STYLE[result] ?? {}), borderRadius: 4, padding: '3px 10px', fontSize: 12, fontWeight: 600 }}>{result}</span>
-                <p style={{ fontSize: 32, fontWeight: 500, color: 'var(--ink)', marginTop: 10 }}>{count}</p>
-                <p style={{ fontSize: 13, color: 'var(--graphite)', marginTop: 4 }}>
-                  {withResult.length > 0 ? Math.round((count / withResult.length) * 100) : 0}% מהדיווחים
-                </p>
-              </div>
-            ))}
+        <Card>
+          <div className="flex items-center justify-between mb-4">
+            <span className="text-[14.5px] font-bold text-ink">פילוח ממצאי הסקר</span>
+            <Link href="/businesses" className="text-[12.5px] font-semibold text-brand hover:text-brand-deep">כל הנכסים ←</Link>
           </div>
-        )}
-      </section>
-    </AppLayout>
+          {stats.reported.length === 0 ? (
+            <EmptyState title="עדיין אין תוצאות סקר שדווחו" description="ברגע שסוקר ידווח ממצא, הפילוח יופיע כאן." />
+          ) : (
+            <div className="flex items-center gap-6 max-w-sm">
+              <svg width="112" height="112" viewBox="0 0 42 42" className="shrink-0">
+                <circle cx="21" cy="21" r="15.9" fill="none" stroke="#f1f3f6" strokeWidth="6.5" />
+                {arcs.filter(a => a.pct > 0).map(arc => (
+                  <circle
+                    key={arc.key}
+                    cx="21" cy="21" r="15.9" fill="none"
+                    stroke={arc.color} strokeWidth="6.5"
+                    strokeDasharray={`${arc.pct} ${100 - arc.pct}`}
+                    strokeDashoffset={arc.dashoffset}
+                    transform="rotate(-90 21 21)"
+                  />
+                ))}
+                <text x="21" y="20.4" textAnchor="middle" style={{ font: "700 6px var(--font-num)", fill: '#0f1a28' }}>{stats.reported.length}</text>
+                <text x="21" y="25" textAnchor="middle" style={{ font: "400 2.9px var(--font-sans)", fill: '#7c8ba0' }}>דיווחים</text>
+              </svg>
+              <div className="flex flex-col gap-2.5">
+                {stats.resultSegments.map(seg => (
+                  <div key={seg.key} className="flex items-center gap-2.5">
+                    <span className="w-2 h-2 rounded-sm shrink-0" style={{ background: seg.color }} />
+                    <span className="text-[12.5px] text-charcoal">{seg.label}</span>
+                    <span className="num text-[12.5px] font-bold text-ink">{seg.count}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </Card>
+
+        <Card padded={false} className="flex-1 min-h-0">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-hairline">
+            <span className="text-[14.5px] font-bold text-ink">תיקים פתוחים — ממתינים לדיווח</span>
+            <span className="num text-[12.5px] text-subtle">{stats.pending.length}</span>
+          </div>
+          {stats.pending.length === 0 ? (
+            <EmptyState title="אין תיקים פתוחים כרגע" description="כל הנכסים שנשלחו לסוקר קיבלו דיווח." />
+          ) : (
+            <Table>
+              <Thead>
+                <Tr>
+                  <Th>נכס</Th>
+                  <Th>שכונה</Th>
+                  <Th>דירוג</Th>
+                </Tr>
+              </Thead>
+              <Tbody>
+                {stats.pending.map(b => (
+                  <Tr key={b.id}>
+                    <Td className="font-semibold">{b.name}</Td>
+                    <Td className="text-charcoal">{b.neighborhood || '—'}</Td>
+                    <Td><Badge tone={RATING_TONE[b.suspicionRating] ?? 'neutral'}>{b.suspicionRating}</Badge></Td>
+                  </Tr>
+                ))}
+              </Tbody>
+            </Table>
+          )}
+        </Card>
+      </div>
+    </AppShell>
   )
 }
-
-function Spinner() {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1, minHeight: '60vh' }}>
-      <div style={{ width: 32, height: 32, border: '3px solid var(--fog)', borderTopColor: 'var(--hp-blue)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-    </div>
-  )
-}
-
-const eyebrow: React.CSSProperties = { fontSize: 13, fontWeight: 500, color: 'var(--graphite)', textTransform: 'uppercase', letterSpacing: '0.7px', marginBottom: 10 }
-const metricCard: React.CSSProperties = { background: 'var(--canvas)', borderRadius: 16, padding: 24, boxShadow: '0 2px 8px rgba(26,26,26,0.08)' }

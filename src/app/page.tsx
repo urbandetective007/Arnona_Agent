@@ -41,9 +41,14 @@ export default function Dashboard() {
   const ready = useRequireRole(['employee', 'manager'])
   const role = useRole()
   const canEdit = role === 'employee'
-  const [businesses, setBusinesses] = useState<Business[]>(() => getCache<Business[]>('businesses') ?? [])
-  const [sessions, setSessions] = useState<UploadSession[]>(() => getCache<UploadSession[]>('sessions') ?? [])
-  const [loading, setLoading] = useState(() => !(getCache<Business[]>('businesses') && getCache<UploadSession[]>('sessions')))
+  // Reading sessionStorage in a lazy useState initializer would give the
+  // server (build-time prerender) and the client's first paint different
+  // values, since sessionStorage doesn't exist on the server — a hydration
+  // mismatch. Starting empty on both sides and hydrating from cache inside
+  // an effect (client-only) keeps the very first render identical.
+  const [businesses, setBusinesses] = useState<Business[]>([])
+  const [sessions, setSessions] = useState<UploadSession[]>([])
+  const [loading, setLoading] = useState(true)
   const [rangeDays, setRangeDays] = useState<number>(Infinity)
   // Captured once per page load rather than read fresh on every render —
   // avoids calling the impure Date.now() during render, and a dashboard
@@ -51,6 +56,14 @@ export default function Dashboard() {
   const [now] = useState(() => Date.now())
 
   useEffect(() => {
+    const cachedB = getCache<Business[]>('businesses')
+    const cachedS = getCache<UploadSession[]>('sessions')
+    if (cachedB && cachedS) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time cache hydration on mount, not a cascading update
+      setBusinesses(cachedB)
+      setSessions(cachedS)
+      setLoading(false)
+    }
     Promise.all([
       supabase.from('businesses').select('*'),
       supabase.from('upload_sessions').select('*'),
@@ -202,14 +215,15 @@ export default function Dashboard() {
     { key: 'gap', label: 'דווח, נמצא פער', count: stats.gapFound.length, color: '#c8102e' },
   ]
   const pipelineTotal = pipelineSegments.reduce((sum, s) => sum + s.count, 0)
-  const circumference = 100
-  let offset = 0
-  const pipelineArcs = pipelineSegments.map(seg => {
-    const pct = pipelineTotal > 0 ? (seg.count / pipelineTotal) * circumference : 0
-    const arc = { ...seg, pct, dashoffset: -offset }
-    offset += pct
-    return arc
-  })
+  const pipelineArcs = pipelineSegments.reduce<{ list: (typeof pipelineSegments[number] & { pct: number; dashoffset: number })[]; offset: number }>(
+    (acc, seg) => {
+      const pct = pipelineTotal > 0 ? (seg.count / pipelineTotal) * 100 : 0
+      acc.list.push({ ...seg, pct, dashoffset: -acc.offset })
+      acc.offset += pct
+      return acc
+    },
+    { list: [], offset: 0 }
+  ).list
 
   return (
     <AppShell
