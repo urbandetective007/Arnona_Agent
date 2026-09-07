@@ -48,9 +48,12 @@ function AppShellInner({ children, title, subtitle, actions }: AppShellProps) {
 
   return (
     <div className="flex min-h-screen bg-canvas">
-      {/* Sidebar — order-2 puts it on the visual right under dir="rtl" */}
+      {/* Sidebar is the first DOM child, so under dir="rtl" (inherited from
+          <html>) it naturally lands on the visual right — no `order`
+          needed, and `order` would in fact push it the wrong way (order
+          moves an item toward the main-end edge, which in RTL is the LEFT). */}
       <aside
-        className="w-60 shrink-0 order-2 sticky top-0 h-screen flex flex-col"
+        className="w-60 shrink-0 sticky top-0 h-screen flex flex-col"
         style={{ background: 'linear-gradient(180deg, var(--color-chrome) 0%, var(--color-chrome-deep) 100%)' }}
       >
         <div className="flex items-center gap-2.5 px-4 pt-5 pb-4 border-b border-chrome-hairline">
@@ -114,11 +117,11 @@ function AppShellInner({ children, title, subtitle, actions }: AppShellProps) {
       </aside>
 
       {/* Main column */}
-      <div className="flex-1 min-w-0 order-1 flex flex-col">
+      <div className="flex-1 min-w-0 flex flex-col">
         <header className="h-[62px] shrink-0 bg-surface border-b border-hairline flex items-center px-6">
           <PageHeader title={title} subtitle={subtitle} actions={actions} className="w-full" />
         </header>
-        <main className="flex-1 min-w-0 overflow-auto p-5 sm:p-6">{children}</main>
+        <main className="flex-1 min-w-0 overflow-auto p-6 lg:p-8">{children}</main>
       </div>
     </div>
   )

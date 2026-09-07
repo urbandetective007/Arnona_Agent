@@ -60,7 +60,12 @@
   --coral:    #ff5050;
 }
 
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+/* Tailwind's own Preflight (loaded via @import "tailwindcss" above) already
+   resets margin/padding to 0 and sets box-sizing: border-box on every
+   element, scoped inside its base cascade layer. A duplicate reset written
+   here as plain, unlayered CSS would, per the CSS cascade layers spec, beat
+   every layered Tailwind utility unconditionally, silently zeroing out
+   every padding and margin utility class in the app. Do not re-add one. */
 
 html, body { height: 100%; }
 

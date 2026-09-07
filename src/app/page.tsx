@@ -137,10 +137,10 @@ export default function Dashboard() {
       title="מרכז בקרה"
       subtitle={lastUpdated ? `עודכן ${lastUpdated} · נתוני אמת מ-Supabase` : 'נתוני אמת מ-Supabase'}
     >
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-5">
 
         {/* KPI ROW */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
             label="נכסים במעקב"
             value={<span className="num">{stats.total.toLocaleString('he')}</span>}
@@ -205,7 +205,7 @@ export default function Dashboard() {
             </div>
             <Link href="/survey-tracking" className="text-[12.5px] font-semibold text-brand hover:text-brand-deep">פירוט מלא ←</Link>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
             {funnelStages.map(stage => (
               <div
                 key={stage.label}
@@ -237,7 +237,7 @@ export default function Dashboard() {
         </Card>
 
         {/* TWO COLUMNS */}
-        <div className="grid grid-cols-1 lg:grid-cols-[1.35fr_1fr] gap-3.5">
+        <div className="grid grid-cols-1 lg:grid-cols-[1.35fr_1fr] gap-5">
 
           {/* Hot neighborhoods */}
           <Card className="flex flex-col">
@@ -248,7 +248,7 @@ export default function Dashboard() {
             {stats.hotNeighborhoods.length === 0 ? (
               <p className="text-sm text-graphite py-6">אין עדיין נכסים עם אינדיקציה משויכים לשכונה.</p>
             ) : (
-              <div className="flex flex-col gap-2.5">
+              <div className="flex flex-col gap-3">
                 {stats.hotNeighborhoods.map(([name, count]) => {
                   const max = stats.hotNeighborhoods[0][1]
                   return (
@@ -280,7 +280,7 @@ export default function Dashboard() {
           </Card>
 
           {/* Donut + activity */}
-          <div className="flex flex-col gap-3.5 min-h-0">
+          <div className="flex flex-col gap-5 min-h-0">
             <Card>
               <div className="text-[14.5px] font-bold text-ink mb-3">התפלגות דירוג</div>
               <div className="flex items-center gap-4">
