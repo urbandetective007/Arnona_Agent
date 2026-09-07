@@ -1,31 +1,73 @@
 @import "tailwindcss";
 
-:root {
+/*
+  Design tokens for the "מוקד בקרה" (control center) redesign.
+  Exposed both as plain CSS custom properties (for any remaining inline
+  styles / third-party overrides below) and as a Tailwind v4 @theme block,
+  so utility classes like `bg-brand`, `text-ink`, `border-hairline` work.
+*/
+@theme {
   /* Brand */
+  --color-brand:      #024ad8;
+  --color-brand-deep: #0e3191;
+  --color-brand-light: #296ef9;
+
+  /* Chrome (dark sidebar) */
+  --color-chrome:      #0d1b2e;
+  --color-chrome-deep: #0a1524;
+
+  /* Surface */
+  --color-canvas:   #f4f6f9;
+  --color-surface:  #ffffff;
+  --color-hairline: #e2e7ee;
+
+  /* Text */
+  --color-ink:      #0f1a28;
+  --color-charcoal: #3f4b5c;
+  --color-graphite: #5b6a7d; /* darkened from mockup's #6b7889 for AA contrast on white */
+  --color-subtle:   #7c8ba0; /* darkened from mockup's #9aa6b6 for AA contrast on white */
+
+  /* Chrome (dark) text */
+  --color-chrome-ink:      #e4ebf6;
+  --color-chrome-graphite: #8a97ab; /* lightened from #6b7889 for AA on dark chrome */
+  --color-chrome-subtle:   #64728a; /* lightened from #4d5b6e for AA on dark chrome */
+  --color-chrome-hairline: rgba(255, 255, 255, 0.08);
+
+  /* Status */
+  --color-high:  #c8102e;
+  --color-mid:   #c2410c;
+  --color-check: #5b6478;
+  --color-clear: #0f7a4a;
+
+  --font-sans: var(--font-assistant), 'Assistant', 'Segoe UI', Arial, sans-serif;
+  --font-num:  var(--font-heebo), 'Heebo', var(--font-sans);
+}
+
+:root {
+  /* Kept for the handful of not-yet-migrated inline styles. */
   --hp-blue:        #024ad8;
   --hp-blue-deep:   #0e3191;
   --hp-blue-bright: #296ef9;
-  /* Surface */
   --canvas:   #ffffff;
   --cloud:    #f7f7f7;
   --fog:      #e8e8e8;
   --steel:    #c2c2c2;
   --hairline: #e8e8e8;
-  /* Text */
   --ink:      #1a1a1a;
   --charcoal: #3d3d3d;
   --graphite: #636363;
   --on-ink:   #ffffff;
-  /* Semantic */
   --coral:    #ff5050;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+html, body { height: 100%; }
+
 body {
-  font-family: var(--font-manrope), 'Manrope', Arial, sans-serif;
-  background: var(--canvas);
-  color: var(--ink);
+  font-family: var(--font-sans);
+  background: var(--color-canvas);
+  color: var(--color-ink);
   font-size: 16px;
   line-height: 1.38;
   -webkit-font-smoothing: antialiased;
@@ -34,7 +76,13 @@ body {
 h1, h2, h3, h4 {
   font-weight: 500;
   line-height: 1.0;
-  color: var(--ink);
+  color: var(--color-ink);
+}
+
+/* Tabular figures for every number in the UI, per the design direction. */
+.num {
+  font-family: var(--font-num);
+  font-variant-numeric: tabular-nums;
 }
 
 @keyframes spin { to { transform: rotate(360deg); } }
@@ -44,28 +92,28 @@ h1, h2, h3, h4 {
    ========================================== */
 
 .leaflet-popup-content-wrapper {
-  background: var(--canvas) !important;
-  color: var(--ink) !important;
+  background: var(--color-surface) !important;
+  color: var(--color-ink) !important;
   border-radius: 12px !important;
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.08) !important;
-  border: 1px solid var(--hairline) !important;
+  border: 1px solid var(--color-hairline) !important;
   padding: 4px !important;
 }
 
 .leaflet-popup-tip {
-  background: var(--canvas) !important;
-  border: 1px solid var(--hairline) !important;
+  background: var(--color-surface) !important;
+  border: 1px solid var(--color-hairline) !important;
   box-shadow: none !important;
 }
 
 .leaflet-popup-close-button {
-  color: var(--graphite) !important;
+  color: var(--color-graphite) !important;
   padding: 8px !important;
   font-size: 16px !important;
 }
 
 .leaflet-popup-close-button:hover {
-  color: var(--ink) !important;
+  color: var(--color-ink) !important;
   background: transparent !important;
 }
 
@@ -79,5 +127,3 @@ h1, h2, h3, h4 {
   transform: scale(1.15) translateY(-2px);
   filter: drop-shadow(0px 4px 8px rgba(0,0,0,0.4)) !important;
 }
-
-

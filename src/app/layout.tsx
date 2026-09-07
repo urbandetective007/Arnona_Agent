@@ -1,11 +1,20 @@
 import type { Metadata } from 'next'
-import { Manrope } from 'next/font/google'
+import { Assistant, Heebo } from 'next/font/google'
 import './globals.css'
 
-const manrope = Manrope({
-  subsets: ['latin'],
+// Assistant (UI text) + Heebo (tabular digits, via the `.num` helper class) —
+// both have real Hebrew glyphs, unlike Manrope which silently fell back to
+// Arial for every Hebrew character on the old site.
+const assistant = Assistant({
+  subsets: ['hebrew', 'latin'],
   weight: ['400', '500', '600', '700'],
-  variable: '--font-manrope',
+  variable: '--font-assistant',
+})
+
+const heebo = Heebo({
+  subsets: ['hebrew', 'latin'],
+  weight: ['400', '500', '700'],
+  variable: '--font-heebo',
 })
 
 export const metadata: Metadata = {
@@ -15,7 +24,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="he" dir="rtl" className={manrope.variable}>
+    <html lang="he" dir="rtl" className={`${assistant.variable} ${heebo.variable}`}>
       <body>{children}</body>
     </html>
   )
