@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { Building2, Flame, Send, ClipboardCheck, ArrowUpRight, TrendingUp, Upload, FileText } from 'lucide-react'
+import { Building2, Flame, Send, ClipboardCheck, ArrowUpRight, TrendingUp, Upload, FileText, Download } from 'lucide-react'
 import { AppShell } from '@/components/AppShell'
 import { useRequireRole } from '@/lib/useRequireRole'
 import { useRole } from '@/lib/useRole'
@@ -10,7 +10,31 @@ import type { Business, UploadSession } from '@/lib/types'
 import { supabase, dbToBusiness, dbToSession } from '@/lib/supabase'
 import { getCache, setCache } from '@/lib/cache'
 import { timeAgo } from '@/lib/dateUtils'
-import { Card, StatCard, Button, Spinner, EmptyState } from '@/components/ui'
+import { Card, StatCard, Button, Spinner, EmptyState, Pill, Sparkline } from '@/components/ui'
+
+const RANGE_OPTIONS = [
+  { label: '7 ימים', days: 7 },
+  { label: '30 יום', days: 30 },
+  { label: 'רבעון', days: 90 },
+] as const
+
+function downloadBusinessesCsv(businesses: Business[]) {
+  const headers = ['שם העסק', 'סוג', 'כתובת', 'שכונה', 'דירוג אינדיקציה', 'סטטוס סוקר', 'תוצאת סקר']
+  const rows = businesses.map(b => [
+    b.name, b.type, b.address, b.neighborhood, b.suspicionRating,
+    b.sentToInspector ?? '', b.surveyResultDetail ?? '',
+  ])
+  const csv = [headers, ...rows]
+    .map(row => row.map(cell => `"${String(cell ?? '').replace(/"/g, '""')}"`).join(','))
+    .join('\r\n')
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `נכסים-${new Date().toISOString().slice(0, 10)}.csv`
+  a.click()
+  URL.revokeObjectURL(url)
+}
 
 export default function Dashboard() {
   const ready = useRequireRole(['employee', 'manager'])
@@ -19,6 +43,7 @@ export default function Dashboard() {
   const [businesses, setBusinesses] = useState<Business[]>(() => getCache<Business[]>('businesses') ?? [])
   const [sessions, setSessions] = useState<UploadSession[]>(() => getCache<UploadSession[]>('sessions') ?? [])
   const [loading, setLoading] = useState(() => !(getCache<Business[]>('businesses') && getCache<UploadSession[]>('sessions')))
+  const [rangeDays, setRangeDays] = useState<number>(30)
 
   useEffect(() => {
     Promise.all([
@@ -50,28 +75,62 @@ export default function Dashboard() {
     )
 
     const now = new Date()
-    const addedThisMonth = businesses.filter(b => {
+    const addedInRange = businesses.filter(b => {
       const d = new Date(b.uploadDate)
-      return !Number.isNaN(d.getTime()) && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
+      return !Number.isNaN(d.getTime()) && (now.getTime() - d.getTime()) / 86400000 <= rangeDays
     }).length
 
-    const byNeighborhood = new Map<string, number>()
+    // Rate per neighborhood (indication ÷ all properties there), not raw
+    // count — a real, currently-computable ratio, unlike a trend or a ₪
+    // figure. A minimum sample size keeps a single-property neighborhood
+    // at 100% from outranking one with a real, sizeable problem.
+    const byNeighborhood = new Map<string, { total: number; indication: number }>()
     businesses.forEach(b => {
       if (!b.neighborhood) return
-      if (b.suspicionRating !== 'גבוה' && b.suspicionRating !== 'בינוני') return
-      byNeighborhood.set(b.neighborhood, (byNeighborhood.get(b.neighborhood) ?? 0) + 1)
+      const entry = byNeighborhood.get(b.neighborhood) ?? { total: 0, indication: 0 }
+      entry.total += 1
+      if (b.suspicionRating === 'גבוה' || b.suspicionRating === 'בינוני') entry.indication += 1
+      byNeighborhood.set(b.neighborhood, entry)
     })
-    const hotNeighborhoods = [...byNeighborhood.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6)
+    const hotNeighborhoods = [...byNeighborhood.entries()]
+      .map(([name, e]) => ({ name, count: e.indication, total: e.total, pct: Math.round((e.indication / e.total) * 100) }))
+      .filter(n => n.total >= 3 && n.count > 0)
+      .sort((a, b) => b.pct - a.pct || b.count - a.count)
+      .slice(0, 6)
     const topThreeShare = indication > 0
-      ? Math.round((hotNeighborhoods.slice(0, 3).reduce((sum, [, c]) => sum + c, 0) / indication) * 100)
+      ? Math.round((hotNeighborhoods.slice(0, 3).reduce((sum, n) => sum + n.count, 0) / indication) * 100)
       : 0
+
+    // Cumulative history from each business's own upload date — a real
+    // series (not an invented ±% trend) usable for the KPI sparklines.
+    const byDay = new Map<string, { total: number; indication: number }>()
+    businesses.forEach(b => {
+      const day = (b.uploadDate || '').slice(0, 10)
+      if (!day) return
+      const entry = byDay.get(day) ?? { total: 0, indication: 0 }
+      entry.total += 1
+      if (b.suspicionRating === 'גבוה' || b.suspicionRating === 'בינוני') entry.indication += 1
+      byDay.set(day, entry)
+    })
+    const sortedDays = [...byDay.keys()].sort()
+    let runningTotal = 0
+    let runningIndication = 0
+    const totalHistory: number[] = []
+    const indicationHistory: number[] = []
+    sortedDays.forEach(day => {
+      const e = byDay.get(day)!
+      runningTotal += e.total
+      runningIndication += e.indication
+      totalHistory.push(runningTotal)
+      indicationHistory.push(runningIndication)
+    })
 
     return {
       total, high, mid, needsCheck, notSuspect, indication,
       sent, declined, reported, gapFound, pendingAssignment,
-      addedThisMonth, hotNeighborhoods, topThreeShare,
+      addedInRange, hotNeighborhoods, topThreeShare, totalHistory, indicationHistory,
     }
-  }, [businesses])
+  }, [businesses, rangeDays])
 
   const lastUpdated = useMemo(() => {
     const dates = sessions.map(s => s.uploadDate).filter(Boolean).sort()
@@ -136,6 +195,20 @@ export default function Dashboard() {
     <AppShell
       title="מרכז בקרה"
       subtitle={lastUpdated ? `עודכן ${lastUpdated} · נתוני אמת מ-Supabase` : 'נתוני אמת מ-Supabase'}
+      actions={
+        <>
+          <div className="flex bg-canvas rounded-lg p-0.5 gap-0.5">
+            {RANGE_OPTIONS.map(opt => (
+              <Pill key={opt.days} active={rangeDays === opt.days} onClick={() => setRangeDays(opt.days)}>
+                {opt.label}
+              </Pill>
+            ))}
+          </div>
+          <Button variant="secondary" icon={<Download size={15} strokeWidth={1.9} />} onClick={() => downloadBusinessesCsv(businesses)}>
+            ייצוא דוח
+          </Button>
+        </>
+      }
     >
       <div className="flex flex-col gap-5">
 
@@ -145,11 +218,12 @@ export default function Dashboard() {
             label="נכסים במעקב"
             value={<span className="num">{stats.total.toLocaleString('he')}</span>}
             icon={<Building2 size={16} className="text-subtle" strokeWidth={1.8} />}
-            footer={stats.addedThisMonth > 0 && (
+            sparkline={<Sparkline values={stats.totalHistory} color="#296ef9" />}
+            footer={stats.addedInRange > 0 && (
               <div className="flex items-center gap-1 text-[12px] text-clear font-semibold">
                 <ArrowUpRight size={13} strokeWidth={2.4} />
-                <span className="num">{stats.addedThisMonth}</span>
-                <span className="text-subtle font-normal">החודש</span>
+                <span className="num">{stats.addedInRange}</span>
+                <span className="text-subtle font-normal">ב{RANGE_OPTIONS.find(o => o.days === rangeDays)?.label}</span>
               </div>
             )}
           />
@@ -157,6 +231,7 @@ export default function Dashboard() {
             label="אינדיקציה גבוהה"
             value={<span className="num text-high">{stats.high.toLocaleString('he')}</span>}
             icon={<span className="w-1.5 h-1.5 rounded-full bg-high" />}
+            sparkline={<Sparkline values={stats.indicationHistory} color="#c8102e" />}
             footer={
               <span className="text-[12px] text-subtle">
                 <span className="num">{stats.total > 0 ? Math.round((stats.high / stats.total) * 100) : 0}%</span> מכלל הנכסים
@@ -174,24 +249,22 @@ export default function Dashboard() {
             }
           />
           <StatCard
+            tone="brand"
             label="אימות בשטח"
+            icon={<ClipboardCheck size={16} className="text-[#b9cdf7]" strokeWidth={1.8} />}
             value={
               <span className="flex items-baseline gap-1.5">
                 <span className="num">{stats.sent.length > 0 ? Math.round((stats.reported.length / stats.sent.length) * 100) : 0}%</span>
-                <span className="num text-[12.5px] text-subtle font-normal">{stats.reported.length} מתוך {stats.sent.length} דיווחים</span>
+                <span className="num text-[12.5px] text-[#a9c1f4] font-normal">{stats.reported.length} מתוך {stats.sent.length} דיווחים</span>
               </span>
             }
-            icon={<ClipboardCheck size={16} className="text-subtle" strokeWidth={1.8} />}
             footer={
-              <>
-                <div className="h-1.5 bg-canvas rounded-full overflow-hidden flex">
-                  <span
-                    className="bg-clear block h-full"
-                    style={{ width: `${stats.sent.length > 0 ? (stats.reported.length / stats.sent.length) * 100 : 0}%` }}
-                  />
-                </div>
-                <div className="text-[11.5px] text-graphite mt-1.5">שיעור הדיווחים שהתקבלו מהסוקר</div>
-              </>
+              <div className="h-1.5 bg-white/15 rounded-full overflow-hidden flex w-36">
+                <span
+                  className="bg-white block h-full"
+                  style={{ width: `${stats.sent.length > 0 ? (stats.reported.length / stats.sent.length) * 100 : 0}%` }}
+                />
+              </div>
             }
           />
         </div>
@@ -243,27 +316,32 @@ export default function Dashboard() {
           <Card className="flex flex-col">
             <div className="flex items-center justify-between mb-3.5">
               <span className="text-[14.5px] font-bold text-ink">שכונות חמות</span>
-              <span className="text-[11.5px] text-graphite">לפי מספר נכסים באינדיקציה</span>
+              <span className="text-[11.5px] text-graphite">לפי שיעור אינדיקציה מתוך נכסי השכונה</span>
             </div>
             {stats.hotNeighborhoods.length === 0 ? (
-              <p className="text-sm text-graphite py-6">אין עדיין נכסים עם אינדיקציה משויכים לשכונה.</p>
+              <p className="text-sm text-graphite py-6">אין עדיין מספיק נכסים לשכונה כדי לחשב שיעור אמין.</p>
             ) : (
               <div className="flex flex-col gap-3">
-                {stats.hotNeighborhoods.map(([name, count]) => {
-                  const max = stats.hotNeighborhoods[0][1]
+                {stats.hotNeighborhoods.map((n, i) => {
+                  const [gradient, textColor] = i < 2
+                    ? ['linear-gradient(90deg, #c8102e 0%, #e04a5f 100%)', 'text-high']
+                    : i < 4
+                      ? ['linear-gradient(90deg, #c2410c 0%, #e07a44 100%)', 'text-mid']
+                      : ['linear-gradient(90deg, #a16207 0%, #d0a24a 100%)', 'text-[#a16207]']
                   return (
-                    <div key={name} className="flex items-center gap-3">
-                      <span className="w-24 shrink-0 text-[13px] font-semibold text-ink truncate">{name}</span>
-                      {/* justify-end anchors the bar to the same side as the count, so a
-                          short bar still sits next to its number instead of stranding it
+                    <div key={n.name} className="flex items-center gap-3">
+                      <span className="w-24 shrink-0 text-[13px] font-semibold text-ink truncate">{n.name}</span>
+                      {/* justify-end anchors the bar to the same side as the values, so a
+                          short bar still sits next to its numbers instead of stranding them
                           across an empty track. */}
                       <div className="flex-1 h-[22px] bg-canvas rounded-md overflow-hidden flex justify-end">
                         <span
                           className="block h-full rounded-md min-w-[10px]"
-                          style={{ width: `${(count / max) * 100}%`, background: 'linear-gradient(90deg, #c8102e 0%, #e04a5f 100%)' }}
+                          style={{ width: `${n.pct}%`, background: gradient }}
                         />
                       </div>
-                      <span className="num w-8 shrink-0 text-start text-[13px] font-bold text-high">{count}</span>
+                      <span className={`num w-9 shrink-0 text-start text-[13px] font-bold ${textColor}`}>{n.pct}%</span>
+                      <span className="num w-6 shrink-0 text-start text-[12px] text-subtle">{n.count}</span>
                     </div>
                   )
                 })}
