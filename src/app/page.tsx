@@ -16,6 +16,7 @@ const RANGE_OPTIONS = [
   { label: '7 ימים', days: 7 },
   { label: '30 יום', days: 30 },
   { label: 'רבעון', days: 90 },
+  { label: 'כלל הנתונים', days: Infinity },
 ] as const
 
 function downloadBusinessesCsv(businesses: Business[], rangeLabel: string) {
