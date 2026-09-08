@@ -1,46 +1,48 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import Link from 'next/link'
-import AppLayout from '@/components/AppLayout'
+import { FileSpreadsheet, Trash2, Upload as UploadIcon } from 'lucide-react'
+import { AppShell } from '@/components/AppShell'
 import { useRequireRole } from '@/lib/useRequireRole'
 import type { Business, UploadSession } from '@/lib/types'
 import { supabase, dbToBusiness, dbToSession, sessionToDb } from '@/lib/supabase'
 import { getCache, setCache } from '@/lib/cache'
 import { formatDate } from '@/lib/dateUtils'
+import { Card, Badge, Button, Spinner, EmptyState } from '@/components/ui'
+import type { BadgeTone } from '@/components/ui'
 
-const BADGE: Record<string, React.CSSProperties> = {
-  'גבוה':        { background: '#fef2f2', color: '#b91c1c' },
-  'בינוני':      { background: '#fff7ed', color: '#c2410c' },
-  'לא חשוד':    { background: '#f0fdf4', color: '#15803d' },
-  'דרוש בדיקה': { background: 'var(--cloud)', color: 'var(--charcoal)' },
-}
+const RATING_TONE: Record<string, BadgeTone> = { 'גבוה': 'high', 'בינוני': 'mid', 'לא חשוד': 'clear' }
 
 export default function FilesPage() {
   const ready = useRequireRole(['employee'])
-  const [sessions,   setSessions]   = useState<UploadSession[]>([])
+  // Reading sessionStorage in a lazy useState initializer would give the
+  // server (build-time prerender) and the client's first paint different
+  // values, since sessionStorage doesn't exist on the server — a hydration
+  // mismatch. Starting empty on both sides and hydrating from cache inside
+  // an effect (client-only) keeps the very first render identical.
+  const [sessions, setSessions] = useState<UploadSession[]>([])
   const [businesses, setBusinesses] = useState<Business[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [loading,    setLoading]    = useState(true)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const cachedS = getCache<UploadSession[]>('sessions')
     const cachedB = getCache<Business[]>('businesses')
     if (cachedS && cachedB) {
-      setSessions(cachedS); setBusinesses(cachedB); setLoading(false)
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time cache hydration on mount, not a cascading update
+      setSessions(cachedS)
+      setBusinesses(cachedB)
+      setLoading(false)
     }
     Promise.all([
       supabase.from('upload_sessions').select('*'),
       supabase.from('businesses').select('*'),
     ]).then(([{ data: sData }, { data: bData }]) => {
-      if (sData) { const s = sData.map(dbToSession);  setSessions(s);   setCache('sessions', s) }
+      if (sData) { const s = sData.map(dbToSession); setSessions(s); setCache('sessions', s) }
       if (bData) { const b = bData.map(dbToBusiness); setBusinesses(b); setCache('businesses', b) }
       setLoading(false)
     })
   }, [])
-
-  if (!ready) return null
-  if (loading) return <AppLayout><Spinner /></AppLayout>
 
   async function deleteSession(id: string) {
     if (!confirm('למחוק את הקובץ וכל העסקים שלו?')) return
@@ -54,9 +56,9 @@ export default function FilesPage() {
   }
 
   async function deleteBusiness(id: string) {
-    await supabase.from('businesses').delete().eq('id', id)
     const next = businesses.filter(b => b.id !== id)
     setBusinesses(next); setCache('businesses', next)
+    await supabase.from('businesses').delete().eq('id', id)
 
     const nextSessions = await Promise.all(sessions.map(async s => {
       if (!s.businessIds.includes(id)) return s
@@ -83,110 +85,122 @@ export default function FilesPage() {
     setCache('businesses', []); setCache('sessions', [])
   }
 
+  if (!ready) return null
+
+  if (loading) {
+    return (
+      <AppShell title="קבצים שהועלו">
+        <Spinner fullHeight />
+      </AppShell>
+    )
+  }
+
   const selected = sessions.find(s => s.id === selectedId)
-  const selBiz   = selectedId ? businesses.filter(b => b.uploadSessionId === selectedId) : []
+  const selectedBusinesses = selectedId ? businesses.filter(b => b.uploadSessionId === selectedId) : []
 
   return (
-    <AppLayout>
-      <section style={{ background: 'var(--canvas)', padding: '48px 48px 32px', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between' }}>
-        <div>
-          <p style={eyebrow}>היסטוריית העלאות</p>
-          <h1 style={{ fontSize: 44, fontWeight: 500 }}>קבצים שהועלו</h1>
-          <p style={{ color: 'var(--charcoal)', marginTop: 6 }}>{sessions.length} קבצים · {businesses.length} עסקים סה״כ</p>
-        </div>
-        {(sessions.length > 0 || businesses.length > 0) && (
-          <button onClick={clearAll} style={btnDanger}>נקה את כל הנתונים</button>
-        )}
-      </section>
-
+    <AppShell
+      title="קבצים שהועלו"
+      subtitle={`${sessions.length.toLocaleString('he')} קבצים · ${businesses.length.toLocaleString('he')} עסקים סה״כ`}
+      actions={
+        (sessions.length > 0 || businesses.length > 0) && (
+          <Button variant="secondary" icon={<Trash2 size={15} strokeWidth={1.9} />} onClick={clearAll} className="!text-high !border-high/30 hover:!bg-high/5">
+            נקה את כל הנתונים
+          </Button>
+        )
+      }
+    >
       {sessions.length === 0 && businesses.length === 0 ? (
-        <section style={{ background: 'var(--cloud)', padding: '80px 48px', textAlign: 'center' }}>
-          <p style={{ fontSize: 32, fontWeight: 500, marginBottom: 16 }}>לא הועלו קבצים עדיין</p>
-          <Link href="/upload" style={btnBlue}>העלאת קובץ ראשון</Link>
-        </section>
+        <Card>
+          <EmptyState
+            icon={<FileSpreadsheet size={40} strokeWidth={1.5} />}
+            title="לא הועלו קבצים עדיין"
+            action={<Button href="/upload">העלאת קובץ ראשון</Button>}
+          />
+        </Card>
       ) : (
-        <section style={{ background: 'var(--cloud)', padding: '32px 48px 80px', display: 'flex', gap: 24, alignItems: 'flex-start' }}>
-
-          {/* Sessions list */}
-          <div style={{ width: 280, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-4 items-start">
+          <div className="flex flex-col gap-2.5">
             {[...sessions].reverse().map(session => {
               const active = selectedId === session.id
               return (
-                <div key={session.id} onClick={() => setSelectedId(active ? null : session.id)}
-                  style={{ background: 'var(--canvas)', borderRadius: 16, padding: 20, cursor: 'pointer', boxShadow: '0 2px 8px rgba(26,26,26,0.08)', border: active ? '2px solid var(--hp-blue)' : '2px solid transparent' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <div style={{ minWidth: 0 }}>
-                      <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{session.fileName}</p>
-                      <p style={{ fontSize: 12, color: 'var(--graphite)', marginTop: 3 }}>{formatDate(session.uploadDate)}</p>
+                <button
+                  key={session.id}
+                  onClick={() => setSelectedId(active ? null : session.id)}
+                  className={`text-start rounded-xl p-4 transition-colors border-2 ${active ? 'border-brand bg-brand/[0.04]' : 'border-transparent bg-surface hover:bg-canvas'} shadow-[0_1px_2px_rgba(15,26,40,0.03)]`}
+                >
+                  <div className="flex justify-between items-start gap-2">
+                    <div className="min-w-0">
+                      <p className="font-semibold text-[13.5px] text-ink truncate">{session.fileName}</p>
+                      <p className="text-[12px] text-subtle mt-0.5">{formatDate(session.uploadDate)}</p>
                     </div>
-                    <button onClick={e => { e.stopPropagation(); deleteSession(session.id) }}
-                      style={{ background: 'none', border: 'none', color: 'var(--steel)', cursor: 'pointer', fontSize: 20, lineHeight: 1, flexShrink: 0 }}>
-                      ×
-                    </button>
+                    <span
+                      role="button"
+                      tabIndex={0}
+                      onClick={e => { e.stopPropagation(); deleteSession(session.id) }}
+                      className="text-subtle hover:text-high shrink-0"
+                    >
+                      <Trash2 size={15} strokeWidth={1.8} />
+                    </span>
                   </div>
-                  <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
-                    <Chip label={`חדש: ${session.totalCount}`} color="#1d4ed8" bg="#eff6ff" />
-                    {session.skippedCount > 0 && <Chip label={`כפול: ${session.skippedCount}`} color="#92400e" bg="#fffbeb" />}
-                    {session.suspiciousCount > 0 && <Chip label={`אינדיקציה: ${session.suspiciousCount}`} color="#b91c1c" bg="#fef2f2" />}
-                    {session.okCount > 0 && <Chip label={`תקין: ${session.okCount}`} color="#15803d" bg="#f0fdf4" />}
+                  <div className="flex gap-1.5 mt-2.5 flex-wrap">
+                    <Badge tone="brand">חדש: {session.totalCount}</Badge>
+                    {session.skippedCount > 0 && <Badge tone="mid">כפול: {session.skippedCount}</Badge>}
+                    {session.suspiciousCount > 0 && <Badge tone="high">אינדיקציה: {session.suspiciousCount}</Badge>}
+                    {session.okCount > 0 && <Badge tone="clear">תקין: {session.okCount}</Badge>}
                   </div>
-                </div>
+                </button>
               )
             })}
           </div>
 
-          {/* Businesses panel */}
-          <div style={{ flex: 1, minWidth: 0 }}>
+          <div className="min-w-0">
             {!selectedId ? (
-              <div style={{ background: 'var(--canvas)', borderRadius: 16, padding: 48, textAlign: 'center', color: 'var(--graphite)', boxShadow: '0 2px 8px rgba(26,26,26,0.08)' }}>
-                בחר קובץ מהרשימה כדי לראות את הנכסים שלו
-              </div>
+              <Card>
+                <EmptyState title="בחר קובץ מהרשימה כדי לראות את הנכסים שלו" />
+              </Card>
             ) : (
-              <div style={{ background: 'var(--canvas)', borderRadius: 16, overflow: 'hidden', boxShadow: '0 2px 8px rgba(26,26,26,0.08)' }}>
-                <div style={{ padding: '16px 24px', background: 'var(--fog)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Card padded={false}>
+                <div className="flex items-center justify-between px-5 py-4 bg-canvas border-b border-hairline">
                   <div>
-                    <p style={{ fontWeight: 600, color: 'var(--ink)' }}>{selected?.fileName}</p>
-                    <p style={{ fontSize: 12, color: 'var(--graphite)', marginTop: 2 }}>{selBiz.length} עסקים</p>
+                    <p className="font-semibold text-ink">{selected?.fileName}</p>
+                    <p className="text-[12px] text-subtle mt-0.5">{selectedBusinesses.length.toLocaleString('he')} עסקים</p>
                   </div>
-                  <button onClick={() => deleteSession(selectedId)} style={btnDanger}>מחק קובץ</button>
+                  <Button variant="secondary" icon={<Trash2 size={14} strokeWidth={1.9} />} onClick={() => deleteSession(selectedId)} className="!text-high !border-high/30 h-9">
+                    מחק קובץ
+                  </Button>
                 </div>
-                {selected && (selected.skippedCount > 0 || selected.totalCount > 0) && (
-                  <div style={{ padding: '10px 24px', background: '#f8faff', borderBottom: '1px solid var(--hairline)', display: 'flex', gap: 24, fontSize: 13 }}>
-                    <span style={{ color: '#1d4ed8', fontWeight: 600 }}>✓ {selected.totalCount} עסקים חדשים נוספו</span>
-                    {selected.skippedCount > 0 && (
-                      <span style={{ color: '#92400e', fontWeight: 600 }}>⊘ {selected.skippedCount} כפולים דולגו</span>
-                    )}
+                {selected && selected.totalCount > 0 && (
+                  <div className="flex gap-6 px-5 py-2.5 bg-brand/[0.04] border-b border-hairline text-[13px]">
+                    <span className="text-brand font-semibold">✓ {selected.totalCount} עסקים חדשים נוספו</span>
+                    {selected.skippedCount > 0 && <span className="text-mid font-semibold">⊘ {selected.skippedCount} כפולים דולגו</span>}
                   </div>
                 )}
-
-                <div style={{ overflow: 'auto', maxHeight: 560 }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
-                    <thead style={{ position: 'sticky', top: 0, background: 'var(--cloud)', zIndex: 1 }}>
-                      <tr style={{ borderBottom: '1px solid var(--hairline)' }}>
-                        {['שם העסק', 'כתובת', 'דירוג', 'פירוט', ''].map((h, i) => (
-                          <th key={i} style={{ textAlign: 'right', padding: '10px 16px', fontSize: 12, fontWeight: 600, color: 'var(--charcoal)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{h}</th>
+                <div className="overflow-auto max-h-[560px]">
+                  <table className="w-full border-collapse text-[13px]">
+                    <thead className="sticky top-0 bg-canvas z-10">
+                      <tr className="border-b border-hairline">
+                        {['שם העסק', 'כתובת', 'דירוג', 'פירוט', ''].map(h => (
+                          <th key={h} className="px-4 py-2.5 text-start text-[12px] font-semibold text-graphite whitespace-nowrap">{h}</th>
                         ))}
                       </tr>
                     </thead>
-                    <tbody>
-                      {selBiz.length === 0 ? (
-                        <tr><td colSpan={5} style={{ textAlign: 'center', padding: 32, color: 'var(--graphite)' }}>אין עסקים בקובץ זה</td></tr>
-                      ) : selBiz.map(b => (
-                        <tr key={b.id} style={{ borderBottom: '1px solid var(--hairline)' }}>
-                          <td style={{ padding: '12px 16px', fontWeight: 500, color: 'var(--ink)' }}>{b.name}</td>
-                          <td style={{ padding: '12px 16px', color: 'var(--charcoal)' }}>{b.address}</td>
-                          <td style={{ padding: '12px 16px' }}>
-                            {b.suspicionRating
-                              ? <span style={{ ...badgeBase, ...(BADGE[b.suspicionRating] ?? { background: 'var(--cloud)', color: 'var(--charcoal)' }) }}>{b.suspicionRating}</span>
-                              : '—'}
+                    <tbody className="divide-y divide-hairline">
+                      {selectedBusinesses.length === 0 ? (
+                        <tr><td colSpan={5} className="text-center py-8 text-graphite">אין עסקים בקובץ זה</td></tr>
+                      ) : selectedBusinesses.map(b => (
+                        <tr key={b.id}>
+                          <td className="px-4 py-3 font-semibold text-ink">{b.name}</td>
+                          <td className="px-4 py-3 text-charcoal">{b.address}</td>
+                          <td className="px-4 py-3">
+                            {b.suspicionRating ? <Badge tone={RATING_TONE[b.suspicionRating] ?? 'neutral'}>{b.suspicionRating}</Badge> : '—'}
                           </td>
-                          <td style={{ padding: '12px 16px', color: 'var(--graphite)', fontSize: 12, maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={b.suspicionDetail || b.noSuspicionReason}>
+                          <td className="px-4 py-3 text-subtle text-[12px] max-w-[220px] truncate" title={b.suspicionDetail || b.noSuspicionReason}>
                             {b.suspicionDetail || b.noSuspicionReason || '—'}
                           </td>
-                          <td style={{ padding: '12px 16px' }}>
-                            <button onClick={() => { if (confirm(`למחוק "${b.name}"?`)) deleteBusiness(b.id) }}
-                              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--steel)', fontSize: 18, lineHeight: 1 }}>
-                              ×
+                          <td className="px-4 py-3">
+                            <button onClick={() => { if (confirm(`למחוק "${b.name}"?`)) deleteBusiness(b.id) }} className="text-subtle hover:text-high" title="מחק">
+                              <Trash2 size={14} strokeWidth={1.8} />
                             </button>
                           </td>
                         </tr>
@@ -194,34 +208,22 @@ export default function FilesPage() {
                     </tbody>
                   </table>
                 </div>
-              </div>
+              </Card>
             )}
           </div>
-        </section>
+        </div>
       )}
 
-      <section style={{ background: 'var(--ink)', padding: '48px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <p style={{ color: 'var(--steel)', fontSize: 16 }}>להוספת נתונים חדשים — העלה דוח יומי</p>
-        <Link href="/upload" style={btnWhite}>העלאת דוח חדש</Link>
-      </section>
-    </AppLayout>
+      <div
+        className="mt-4 rounded-xl p-5 flex items-center justify-between gap-6 flex-wrap"
+        style={{ background: 'linear-gradient(180deg, var(--color-chrome) 0%, var(--color-chrome-deep) 100%)' }}
+      >
+        <div className="flex items-center gap-1.5 text-chrome-graphite text-sm">
+          <UploadIcon size={13} strokeWidth={2} />
+          להוספת נתונים חדשים — העלה דוח יומי
+        </div>
+        <Button href="/upload" variant="onDark" className="shrink-0">העלאת דוח חדש</Button>
+      </div>
+    </AppShell>
   )
 }
-
-function Spinner() {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1, minHeight: '60vh' }}>
-      <div style={{ width: 32, height: 32, border: '3px solid var(--fog)', borderTopColor: 'var(--hp-blue)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-    </div>
-  )
-}
-
-function Chip({ label, color = 'var(--charcoal)', bg = 'var(--cloud)' }: { label: string; color?: string; bg?: string }) {
-  return <span style={{ fontSize: 12, fontWeight: 600, color, background: bg, borderRadius: 4, padding: '2px 8px' }}>{label}</span>
-}
-
-const eyebrow:   React.CSSProperties = { fontSize: 13, fontWeight: 500, color: 'var(--graphite)', textTransform: 'uppercase', letterSpacing: '0.7px', marginBottom: 10 }
-const badgeBase: React.CSSProperties = { borderRadius: 4, padding: '3px 10px', fontSize: 12, fontWeight: 600 }
-const btnBlue:   React.CSSProperties = { display: 'inline-block', height: 44, padding: '0 24px', lineHeight: '44px', background: 'var(--hp-blue)', color: '#fff', borderRadius: 4, fontSize: 14, fontWeight: 600, letterSpacing: '0.7px', textTransform: 'uppercase', textDecoration: 'none' }
-const btnWhite:  React.CSSProperties = { display: 'inline-block', height: 44, padding: '0 24px', lineHeight: '44px', background: 'var(--canvas)', color: 'var(--ink)', borderRadius: 4, fontSize: 14, fontWeight: 600, letterSpacing: '0.7px', textTransform: 'uppercase', textDecoration: 'none', flexShrink: 0 }
-const btnDanger: React.CSSProperties = { height: 36, padding: '0 14px', background: 'none', border: '1px solid #b91c1c', color: '#b91c1c', borderRadius: 4, fontSize: 13, fontWeight: 600, cursor: 'pointer', letterSpacing: '0.5px', textTransform: 'uppercase', whiteSpace: 'nowrap' }
