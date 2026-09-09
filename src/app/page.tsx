@@ -9,7 +9,7 @@ import { useRole } from '@/lib/useRole'
 import type { Business, UploadSession } from '@/lib/types'
 import { supabase, dbToBusiness, dbToSession } from '@/lib/supabase'
 import { getCache, setCache } from '@/lib/cache'
-import { timeAgo } from '@/lib/dateUtils'
+import { timeAgo, parseUploadDate } from '@/lib/dateUtils'
 import { Card, StatCard, Button, Spinner, EmptyState, Pill, Sparkline } from '@/components/ui'
 
 const RANGE_OPTIONS = [
@@ -78,10 +78,14 @@ export default function Dashboard() {
   // one footer line — so every metric below is computed from this
   // range-scoped set, not from the full `businesses` array.
   const businessesInRange = useMemo(() => {
+    // "כלל הנתונים" must mean literally everything, regardless of whether a
+    // given record's upload date happens to be parseable — otherwise a
+    // handful of legacy-format dates would silently disappear even here.
+    if (rangeDays === Infinity) return businesses
     const cutoff = now - rangeDays * 86400000
     return businesses.filter(b => {
-      const d = new Date(b.uploadDate)
-      return !Number.isNaN(d.getTime()) && d.getTime() >= cutoff
+      const d = parseUploadDate(b.uploadDate)
+      return d !== null && d.getTime() >= cutoff
     })
   }, [businesses, rangeDays, now])
 
@@ -131,8 +135,9 @@ export default function Dashboard() {
     // series (not an invented ±% trend) usable for the KPI sparklines.
     const byDay = new Map<string, { total: number; indication: number }>()
     businessesInRange.forEach(b => {
-      const day = (b.uploadDate || '').slice(0, 10)
-      if (!day) return
+      const parsed = parseUploadDate(b.uploadDate)
+      if (!parsed) return
+      const day = parsed.toISOString().slice(0, 10)
       const entry = byDay.get(day) ?? { total: 0, indication: 0 }
       entry.total += 1
       if (b.suspicionRating === 'גבוה' || b.suspicionRating === 'בינוני') entry.indication += 1
@@ -160,12 +165,12 @@ export default function Dashboard() {
   }, [businessesInRange])
 
   const lastUpdated = useMemo(() => {
-    const dates = sessions.map(s => s.uploadDate).filter(Boolean).sort()
-    return dates.length ? timeAgo(dates[dates.length - 1]) : null
+    const timestamps = sessions.map(s => parseUploadDate(s.uploadDate)?.getTime()).filter((t): t is number => t !== undefined)
+    return timestamps.length ? timeAgo(new Date(Math.max(...timestamps)).toISOString()) : null
   }, [sessions])
 
   const recentSessions = useMemo(
-    () => [...sessions].sort((a, b) => (a.uploadDate < b.uploadDate ? 1 : -1)).slice(0, 5),
+    () => [...sessions].sort((a, b) => (parseUploadDate(b.uploadDate)?.getTime() ?? 0) - (parseUploadDate(a.uploadDate)?.getTime() ?? 0)).slice(0, 5),
     [sessions]
   )
 

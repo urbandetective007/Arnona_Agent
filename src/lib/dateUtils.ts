@@ -1,3 +1,20 @@
+// `uploadDate` is normally a full ISO datetime, but some existing records
+// were written as a `D.M.YYYY` string (`toLocaleDateString('he-IL')`) —
+// ambiguous under the native Date constructor: "8.9.2026" silently parses
+// as August 9th, and any day above 12 fails to parse at all. This reads
+// either format correctly instead of silently mis-parsing or dropping it.
+export function parseUploadDate(value: string): Date | null {
+  if (!value) return null
+  const dmy = value.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/)
+  if (dmy) {
+    const [, day, month, year] = dmy
+    const d = new Date(Number(year), Number(month) - 1, Number(day))
+    return Number.isNaN(d.getTime()) ? null : d
+  }
+  const d = new Date(value)
+  return Number.isNaN(d.getTime()) ? null : d
+}
+
 export function formatDate(value: string): string {
   if (!value) return ''
   const iso = value.match(/^(\d{4})-(\d{2})-(\d{2})T/)

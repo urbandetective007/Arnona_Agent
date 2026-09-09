@@ -220,7 +220,7 @@ export default function UploadPage() {
     setSubmitError('')
     try {
       const sessionId = `session-${Date.now()}`
-      const today = new Date().toLocaleDateString('he-IL')
+      const today = new Date().toISOString()
       const { businesses, issues } = buildBusinesses(raw, hIdx, headers, mapping, sessionId, today)
 
       const { data: existing, error } = await supabase.from('businesses').select('name, address')
