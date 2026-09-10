@@ -189,9 +189,7 @@ export default function WorkPlanPage() {
                                 href={mapsUrl(b.address)}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className={`w-11 h-11 rounded-[11px] flex items-center justify-center shrink-0 ${
-                                  isNext ? 'bg-brand text-white' : 'border-[1.5px] border-hairline text-charcoal'
-                                }`}
+                                className="w-11 h-11 rounded-[11px] bg-brand text-white flex items-center justify-center shrink-0"
                                 aria-label={`נווט אל ${b.name}`}
                               >
                                 <Navigation size={17} strokeWidth={2} />
