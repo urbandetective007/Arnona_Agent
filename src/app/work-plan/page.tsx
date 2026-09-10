@@ -168,7 +168,7 @@ export default function WorkPlanPage() {
                     {list.map((b, i) => {
                       const isNext = b.id === nextStop?.id
                       return (
-                        <div key={b.id} className={`rounded-xl ${isNext ? 'bg-brand/[0.06] ring-1 ring-brand/20' : 'bg-canvas'}`}>
+                        <div key={b.id} className="rounded-xl bg-canvas">
                           <div className="flex items-center gap-2.5 px-2 py-2.5">
                             <span
                               className={`num w-[26px] h-[26px] rounded-full border-2 flex items-center justify-center text-[11.5px] font-bold shrink-0 ${
