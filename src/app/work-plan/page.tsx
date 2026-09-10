@@ -190,7 +190,7 @@ export default function WorkPlanPage() {
                     {list.map((b, i) => {
                       const isNext = b.id === nextStop?.id
                       return (
-                        <div key={b.id} className={`rounded-[10px] ${isNext ? 'bg-brand/[0.04]' : ''}`}>
+                        <div key={b.id} className={`rounded-xl ${isNext ? 'bg-brand/[0.06] ring-1 ring-brand/20' : 'bg-canvas'}`}>
                           <div className="flex items-center gap-2.5 px-2 py-2.5">
                             <span
                               className={`num w-[26px] h-[26px] rounded-full border-2 flex items-center justify-center text-[11.5px] font-bold shrink-0 ${
@@ -222,7 +222,7 @@ export default function WorkPlanPage() {
                           </div>
 
                           {reportingId === b.id ? (
-                            <div className="mx-2 mb-2 p-3 rounded-lg bg-canvas flex flex-col gap-2.5">
+                            <div className="mx-2 mb-2 p-3 rounded-lg bg-surface border border-hairline flex flex-col gap-2.5">
                               <Select value={resultDraft} onChange={e => setResultDraft(e.target.value)} className="w-full">
                                 <option value="">בחר תוצאת סקר...</option>
                                 {SURVEY_RESULT_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
@@ -238,7 +238,7 @@ export default function WorkPlanPage() {
                             <div className="px-2 pb-2">
                               <button
                                 onClick={() => startReport(b)}
-                                className="w-full h-9 rounded-lg border border-hairline text-[12.5px] font-semibold text-charcoal hover:bg-canvas transition-colors"
+                                className="w-full h-9 rounded-lg border border-hairline bg-surface text-[12.5px] font-semibold text-charcoal hover:border-[#c7d1de] transition-colors"
                               >
                                 דיווח ממצאי סקר
                               </button>
