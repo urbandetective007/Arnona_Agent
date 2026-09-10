@@ -164,11 +164,16 @@ export default function WorkPlanPage() {
           ) : groups.map(([neighborhood, list]) => {
             const open = effectiveOpen === neighborhood
             return (
-              <div key={neighborhood} className="bg-surface rounded-2xl shadow-[0_1px_3px_rgba(15,26,40,0.06)] overflow-hidden">
+              <div
+                key={neighborhood}
+                className={`bg-surface rounded-2xl overflow-hidden border-2 transition-colors ${
+                  open ? 'border-brand/25 shadow-[0_2px_8px_rgba(2,74,216,0.08)]' : 'border-transparent shadow-[0_1px_3px_rgba(15,26,40,0.06)]'
+                }`}
+              >
                 <button
                   type="button"
                   onClick={() => setOpenNeighborhood(open ? null : neighborhood)}
-                  className={`w-full text-start px-4 py-3.5 flex items-center gap-2.5 ${open ? 'border-b border-hairline' : ''}`}
+                  className={`w-full text-start px-4 py-3.5 flex items-center gap-2.5 ${open ? 'bg-brand/[0.04] border-b border-hairline' : ''}`}
                 >
                   <span className="w-[34px] h-[34px] rounded-[10px] bg-high/10 flex items-center justify-center shrink-0">
                     <MapPin size={16} className="text-high" strokeWidth={2} />
