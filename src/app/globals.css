@@ -92,6 +92,22 @@ h1, h2, h3, h4 {
 
 @keyframes spin { to { transform: rotate(360deg); } }
 
+/* Tactile press feedback for every button and button/link across the app —
+   previously a tap gave no visual response at all beyond a hover color that
+   doesn't fire on touch. Global rather than per-component so every existing
+   and future button gets it automatically, including icon-only ones. A
+   child element's own transform (e.g. the rotating chevron on an accordion
+   toggle) is unaffected, since this targets the button/link itself. */
+@media (prefers-reduced-motion: no-preference) {
+  button:not(:disabled), a {
+    transition: transform 0.12s ease-out;
+  }
+
+  button:not(:disabled):active, a:active {
+    transform: scale(0.96);
+  }
+}
+
 /* ==========================================
    Premium Leaflet Map Customizations
    ========================================== */

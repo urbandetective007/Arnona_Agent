@@ -124,32 +124,35 @@ export default function FilesPage() {
             {[...sessions].reverse().map(session => {
               const active = selectedId === session.id
               return (
-                <button
+                <div
                   key={session.id}
-                  onClick={() => setSelectedId(active ? null : session.id)}
-                  className={`text-start rounded-xl p-4 transition-colors border-2 ${active ? 'border-brand bg-brand/[0.04]' : 'border-transparent bg-surface hover:bg-canvas'} shadow-[0_1px_2px_rgba(15,26,40,0.03)]`}
+                  className={`relative rounded-xl transition-colors border-2 ${active ? 'border-brand bg-brand/[0.04]' : 'border-transparent bg-surface hover:bg-canvas'} shadow-[0_1px_2px_rgba(15,26,40,0.03)]`}
                 >
-                  <div className="flex justify-between items-start gap-2">
-                    <div className="min-w-0">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedId(active ? null : session.id)}
+                    className="text-start w-full p-4"
+                  >
+                    <div className="min-w-0 pe-7">
                       <p className="font-semibold text-[13.5px] text-ink truncate">{session.fileName}</p>
                       <p className="text-[12px] text-subtle mt-0.5">{formatDate(session.uploadDate)}</p>
                     </div>
-                    <span
-                      role="button"
-                      tabIndex={0}
-                      onClick={e => { e.stopPropagation(); deleteSession(session.id) }}
-                      className="text-subtle hover:text-high shrink-0"
-                    >
-                      <Trash2 size={15} strokeWidth={1.8} />
-                    </span>
-                  </div>
-                  <div className="flex gap-1.5 mt-2.5 flex-wrap">
-                    <Badge tone="brand">חדש: {session.totalCount}</Badge>
-                    {session.skippedCount > 0 && <Badge tone="mid">כפול: {session.skippedCount}</Badge>}
-                    {session.suspiciousCount > 0 && <Badge tone="high">אינדיקציה: {session.suspiciousCount}</Badge>}
-                    {session.okCount > 0 && <Badge tone="clear">תקין: {session.okCount}</Badge>}
-                  </div>
-                </button>
+                    <div className="flex gap-1.5 mt-2.5 flex-wrap">
+                      <Badge tone="brand">חדש: {session.totalCount}</Badge>
+                      {session.skippedCount > 0 && <Badge tone="mid">כפול: {session.skippedCount}</Badge>}
+                      {session.suspiciousCount > 0 && <Badge tone="high">אינדיקציה: {session.suspiciousCount}</Badge>}
+                      {session.okCount > 0 && <Badge tone="clear">תקין: {session.okCount}</Badge>}
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => deleteSession(session.id)}
+                    aria-label="מחק קובץ"
+                    className="absolute top-4 end-4 text-subtle hover:text-high"
+                  >
+                    <Trash2 size={15} strokeWidth={1.8} />
+                  </button>
+                </div>
               )
             })}
           </div>
