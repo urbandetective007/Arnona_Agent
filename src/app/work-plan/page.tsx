@@ -2,19 +2,25 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ChevronDown, LogOut, MapPin, Navigation } from 'lucide-react'
+import { ChevronDown, ClipboardEdit, LogOut, MapPin, Navigation } from 'lucide-react'
 import { useRequireRole } from '@/lib/useRequireRole'
 import { logout } from '@/lib/auth'
 import type { Business } from '@/lib/types'
-import { supabase, dbToBusiness, businessToDb } from '@/lib/supabase'
+import { supabase, dbToBusiness } from '@/lib/supabase'
 import { getCache, setCache } from '@/lib/cache'
-import { Badge, Button, Select, Spinner } from '@/components/ui'
+import { Badge, Spinner } from '@/components/ui'
 import type { BadgeTone } from '@/components/ui'
 
 const RATING_TONE: Record<string, BadgeTone> = { 'גבוה': 'high', 'בינוני': 'mid', 'לא חשוד': 'clear' }
-const SURVEY_RESULT_OPTIONS = ['נמצא פער בסיווג', 'נמצא פער שטח + סיווג', 'נמצא פער שטח', 'לא נמצא עסק/פער שטח']
 const NO_NEIGHBORHOOD = 'ללא שכונה משויכת'
 const DAY_NAMES = ['יום ראשון', 'יום שני', 'יום שלישי', 'יום רביעי', 'יום חמישי', 'יום שישי', 'שבת']
+
+// The surveyor reports findings on the municipality's own Microsoft Forms
+// form (an external process this app doesn't replace) — this button just
+// gets them there. See the code comment above SURVEY_FORM_URL's usage for
+// how to add address/name/date pre-fill once a prefilled-link template is
+// available from that form.
+const SURVEY_FORM_URL = 'https://forms.cloud.microsoft/r/vGwE8SGUAR'
 
 function mapsUrl(address: string): string {
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`
@@ -31,9 +37,6 @@ export default function WorkPlanPage() {
   const [businesses, setBusinesses] = useState<Business[]>([])
   const [loading, setLoading] = useState(true)
   const [openNeighborhood, setOpenNeighborhood] = useState<string | null | undefined>(undefined)
-  const [reportingId, setReportingId] = useState<string | null>(null)
-  const [resultDraft, setResultDraft] = useState('')
-  const [saving, setSaving] = useState<string | null>(null)
   const [today] = useState(() => new Date())
 
   useEffect(() => {
@@ -69,31 +72,6 @@ export default function WorkPlanPage() {
 
   const effectiveOpen = openNeighborhood !== undefined ? openNeighborhood : (groups[0]?.[0] ?? null)
   const nextStop = groups[0]?.[1]?.[0]
-
-  function startReport(b: Business) {
-    setReportingId(b.id)
-    setResultDraft(b.surveyResultDetail ?? '')
-  }
-
-  async function saveReport(id: string) {
-    if (!resultDraft) { alert('יש לבחור תוצאת סקר'); return }
-    setSaving(id)
-    try {
-      const business = businesses.find(b => b.id === id)
-      if (!business) return
-      const updated: Business = { ...business, surveyResultDetail: resultDraft as Business['surveyResultDetail'] }
-      const { error } = await supabase.from('businesses').update(businessToDb(updated)).eq('id', id)
-      if (error) { alert(`שגיאה בשמירה: ${error.message}`); return }
-      setBusinesses(prev => {
-        const next = prev.map(b => b.id === id ? updated : b)
-        setCache('businesses', next)
-        return next
-      })
-      setReportingId(null)
-    } finally {
-      setSaving(null)
-    }
-  }
 
   if (!ready) return null
 
@@ -221,29 +199,17 @@ export default function WorkPlanPage() {
                             )}
                           </div>
 
-                          {reportingId === b.id ? (
-                            <div className="mx-2 mb-2 p-3 rounded-lg bg-surface border border-hairline flex flex-col gap-2.5">
-                              <Select value={resultDraft} onChange={e => setResultDraft(e.target.value)} className="w-full">
-                                <option value="">בחר תוצאת סקר...</option>
-                                {SURVEY_RESULT_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
-                              </Select>
-                              <div className="flex gap-2">
-                                <Button onClick={() => saveReport(b.id)} disabled={saving === b.id} className="flex-1 h-10">
-                                  {saving === b.id ? 'שומר...' : 'שמור דיווח'}
-                                </Button>
-                                <Button variant="secondary" onClick={() => setReportingId(null)} className="h-10">ביטול</Button>
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="px-2 pb-2">
-                              <button
-                                onClick={() => startReport(b)}
-                                className="w-full h-9 rounded-lg border border-hairline bg-surface text-[12.5px] font-semibold text-charcoal hover:border-[#c7d1de] transition-colors"
-                              >
-                                דיווח ממצאי סקר
-                              </button>
-                            </div>
-                          )}
+                          <div className="px-2 pb-2">
+                            <a
+                              href={SURVEY_FORM_URL}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="w-full h-9 rounded-lg border border-hairline bg-surface flex items-center justify-center gap-1.5 text-[12.5px] font-semibold text-charcoal hover:border-[#c7d1de] transition-colors"
+                            >
+                              <ClipboardEdit size={14} strokeWidth={1.9} />
+                              מילוי דיווח סקר
+                            </a>
+                          </div>
                         </div>
                       )
                     })}
