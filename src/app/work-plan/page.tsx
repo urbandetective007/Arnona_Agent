@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ChevronDown, ClipboardEdit, LogOut, MapPin, Navigation } from 'lucide-react'
+import { Check, ChevronDown, ClipboardEdit, LogOut, MapPin, Navigation } from 'lucide-react'
 import { useRequireRole } from '@/lib/useRequireRole'
 import { logout } from '@/lib/auth'
 import type { Business } from '@/lib/types'
@@ -26,6 +26,17 @@ function mapsUrl(address: string): string {
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`
 }
 
+const CHECKED_STORAGE_KEY = 'work-plan-checked'
+
+function loadChecked(): Set<string> {
+  try {
+    const raw = localStorage.getItem(CHECKED_STORAGE_KEY)
+    return raw ? new Set(JSON.parse(raw)) : new Set()
+  } catch {
+    return new Set()
+  }
+}
+
 export default function WorkPlanPage() {
   const ready = useRequireRole(['employee', 'surveyor'])
   const router = useRouter()
@@ -38,6 +49,14 @@ export default function WorkPlanPage() {
   const [loading, setLoading] = useState(true)
   const [openNeighborhood, setOpenNeighborhood] = useState<string | null | undefined>(undefined)
   const [today] = useState(() => new Date())
+  // `checked` is live — it drives the checkmark itself and updates the
+  // instant you tap one. `checkedAtLoad` is a snapshot taken once when the
+  // page loads and never touched again afterward: the neighborhood/property
+  // ordering below is sorted from that frozen snapshot, so ticking things
+  // off doesn't yank the list out from under your finger mid-round — a
+  // completed item only sinks to the bottom the next time the page loads.
+  const [checked, setChecked] = useState<Set<string>>(new Set())
+  const [checkedAtLoad, setCheckedAtLoad] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     const cached = getCache<Business[]>('businesses')
@@ -50,7 +69,30 @@ export default function WorkPlanPage() {
       if (data) { const b = data.map(dbToBusiness); setBusinesses(b); setCache('businesses', b) }
       setLoading(false)
     })
+
+    const loaded = loadChecked()
+    setChecked(loaded)
+    setCheckedAtLoad(loaded)
   }, [])
+
+  function persistChecked(next: Set<string>) {
+    setChecked(next)
+    try { localStorage.setItem(CHECKED_STORAGE_KEY, JSON.stringify([...next])) } catch { /* ignore */ }
+  }
+
+  function toggleChecked(id: string) {
+    const next = new Set(checked)
+    if (next.has(id)) next.delete(id)
+    else next.add(id)
+    persistChecked(next)
+  }
+
+  function toggleNeighborhoodChecked(list: Business[]) {
+    const allChecked = list.every(b => checked.has(b.id))
+    const next = new Set(checked)
+    list.forEach(b => { if (allChecked) next.delete(b.id); else next.add(b.id) })
+    persistChecked(next)
+  }
 
   const pending = useMemo(
     () => businesses.filter(b => b.sentToInspector === 'נשלח לסוקר' && !b.surveyResultDetail),
@@ -66,9 +108,20 @@ export default function WorkPlanPage() {
       byNeighborhood.set(key, list)
     })
     return [...byNeighborhood.entries()]
-      .map(([name, list]): [string, Business[]] => [name, [...list].sort((a, b) => a.name.localeCompare(b.name, 'he'))])
-      .sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0], 'he'))
-  }, [pending])
+      .map(([name, list]): [string, Business[]] => [
+        name,
+        [...list].sort((a, b) => {
+          const aDone = checkedAtLoad.has(a.id) ? 1 : 0
+          const bDone = checkedAtLoad.has(b.id) ? 1 : 0
+          return aDone - bDone || a.name.localeCompare(b.name, 'he')
+        }),
+      ])
+      .sort((a, b) => {
+        const aDone = a[1].every(x => checkedAtLoad.has(x.id)) ? 1 : 0
+        const bDone = b[1].every(x => checkedAtLoad.has(x.id)) ? 1 : 0
+        return aDone - bDone || b[1].length - a[1].length || a[0].localeCompare(b[0], 'he')
+      })
+  }, [pending, checkedAtLoad])
 
   const effectiveOpen = openNeighborhood !== undefined ? openNeighborhood : (groups[0]?.[0] ?? null)
 
@@ -129,6 +182,7 @@ export default function WorkPlanPage() {
             </div>
           ) : groups.map(([neighborhood, list]) => {
             const open = effectiveOpen === neighborhood
+            const neighborhoodChecked = list.every(b => checked.has(b.id))
             return (
               <div
                 key={neighborhood}
@@ -136,30 +190,50 @@ export default function WorkPlanPage() {
                   open ? 'border-brand/25 shadow-[0_2px_8px_rgba(2,74,216,0.08)]' : 'border-transparent shadow-[0_1px_3px_rgba(15,26,40,0.06)]'
                 }`}
               >
-                <button
-                  type="button"
-                  onClick={() => setOpenNeighborhood(open ? null : neighborhood)}
-                  className={`w-full text-start px-4 py-3.5 flex items-center gap-2.5 ${open ? 'bg-brand/[0.04] border-b border-hairline' : ''}`}
-                >
-                  <span className="w-[34px] h-[34px] rounded-[10px] bg-high/10 flex items-center justify-center shrink-0">
-                    <MapPin size={16} className="text-high" strokeWidth={2} />
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[15px] font-bold text-ink">{neighborhood}</p>
-                    <p className="num text-[12px] text-subtle mt-0.5">{list.length.toLocaleString('he')} נכסים</p>
-                  </div>
-                  <ChevronDown size={17} className={`text-subtle shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} strokeWidth={2.1} />
-                </button>
+                <div className={`flex items-center gap-2.5 px-4 py-3.5 ${open ? 'bg-brand/[0.04] border-b border-hairline' : ''}`}>
+                  <button
+                    type="button"
+                    onClick={() => toggleNeighborhoodChecked(list)}
+                    aria-label={neighborhoodChecked ? 'בטל סימון כל נכסי השכונה' : 'סמן את כל נכסי השכונה כבוצעו'}
+                    className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
+                      neighborhoodChecked ? 'bg-clear border-clear' : 'border-hairline'
+                    }`}
+                  >
+                    {neighborhoodChecked && <Check size={13} className="text-white" strokeWidth={3} />}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setOpenNeighborhood(open ? null : neighborhood)}
+                    className="flex-1 min-w-0 text-start flex items-center gap-2.5"
+                  >
+                    <span className="w-[34px] h-[34px] rounded-[10px] bg-high/10 flex items-center justify-center shrink-0">
+                      <MapPin size={16} className="text-high" strokeWidth={2} />
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[15px] font-bold text-ink">{neighborhood}</p>
+                      <p className="num text-[12px] text-subtle mt-0.5">{list.length.toLocaleString('he')} נכסים</p>
+                    </div>
+                    <ChevronDown size={17} className={`text-subtle shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} strokeWidth={2.1} />
+                  </button>
+                </div>
 
                 {open && (
                   <div className="px-2.5 pb-2.5 flex flex-col gap-1.5">
-                    {list.map((b, i) => {
+                    {list.map(b => {
+                      const isChecked = checked.has(b.id)
                       return (
                         <div key={b.id} className="rounded-xl bg-canvas">
                           <div className="flex items-center gap-2.5 px-2 py-2.5">
-                            <span className="num w-[26px] h-[26px] rounded-full border-2 border-hairline text-subtle flex items-center justify-center text-[11.5px] font-bold shrink-0">
-                              {i + 1}
-                            </span>
+                            <button
+                              type="button"
+                              onClick={() => toggleChecked(b.id)}
+                              aria-label={isChecked ? 'בטל סימון' : 'סמן כבוצע'}
+                              className={`w-[26px] h-[26px] rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
+                                isChecked ? 'bg-clear border-clear' : 'border-hairline'
+                              }`}
+                            >
+                              {isChecked && <Check size={13} className="text-white" strokeWidth={3} />}
+                            </button>
                             <div className="flex-1 min-w-0">
                               <p className="text-[14px] font-semibold text-ink truncate">{b.name}</p>
                               <p className="text-[12.5px] text-subtle mt-0.5 truncate">{b.address}</p>
