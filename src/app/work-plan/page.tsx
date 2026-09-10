@@ -71,7 +71,6 @@ export default function WorkPlanPage() {
   }, [pending])
 
   const effectiveOpen = openNeighborhood !== undefined ? openNeighborhood : (groups[0]?.[0] ?? null)
-  const nextStop = groups[0]?.[1]?.[0]
 
   if (!ready) return null
 
@@ -119,17 +118,6 @@ export default function WorkPlanPage() {
                 <p className="num text-white text-[19px] font-bold leading-none">{groups.length}</p>
                 <p className="text-[11.5px] mt-1" style={{ color: '#8fa8c8' }}>שכונות</p>
               </div>
-              {nextStop && nextStop.address && (
-                <a
-                  href={mapsUrl(nextStop.address)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="ms-auto w-10 h-10 rounded-[11px] bg-brand flex items-center justify-center shrink-0"
-                  aria-label={`נווט אל ${nextStop.name}`}
-                >
-                  <Navigation size={17} className="text-white" strokeWidth={2} />
-                </a>
-              )}
             </div>
           </div>
         </header>
@@ -166,15 +154,10 @@ export default function WorkPlanPage() {
                 {open && (
                   <div className="px-2.5 pb-2.5 flex flex-col gap-1.5">
                     {list.map((b, i) => {
-                      const isNext = b.id === nextStop?.id
                       return (
                         <div key={b.id} className="rounded-xl bg-canvas">
                           <div className="flex items-center gap-2.5 px-2 py-2.5">
-                            <span
-                              className={`num w-[26px] h-[26px] rounded-full border-2 flex items-center justify-center text-[11.5px] font-bold shrink-0 ${
-                                isNext ? 'border-brand text-brand' : 'border-hairline text-subtle'
-                              }`}
-                            >
+                            <span className="num w-[26px] h-[26px] rounded-full border-2 border-hairline text-subtle flex items-center justify-center text-[11.5px] font-bold shrink-0">
                               {i + 1}
                             </span>
                             <div className="flex-1 min-w-0">
