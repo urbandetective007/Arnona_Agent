@@ -59,7 +59,7 @@ function AppShellInner({ children, title, subtitle, actions }: AppShellProps) {
         <div className="flex items-center gap-2.5 px-4 pt-5 pb-4 border-b border-chrome-hairline">
           <Landmark size={24} strokeWidth={1.7} className="text-brand-light shrink-0" />
           <div className="min-w-0">
-            <div className="text-white font-bold text-[15px] truncate">סוכן ארנונה</div>
+            <div className="text-white font-bold text-[15px] truncate">ארנו-נט</div>
             <div className="text-chrome-graphite text-[11.5px] mt-0.5">עיריית ירושלים</div>
           </div>
         </div>

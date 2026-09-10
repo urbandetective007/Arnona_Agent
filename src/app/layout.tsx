@@ -19,7 +19,7 @@ const heebo = Heebo({
 })
 
 export const metadata: Metadata = {
-  title: 'סוכן ארנונה | עיריית ירושלים',
+  title: 'ארנו-נט | עיריית ירושלים',
   description: 'מערכת לזיהוי עסקים עם אינדיקציה לתשלום ארנונת מגורים',
 }
 
