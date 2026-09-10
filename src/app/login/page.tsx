@@ -51,7 +51,7 @@ export default function LoginPage() {
           <div className="flex items-center gap-2.5">
             <Landmark size={28} className="text-brand shrink-0" strokeWidth={1.7} />
             <div>
-              <div className="text-[16px] font-bold text-ink">סוכן ארנונה</div>
+              <div className="text-[16px] font-bold text-ink">ארנו-נט</div>
               <div className="text-[12px] text-subtle">עיריית ירושלים · אגף הארנונה</div>
             </div>
           </div>
@@ -176,14 +176,14 @@ export default function LoginPage() {
             className="inline-flex items-center gap-2 self-start rounded-full px-3.5 py-1.5"
             style={{ background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.18)' }}
           >
-            <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#6ee7a8' }} />
-            <span className="text-[12.5px] font-semibold" style={{ color: '#cfe0ff' }}>מערכת אכיפת ארנונה עירונית</span>
+            <Landmark size={13} style={{ color: '#cfe0ff' }} strokeWidth={2} />
+            <span className="text-[12.5px] font-semibold" style={{ color: '#cfe0ff' }}>עיריית ירושלים · אגף הארנונה</span>
           </span>
-          <div className="mt-7 text-white text-[32px] font-bold leading-snug tracking-tight max-w-md">
-            איתור עסקים המשלמים<br />ארנונת מגורים שלא כדין
+          <div className="mt-8 text-white font-extrabold leading-none tracking-tight" style={{ fontSize: 80 }}>
+            ארנו<span style={{ color: '#7fa8f0' }}>-נט</span>
           </div>
-          <p className="mt-3.5 text-[15px] leading-relaxed max-w-sm" style={{ color: '#a9c1f4' }}>
-            סריקה אוטומטית, אימות בשטח ומעקב אכיפה — במקום אחד.
+          <p className="mt-6 text-[17px] leading-relaxed max-w-md" style={{ color: '#a9c1f4' }}>
+            סריקה אוטומטית, אימות בשטח ומעקב אכיפה אחר עסקים שמשלמים ארנונת מגורים במקום ארנונת עסקים — הכול במקום אחד.
           </p>
         </div>
       </div>
