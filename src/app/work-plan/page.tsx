@@ -38,7 +38,7 @@ function loadChecked(): Set<string> {
 }
 
 export default function WorkPlanPage() {
-  const ready = useRequireRole(['employee', 'surveyor'])
+  const ready = useRequireRole(['surveyor'])
   const router = useRouter()
   // Reading sessionStorage in a lazy useState initializer would give the
   // server (build-time prerender) and the client's first paint different
