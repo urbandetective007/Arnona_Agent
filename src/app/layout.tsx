@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { Assistant, Heebo } from 'next/font/google'
+import { IosActiveFix } from '@/components/IosActiveFix'
 import './globals.css'
 
 // Assistant (UI text) + Heebo (tabular digits, via the `.num` helper class) —
@@ -25,7 +26,10 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="he" dir="rtl" className={`${assistant.variable} ${heebo.variable}`}>
-      <body>{children}</body>
+      <body>
+        <IosActiveFix />
+        {children}
+      </body>
     </html>
   )
 }
