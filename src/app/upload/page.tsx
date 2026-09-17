@@ -182,6 +182,46 @@ function WizardStepper({ step, steps }: { step: Step; steps: { key: Step; label:
   )
 }
 
+// A typeable combobox for the neighborhood field — a native <input list>
+// (datalist) leaves the suggestions' position to the browser, which can pop
+// up beside the field instead of under it. This renders its own dropdown
+// directly below the input so it always opens in the same place.
+function NeighborhoodField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [open, setOpen] = useState(false)
+  const options = useMemo(() => {
+    const q = value.trim()
+    return q ? SORTED_NEIGHBORHOODS.filter(n => n.includes(q)) : SORTED_NEIGHBORHOODS
+  }, [value])
+
+  return (
+    <div className="relative">
+      <Input
+        value={value}
+        onChange={e => { onChange(e.target.value); setOpen(true) }}
+        onFocus={() => setOpen(true)}
+        onBlur={() => setTimeout(() => setOpen(false), 120)}
+        placeholder="הקלידו או בחרו שכונה"
+        className="w-full"
+        autoComplete="off"
+      />
+      {open && options.length > 0 && (
+        <div className="absolute z-20 top-full inset-x-0 mt-1 max-h-56 overflow-auto rounded-lg border border-hairline bg-surface shadow-[0_8px_24px_rgba(15,26,40,0.14)]">
+          {options.map(n => (
+            <button
+              key={n}
+              type="button"
+              onMouseDown={e => { e.preventDefault(); onChange(n); setOpen(false) }}
+              className="block w-full text-start px-3.5 py-2 text-[13.5px] text-ink hover:bg-canvas"
+            >
+              {n}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function UploadPage() {
   const ready = useRequireRole(['employee'])
   const fileRef = useRef<HTMLInputElement>(null)
@@ -454,18 +494,10 @@ export default function UploadPage() {
                       {fd.label}{fd.required && <span className="text-high"> *</span>}
                     </label>
                     {fd.key === 'neighborhood' ? (
-                      <>
-                        <Input
-                          list="manual-neighborhood-options"
-                          value={manual.neighborhood}
-                          onChange={e => setManual(m => ({ ...m, neighborhood: e.target.value }))}
-                          placeholder="הקלידו או בחרו שכונה"
-                          className="w-full"
-                        />
-                        <datalist id="manual-neighborhood-options">
-                          {SORTED_NEIGHBORHOODS.map(n => <option key={n} value={n} />)}
-                        </datalist>
-                      </>
+                      <NeighborhoodField
+                        value={manual.neighborhood}
+                        onChange={v => setManual(m => ({ ...m, neighborhood: v }))}
+                      />
                     ) : fd.key === 'suspicionRating' ? (
                       <Select value={manual.suspicionRating} onChange={e => setManual(m => ({ ...m, suspicionRating: e.target.value }))} className="w-full">
                         {RATING_OPTIONS.map(r => <option key={r} value={r}>{r}</option>)}
