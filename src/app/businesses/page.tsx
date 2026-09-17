@@ -27,18 +27,18 @@ function linkCount(b: Business): number {
 type SortKey = 'name' | 'type' | 'address' | 'neighborhood' | 'suspicionRating' | 'unitCount' | 'linksCount' | 'uploadDate' | 'sentToInspector' | 'surveyResultDetail' | 'source'
 type SortDir = 'asc' | 'desc'
 
-const COLUMNS: { key: SortKey | null; label: string; width: string; accessor?: (b: Business) => string | number }[] = [
-  { key: 'name', label: 'שם העסק', width: '13%', accessor: b => b.name },
-  { key: 'type', label: 'סוג עסק', width: '7%', accessor: b => b.type },
-  { key: 'address', label: 'כתובת', width: '13%', accessor: b => b.address },
-  { key: 'neighborhood', label: 'שכונה', width: '7%', accessor: b => b.neighborhood },
-  { key: 'linksCount', label: 'קישורים', width: '4%', accessor: b => linkCount(b) },
-  { key: 'suspicionRating', label: 'דירוג אינדיקציה', width: '8%', accessor: b => ALL_RATINGS.indexOf(b.suspicionRating) },
-  { key: 'unitCount', label: 'יחידות', width: '4%', accessor: b => parseFloat(b.unitCount) || 0 },
-  { key: 'uploadDate', label: 'תאריך', width: '6%', accessor: b => b.uploadDate },
-  { key: 'source', label: 'מקור', width: '7%', accessor: b => SOURCE_LABEL[b.source] },
-  { key: 'sentToInspector', label: 'סוקר', width: '11%', accessor: b => b.sentToInspector ?? '' },
-  { key: 'surveyResultDetail', label: 'תוצאת סקר', width: '11%', accessor: b => b.surveyResultDetail ?? '' },
+const COLUMNS: { key: SortKey | null; label: string; accessor?: (b: Business) => string | number }[] = [
+  { key: 'name', label: 'שם העסק', accessor: b => b.name },
+  { key: 'type', label: 'סוג עסק', accessor: b => b.type },
+  { key: 'address', label: 'כתובת', accessor: b => b.address },
+  { key: 'neighborhood', label: 'שכונה', accessor: b => b.neighborhood },
+  { key: 'linksCount', label: 'קישורים', accessor: b => linkCount(b) },
+  { key: 'suspicionRating', label: 'דירוג אינדיקציה', accessor: b => ALL_RATINGS.indexOf(b.suspicionRating) },
+  { key: 'unitCount', label: 'יחידות', accessor: b => parseFloat(b.unitCount) || 0 },
+  { key: 'uploadDate', label: 'תאריך', accessor: b => b.uploadDate },
+  { key: 'source', label: 'מקור', accessor: b => SOURCE_LABEL[b.source] },
+  { key: 'sentToInspector', label: 'סוקר', accessor: b => b.sentToInspector ?? '' },
+  { key: 'surveyResultDetail', label: 'תוצאת סקר', accessor: b => b.surveyResultDetail ?? '' },
 ]
 
 function compareValues(a: string | number, b: string | number): number {
@@ -375,150 +375,151 @@ export default function BusinessesPage() {
           </Card>
         ) : (
           <Card padded={false}>
-            <table className="w-full table-fixed border-collapse text-[13px]">
-              <thead>
-                <tr className="bg-canvas border-b border-hairline">
-                  <th className="px-3.5 py-2.5" style={{ width: '3%' }}>
-                    <input type="checkbox" checked={allVisibleSelected} onChange={toggleSelectAllVisible} className="w-4 h-4 accent-[#024ad8] cursor-pointer" />
-                  </th>
-                  <th style={{ width: '2%' }} />
-                  {COLUMNS.map(c => (
-                    <th
-                      key={c.key}
-                      onClick={() => toggleSort(c.key as SortKey)}
-                      style={{ width: c.width }}
-                      className="px-3.5 py-2.5 text-start text-[12px] font-semibold text-graphite truncate cursor-pointer select-none"
-                    >
-                      {c.label}{sortKey === c.key && (sortDir === 'asc' ? ' ▲' : ' ▼')}
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse text-[13px] min-w-[1000px]">
+                <thead>
+                  <tr className="bg-canvas border-b border-hairline">
+                    <th className="px-3.5 py-2.5 w-9">
+                      <input type="checkbox" checked={allVisibleSelected} onChange={toggleSelectAllVisible} className="w-4 h-4 accent-[#024ad8] cursor-pointer" />
                     </th>
-                  ))}
-                  <th style={{ width: '4%' }} />
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-hairline">
-                {sorted.length === 0 ? (
-                  <tr><td colSpan={14} className="text-center py-12 text-graphite">לא נמצאו תוצאות</td></tr>
-                ) : sorted.map(b => (
-                  <RowGroup key={b.id}>
-                    <tr
-                      className={`cursor-pointer transition-colors ${expanded === b.id ? 'bg-canvas' : 'hover:bg-canvas/60'}`}
-                      onClick={() => setExpanded(expanded === b.id ? null : b.id)}
-                    >
-                      <td className="px-3.5 py-3" onClick={e => e.stopPropagation()}>
-                        <input type="checkbox" checked={selectedIds.has(b.id)} onChange={() => toggleSelected(b.id)} className="w-4 h-4 accent-[#024ad8] cursor-pointer" />
-                      </td>
-                      <td className="text-subtle">{expanded === b.id ? <ChevronDown size={14} /> : <ChevronLeft size={14} />}</td>
-                      <td className="px-3.5 py-3 font-semibold text-ink truncate">{b.name}</td>
-                      <td className="px-3.5 py-3 text-charcoal truncate">{b.type}</td>
-                      <td className="px-3.5 py-3 text-charcoal truncate">{b.address}</td>
-                      <td className="px-3.5 py-3 text-charcoal truncate">{b.neighborhood || '—'}</td>
-                      <td className="px-3.5 py-3 text-graphite">{linkCount(b)}</td>
-                      <td className="px-3.5 py-3 truncate">
-                        {b.suspicionRating ? <Badge tone={RATING_TONE[b.suspicionRating] ?? 'neutral'}>{b.suspicionRating}</Badge> : '—'}
-                      </td>
-                      <td className="px-3.5 py-3 text-graphite">{b.unitCount || '—'}</td>
-                      <td className="px-3.5 py-3 text-graphite text-[12px] truncate">{formatDate(b.uploadDate)}</td>
-                      <td className="px-3.5 py-3 truncate">
-                        <Badge tone={b.source === 'manual' ? 'mid' : 'neutral'}>{SOURCE_LABEL[b.source]}</Badge>
-                      </td>
-                      <td className="px-3.5 py-3" onClick={e => e.stopPropagation()}>
-                        <Select
-                          value={b.sentToInspector ?? 'לא נשלח לסוקר'}
-                          onChange={e => updateInspectorStatus(b.id, e.target.value as typeof INSPECTOR_OPTIONS[number])}
-                          disabled={updating === b.id}
-                          className="w-full h-9 text-[12.5px] px-2.5"
-                        >
-                          {INSPECTOR_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
-                        </Select>
-                      </td>
-                      <td className="px-3.5 py-3" onClick={e => e.stopPropagation()}>
-                        <Select
-                          value={b.surveyResultDetail ?? ''}
-                          onChange={e => updateSurveyResult(b.id, e.target.value)}
-                          disabled={updating === b.id}
-                          className="w-full h-9 text-[12.5px] px-2.5"
-                        >
-                          <option value="">—</option>
-                          {SURVEY_RESULT_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
-                        </Select>
-                      </td>
-                      <td className="px-3.5 py-3 text-center">
-                        <button onClick={e => { e.stopPropagation(); deleteBusiness(b.id) }} className="text-subtle hover:text-high" title="מחק">
-                          <Trash2 size={15} strokeWidth={1.8} />
-                        </button>
-                      </td>
-                    </tr>
-
-                    {expanded === b.id && (
-                      <tr className="bg-canvas">
-                        <td colSpan={14} className="px-8 py-5">
-                          {editingId === b.id ? (
-                            <div>
-                              <div className="grid grid-cols-2 gap-x-10 gap-y-3">
-                                <EditField label="שם העסק" value={editForm.name ?? ''} onChange={v => setEditForm(f => ({ ...f, name: v }))} />
-                                <EditField label="סוג עסק" value={editForm.type ?? ''} onChange={v => setEditForm(f => ({ ...f, type: v }))} />
-                                <EditField label="כתובת" value={editForm.address ?? ''} onChange={v => setEditForm(f => ({ ...f, address: v }))} />
-                                <EditField label="שכונה" value={editForm.neighborhood ?? ''} onChange={v => setEditForm(f => ({ ...f, neighborhood: v }))} />
-                                <EditField label="כתובת תואמת במערכת הגבייה" value={editForm.matchedAddress ?? ''} onChange={v => setEditForm(f => ({ ...f, matchedAddress: v }))} />
-                                <EditField label="מספר יחידות" value={editForm.unitCount ?? ''} onChange={v => setEditForm(f => ({ ...f, unitCount: v }))} />
-                                <div>
-                                  <label className="block text-[12px] font-semibold text-charcoal mb-1">דירוג אינדיקציה</label>
-                                  <Select value={editForm.suspicionRating || 'דרוש בדיקה'} onChange={e => setEditForm(f => ({ ...f, suspicionRating: e.target.value }))} className="w-full">
-                                    {ALL_RATINGS.map(r => <option key={r} value={r}>{r}</option>)}
-                                  </Select>
-                                </div>
-                                <EditField label="קישור 1" value={editForm.link1 ?? ''} onChange={v => setEditForm(f => ({ ...f, link1: v }))} />
-                                <EditField label="קישור 2" value={editForm.link2 ?? ''} onChange={v => setEditForm(f => ({ ...f, link2: v }))} />
-                                <EditField label="קישור 3" value={editForm.link3 ?? ''} onChange={v => setEditForm(f => ({ ...f, link3: v }))} />
-                                <EditTextArea label="בעלי נכסים" value={editForm.propertyOwners ?? ''} onChange={v => setEditForm(f => ({ ...f, propertyOwners: v }))} />
-                                <EditTextArea label="פירוט האינדיקציה" value={editForm.suspicionDetail ?? ''} onChange={v => setEditForm(f => ({ ...f, suspicionDetail: v }))} />
-                                <EditTextArea label="סיבת אי-אינדיקציה" value={editForm.noSuspicionReason ?? ''} onChange={v => setEditForm(f => ({ ...f, noSuspicionReason: v }))} />
-                              </div>
-                              <div className="flex gap-2 mt-4">
-                                <Button onClick={saveEdit}>שמור</Button>
-                                <Button variant="secondary" onClick={cancelEdit}>ביטול</Button>
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="grid grid-cols-2 gap-x-10 gap-y-2.5 text-[13.5px]">
-                              {([
-                                b.neighborhood && ['שכונה', b.neighborhood],
-                                b.matchedAddress && ['כתובת תואמת במערכת הגבייה', b.matchedAddress],
-                                b.unitCount && ['מספר יחידות', b.unitCount],
-                                b.suspicionDetail && ['פירוט האינדיקציה', b.suspicionDetail],
-                                b.noSuspicionReason && ['סיבת אי-אינדיקציה', b.noSuspicionReason],
-                                b.propertyOwners && ['בעלי נכסים', b.propertyOwners],
-                              ].filter(Boolean) as [string, string][]).map(([label, value]) => {
-                                const full = ['פירוט האינדיקציה', 'סיבת אי-אינדיקציה', 'בעלי נכסים'].includes(label)
-                                return (
-                                  <div key={label} className={full ? 'col-span-2' : ''}>
-                                    <span className="font-semibold text-charcoal">{label}: </span>
-                                    <span className="text-ink">{value}</span>
-                                  </div>
-                                )
-                              })}
-                              {[b.link1, b.link2, b.link3].filter(Boolean).length > 0 && (
-                                <div className="col-span-2 flex flex-col gap-2">
-                                  {[b.link1, b.link2, b.link3].filter(Boolean).map((link, i) => (
-                                    <div key={i}>
-                                      <span className="font-semibold text-charcoal">קישור {i + 1}: </span>
-                                      <a href={link} target="_blank" rel="noopener noreferrer" className="text-brand hover:text-brand-deep break-all">{link}</a>
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-                              <div className="col-span-2">
-                                <Button variant="secondary" onClick={() => startEdit(b)}>ערוך פרטי עסק</Button>
-                              </div>
-                            </div>
-                          )}
+                    <th className="w-6" />
+                    {COLUMNS.map(c => (
+                      <th
+                        key={c.key}
+                        onClick={() => toggleSort(c.key as SortKey)}
+                        className="px-3.5 py-2.5 text-start text-[12px] font-semibold text-graphite whitespace-nowrap cursor-pointer select-none"
+                      >
+                        {c.label}{sortKey === c.key && (sortDir === 'asc' ? ' ▲' : ' ▼')}
+                      </th>
+                    ))}
+                    <th className="w-11" />
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-hairline">
+                  {sorted.length === 0 ? (
+                    <tr><td colSpan={14} className="text-center py-12 text-graphite">לא נמצאו תוצאות</td></tr>
+                  ) : sorted.map(b => (
+                    <RowGroup key={b.id}>
+                      <tr
+                        className={`cursor-pointer transition-colors ${expanded === b.id ? 'bg-canvas' : 'hover:bg-canvas/60'}`}
+                        onClick={() => setExpanded(expanded === b.id ? null : b.id)}
+                      >
+                        <td className="px-3.5 py-3" onClick={e => e.stopPropagation()}>
+                          <input type="checkbox" checked={selectedIds.has(b.id)} onChange={() => toggleSelected(b.id)} className="w-4 h-4 accent-[#024ad8] cursor-pointer" />
+                        </td>
+                        <td className="text-subtle">{expanded === b.id ? <ChevronDown size={14} /> : <ChevronLeft size={14} />}</td>
+                        <td className="px-3.5 py-3 font-semibold text-ink">{b.name}</td>
+                        <td className="px-3.5 py-3 text-charcoal">{b.type}</td>
+                        <td className="px-3.5 py-3 text-charcoal">{b.address}</td>
+                        <td className="px-3.5 py-3 text-charcoal">{b.neighborhood || '—'}</td>
+                        <td className="px-3.5 py-3 text-graphite">{linkCount(b)}</td>
+                        <td className="px-3.5 py-3">
+                          {b.suspicionRating ? <Badge tone={RATING_TONE[b.suspicionRating] ?? 'neutral'}>{b.suspicionRating}</Badge> : '—'}
+                        </td>
+                        <td className="px-3.5 py-3 text-graphite">{b.unitCount || '—'}</td>
+                        <td className="px-3.5 py-3 text-graphite text-[12px]">{formatDate(b.uploadDate)}</td>
+                        <td className="px-3.5 py-3">
+                          <Badge tone={b.source === 'manual' ? 'mid' : 'neutral'}>{SOURCE_LABEL[b.source]}</Badge>
+                        </td>
+                        <td className="px-3.5 py-3" onClick={e => e.stopPropagation()}>
+                          <Select
+                            value={b.sentToInspector ?? 'לא נשלח לסוקר'}
+                            onChange={e => updateInspectorStatus(b.id, e.target.value as typeof INSPECTOR_OPTIONS[number])}
+                            disabled={updating === b.id}
+                            className="h-9 text-[12.5px] px-2.5"
+                          >
+                            {INSPECTOR_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+                          </Select>
+                        </td>
+                        <td className="px-3.5 py-3" onClick={e => e.stopPropagation()}>
+                          <Select
+                            value={b.surveyResultDetail ?? ''}
+                            onChange={e => updateSurveyResult(b.id, e.target.value)}
+                            disabled={updating === b.id}
+                            className="h-9 text-[12.5px] px-2.5"
+                          >
+                            <option value="">—</option>
+                            {SURVEY_RESULT_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+                          </Select>
+                        </td>
+                        <td className="px-3.5 py-3 text-center">
+                          <button onClick={e => { e.stopPropagation(); deleteBusiness(b.id) }} className="text-subtle hover:text-high" title="מחק">
+                            <Trash2 size={15} strokeWidth={1.8} />
+                          </button>
                         </td>
                       </tr>
-                    )}
-                  </RowGroup>
-                ))}
-              </tbody>
-            </table>
+
+                      {expanded === b.id && (
+                        <tr className="bg-canvas">
+                          <td colSpan={14} className="px-8 py-5">
+                            {editingId === b.id ? (
+                              <div>
+                                <div className="grid grid-cols-2 gap-x-10 gap-y-3">
+                                  <EditField label="שם העסק" value={editForm.name ?? ''} onChange={v => setEditForm(f => ({ ...f, name: v }))} />
+                                  <EditField label="סוג עסק" value={editForm.type ?? ''} onChange={v => setEditForm(f => ({ ...f, type: v }))} />
+                                  <EditField label="כתובת" value={editForm.address ?? ''} onChange={v => setEditForm(f => ({ ...f, address: v }))} />
+                                  <EditField label="שכונה" value={editForm.neighborhood ?? ''} onChange={v => setEditForm(f => ({ ...f, neighborhood: v }))} />
+                                  <EditField label="כתובת תואמת במערכת הגבייה" value={editForm.matchedAddress ?? ''} onChange={v => setEditForm(f => ({ ...f, matchedAddress: v }))} />
+                                  <EditField label="מספר יחידות" value={editForm.unitCount ?? ''} onChange={v => setEditForm(f => ({ ...f, unitCount: v }))} />
+                                  <div>
+                                    <label className="block text-[12px] font-semibold text-charcoal mb-1">דירוג אינדיקציה</label>
+                                    <Select value={editForm.suspicionRating || 'דרוש בדיקה'} onChange={e => setEditForm(f => ({ ...f, suspicionRating: e.target.value }))} className="w-full">
+                                      {ALL_RATINGS.map(r => <option key={r} value={r}>{r}</option>)}
+                                    </Select>
+                                  </div>
+                                  <EditField label="קישור 1" value={editForm.link1 ?? ''} onChange={v => setEditForm(f => ({ ...f, link1: v }))} />
+                                  <EditField label="קישור 2" value={editForm.link2 ?? ''} onChange={v => setEditForm(f => ({ ...f, link2: v }))} />
+                                  <EditField label="קישור 3" value={editForm.link3 ?? ''} onChange={v => setEditForm(f => ({ ...f, link3: v }))} />
+                                  <EditTextArea label="בעלי נכסים" value={editForm.propertyOwners ?? ''} onChange={v => setEditForm(f => ({ ...f, propertyOwners: v }))} />
+                                  <EditTextArea label="פירוט האינדיקציה" value={editForm.suspicionDetail ?? ''} onChange={v => setEditForm(f => ({ ...f, suspicionDetail: v }))} />
+                                  <EditTextArea label="סיבת אי-אינדיקציה" value={editForm.noSuspicionReason ?? ''} onChange={v => setEditForm(f => ({ ...f, noSuspicionReason: v }))} />
+                                </div>
+                                <div className="flex gap-2 mt-4">
+                                  <Button onClick={saveEdit}>שמור</Button>
+                                  <Button variant="secondary" onClick={cancelEdit}>ביטול</Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="grid grid-cols-2 gap-x-10 gap-y-2.5 text-[13.5px]">
+                                {([
+                                  b.neighborhood && ['שכונה', b.neighborhood],
+                                  b.matchedAddress && ['כתובת תואמת במערכת הגבייה', b.matchedAddress],
+                                  b.unitCount && ['מספר יחידות', b.unitCount],
+                                  b.suspicionDetail && ['פירוט האינדיקציה', b.suspicionDetail],
+                                  b.noSuspicionReason && ['סיבת אי-אינדיקציה', b.noSuspicionReason],
+                                  b.propertyOwners && ['בעלי נכסים', b.propertyOwners],
+                                ].filter(Boolean) as [string, string][]).map(([label, value]) => {
+                                  const full = ['פירוט האינדיקציה', 'סיבת אי-אינדיקציה', 'בעלי נכסים'].includes(label)
+                                  return (
+                                    <div key={label} className={full ? 'col-span-2' : ''}>
+                                      <span className="font-semibold text-charcoal">{label}: </span>
+                                      <span className="text-ink">{value}</span>
+                                    </div>
+                                  )
+                                })}
+                                {[b.link1, b.link2, b.link3].filter(Boolean).length > 0 && (
+                                  <div className="col-span-2 flex flex-col gap-2">
+                                    {[b.link1, b.link2, b.link3].filter(Boolean).map((link, i) => (
+                                      <div key={i}>
+                                        <span className="font-semibold text-charcoal">קישור {i + 1}: </span>
+                                        <a href={link} target="_blank" rel="noopener noreferrer" className="text-brand hover:text-brand-deep break-all">{link}</a>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                                <div className="col-span-2">
+                                  <Button variant="secondary" onClick={() => startEdit(b)}>ערוך פרטי עסק</Button>
+                                </div>
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      )}
+                    </RowGroup>
+                  ))}
+                </tbody>
+              </table>
+            </div>
             <div className="px-5 py-3 bg-canvas border-t border-hairline text-[13px] text-graphite">
               מציג {filtered.length.toLocaleString('he')} מתוך {businesses.length.toLocaleString('he')} עסקים
             </div>
