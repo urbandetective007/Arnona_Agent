@@ -187,7 +187,7 @@ export default function BusinessesPage() {
   function exportToExcel() {
     const rows = filtered.map(b => ({
       'שם העסק': b.name, 'סוג עסק': b.type, 'כתובת': b.address, 'שכונה': b.neighborhood,
-      'כתובת תואמת': b.matchedAddress, 'דירוג אינדיקציה': b.suspicionRating, 'פירוט האינדיקציה': b.suspicionDetail,
+      'כתובת תואמת במערכת הגבייה': b.matchedAddress, 'דירוג אינדיקציה': b.suspicionRating, 'פירוט האינדיקציה': b.suspicionDetail,
       'סיבת אי-אינדיקציה': b.noSuspicionReason, 'מספר יחידות': b.unitCount, 'בעלי נכסים': b.propertyOwners,
       'קישור 1': b.link1, 'קישור 2': b.link2, 'קישור 3': b.link3, 'תאריך העלאה': formatDate(b.uploadDate),
       'מקור': SOURCE_LABEL[b.source],
@@ -462,7 +462,7 @@ export default function BusinessesPage() {
                                   <EditField label="סוג עסק" value={editForm.type ?? ''} onChange={v => setEditForm(f => ({ ...f, type: v }))} />
                                   <EditField label="כתובת" value={editForm.address ?? ''} onChange={v => setEditForm(f => ({ ...f, address: v }))} />
                                   <EditField label="שכונה" value={editForm.neighborhood ?? ''} onChange={v => setEditForm(f => ({ ...f, neighborhood: v }))} />
-                                  <EditField label="כתובת תואמת" value={editForm.matchedAddress ?? ''} onChange={v => setEditForm(f => ({ ...f, matchedAddress: v }))} />
+                                  <EditField label="כתובת תואמת במערכת הגבייה" value={editForm.matchedAddress ?? ''} onChange={v => setEditForm(f => ({ ...f, matchedAddress: v }))} />
                                   <EditField label="מספר יחידות" value={editForm.unitCount ?? ''} onChange={v => setEditForm(f => ({ ...f, unitCount: v }))} />
                                   <div>
                                     <label className="block text-[12px] font-semibold text-charcoal mb-1">דירוג אינדיקציה</label>
@@ -486,7 +486,7 @@ export default function BusinessesPage() {
                               <div className="grid grid-cols-2 gap-x-10 gap-y-2.5 text-[13.5px]">
                                 {([
                                   b.neighborhood && ['שכונה', b.neighborhood],
-                                  b.matchedAddress && ['כתובת תואמת', b.matchedAddress],
+                                  b.matchedAddress && ['כתובת תואמת במערכת הגבייה', b.matchedAddress],
                                   b.unitCount && ['מספר יחידות', b.unitCount],
                                   b.suspicionDetail && ['פירוט האינדיקציה', b.suspicionDetail],
                                   b.noSuspicionReason && ['סיבת אי-אינדיקציה', b.noSuspicionReason],

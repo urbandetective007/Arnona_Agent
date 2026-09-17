@@ -29,7 +29,7 @@ const FIELD_DEFS: { key: TargetField; label: string; required: boolean; hint: st
   { key: 'suspicionDetail', label: 'פירוט האינדיקציה', required: false, hint: 'פירוט האינדיקציה' },
   { key: 'noSuspicionReason', label: 'סיבת אי-אינדיקציה', required: false, hint: 'סיבת אי-אינדיקציה' },
   { key: 'propertyOwners', label: 'שמות בעלי נכסים', required: false, hint: 'שמות בעלי נכסים' },
-  { key: 'matchedAddress', label: 'כתובת תואמת', required: false, hint: 'כתובת תואמת' },
+  { key: 'matchedAddress', label: 'כתובת תואמת במערכת הגבייה', required: false, hint: 'כתובת תואמת במערכת הגבייה' },
   { key: 'unitCount', label: "מס' דירות", required: false, hint: "מס' דירות" },
   { key: 'link1', label: 'קישור 1', required: false, hint: 'קישור 1' },
   { key: 'link2', label: 'קישור 2', required: false, hint: 'קישור 2' },
@@ -37,13 +37,17 @@ const FIELD_DEFS: { key: TargetField; label: string; required: boolean; hint: st
 ]
 
 // Fields shown in the manual-entry form — same set as FIELD_DEFS minus
-// propertyOwners, which the manual flow doesn't collect.
-const MANUAL_FIELD_DEFS = FIELD_DEFS.filter(fd => fd.key !== 'propertyOwners')
+// propertyOwners and noSuspicionReason, which the manual flow doesn't collect.
+const MANUAL_FIELD_DEFS = FIELD_DEFS.filter(fd => fd.key !== 'propertyOwners' && fd.key !== 'noSuspicionReason')
 
 const EMPTY_MAPPING: Record<TargetField, string> = {
   name: '', address: '', neighborhood: '', type: '', suspicionRating: '', suspicionDetail: '',
   noSuspicionReason: '', propertyOwners: '', matchedAddress: '', unitCount: '', link1: '', link2: '', link3: '',
 }
+
+// Manual entries default to the highest rating rather than the file flow's
+// "needs review" fallback — an employee filling this in has already looked.
+const EMPTY_MANUAL: Record<TargetField, string> = { ...EMPTY_MAPPING, suspicionRating: 'גבוה' }
 
 const RATING_OPTIONS = ['גבוה', 'בינוני', 'לא חשוד', 'דרוש בדיקה']
 const RATING_TONE: Record<string, BadgeTone> = { 'גבוה': 'high', 'בינוני': 'mid', 'לא חשוד': 'clear' }
@@ -186,7 +190,7 @@ export default function UploadPage() {
   const [raw, setRaw] = useState<string[][]>([])
   const [hIdx, setHIdx] = useState(0)
   const [mapping, setMapping] = useState<Record<TargetField, string>>(EMPTY_MAPPING)
-  const [manual, setManual] = useState<Record<TargetField, string>>(EMPTY_MAPPING)
+  const [manual, setManual] = useState<Record<TargetField, string>>(EMPTY_MANUAL)
   const [checking, setChecking] = useState(false)
   const [validation, setValidation] = useState<ValidationResult | null>(null)
   const [pendingSession, setPendingSession] = useState<PendingSession | null>(null)
@@ -261,7 +265,7 @@ export default function UploadPage() {
     try {
       const sessionId = `session-manual-${Date.now()}`
       const today = new Date().toISOString()
-      const rating = manual.suspicionRating || 'דרוש בדיקה'
+      const rating = manual.suspicionRating || 'גבוה'
       const business: Business = {
         id: `${sessionId}-0`,
         name: manual.name.trim(),
@@ -348,7 +352,7 @@ export default function UploadPage() {
     setRaw([])
     setHIdx(0)
     setMapping(EMPTY_MAPPING)
-    setManual(EMPTY_MAPPING)
+    setManual(EMPTY_MANUAL)
     setValidation(null)
     setPendingSession(null)
     setAutoAssign(false)
@@ -452,7 +456,6 @@ export default function UploadPage() {
                       </Select>
                     ) : fd.key === 'suspicionRating' ? (
                       <Select value={manual.suspicionRating} onChange={e => setManual(m => ({ ...m, suspicionRating: e.target.value }))} className="w-full">
-                        <option value="">דרוש בדיקה (ברירת מחדל)</option>
                         {RATING_OPTIONS.map(r => <option key={r} value={r}>{r}</option>)}
                       </Select>
                     ) : (
