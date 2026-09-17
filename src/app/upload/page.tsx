@@ -13,6 +13,10 @@ import { clearCache } from '@/lib/cache'
 import { Card, Badge, Button, Input, Select, Toggle } from '@/components/ui'
 import type { BadgeTone } from '@/components/ui'
 
+// Alphabetical for the manual-entry picker — the registry itself is ordered
+// geographically (by city area), which is not useful for typing/searching.
+const SORTED_NEIGHBORHOODS = [...JERUSALEM_NEIGHBORHOODS].sort((a, b) => a.localeCompare(b, 'he'))
+
 type Step = 'upload' | 'mapping' | 'validate' | 'done'
 type Mode = 'file' | 'manual'
 
@@ -450,10 +454,18 @@ export default function UploadPage() {
                       {fd.label}{fd.required && <span className="text-high"> *</span>}
                     </label>
                     {fd.key === 'neighborhood' ? (
-                      <Select value={manual.neighborhood} onChange={e => setManual(m => ({ ...m, neighborhood: e.target.value }))} className="w-full">
-                        <option value="">— לא ידוע —</option>
-                        {JERUSALEM_NEIGHBORHOODS.map(n => <option key={n} value={n}>{n}</option>)}
-                      </Select>
+                      <>
+                        <Input
+                          list="manual-neighborhood-options"
+                          value={manual.neighborhood}
+                          onChange={e => setManual(m => ({ ...m, neighborhood: e.target.value }))}
+                          placeholder="הקלידו או בחרו שכונה"
+                          className="w-full"
+                        />
+                        <datalist id="manual-neighborhood-options">
+                          {SORTED_NEIGHBORHOODS.map(n => <option key={n} value={n} />)}
+                        </datalist>
+                      </>
                     ) : fd.key === 'suspicionRating' ? (
                       <Select value={manual.suspicionRating} onChange={e => setManual(m => ({ ...m, suspicionRating: e.target.value }))} className="w-full">
                         {RATING_OPTIONS.map(r => <option key={r} value={r}>{r}</option>)}
