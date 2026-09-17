@@ -2,18 +2,19 @@
 
 import { useMemo, useRef, useState } from 'react'
 import * as XLSX from 'xlsx'
-import { AlertCircle, AlertTriangle, ArrowLeft, Check, Copy, FileSpreadsheet, Info, Plus, Upload } from 'lucide-react'
+import { AlertCircle, AlertTriangle, ArrowLeft, Check, Copy, FileSpreadsheet, Info, Pencil, Plus, Upload } from 'lucide-react'
 import { AppShell } from '@/components/AppShell'
 import { useRequireRole } from '@/lib/useRequireRole'
 import type { Business, UploadSession } from '@/lib/types'
 import { mapSuspicionRatingToStatus } from '@/lib/types'
 import { supabase, businessToDb, sessionToDb } from '@/lib/supabase'
-import { normalizeNeighborhood } from '@/lib/neighborhoods'
+import { normalizeNeighborhood, JERUSALEM_NEIGHBORHOODS } from '@/lib/neighborhoods'
 import { clearCache } from '@/lib/cache'
-import { Card, Badge, Button, Select, Toggle } from '@/components/ui'
+import { Card, Badge, Button, Input, Select, Toggle } from '@/components/ui'
 import type { BadgeTone } from '@/components/ui'
 
 type Step = 'upload' | 'mapping' | 'validate' | 'done'
+type Mode = 'file' | 'manual'
 
 type TargetField =
   | 'name' | 'address' | 'neighborhood' | 'type' | 'suspicionRating' | 'suspicionDetail'
@@ -35,11 +36,16 @@ const FIELD_DEFS: { key: TargetField; label: string; required: boolean; hint: st
   { key: 'link3', label: 'קישור 3', required: false, hint: 'קישור 3' },
 ]
 
+// Fields shown in the manual-entry form — same set as FIELD_DEFS minus
+// propertyOwners, which the manual flow doesn't collect.
+const MANUAL_FIELD_DEFS = FIELD_DEFS.filter(fd => fd.key !== 'propertyOwners')
+
 const EMPTY_MAPPING: Record<TargetField, string> = {
   name: '', address: '', neighborhood: '', type: '', suspicionRating: '', suspicionDetail: '',
   noSuspicionReason: '', propertyOwners: '', matchedAddress: '', unitCount: '', link1: '', link2: '', link3: '',
 }
 
+const RATING_OPTIONS = ['גבוה', 'בינוני', 'לא חשוד', 'דרוש בדיקה']
 const RATING_TONE: Record<string, BadgeTone> = { 'גבוה': 'high', 'בינוני': 'mid', 'לא חשוד': 'clear' }
 
 interface RowIssue { row: number; kind: 'error' | 'warning'; title: string; detail: string }
@@ -127,25 +133,30 @@ function buildBusinesses(
       uploadSessionId: sessionId,
       sentToInspector: null,
       surveyResultDetail: null,
+      source: 'excel',
     })
   })
 
   return { businesses, issues }
 }
 
-const STEP_LABELS: { key: Step; label: string }[] = [
+const FILE_STEPS: { key: Step; label: string }[] = [
   { key: 'upload', label: 'העלאת קובץ' },
   { key: 'mapping', label: 'מיפוי עמודות' },
   { key: 'validate', label: 'אימות ואישור' },
 ]
 
-function WizardStepper({ step }: { step: Step }) {
-  const order: Step[] = ['upload', 'mapping', 'validate']
-  const idx = step === 'done' ? order.length : order.indexOf(step)
+const MANUAL_STEPS: { key: Step; label: string }[] = [
+  { key: 'upload', label: 'פרטי העסק' },
+  { key: 'validate', label: 'אישור והוספה' },
+]
+
+function WizardStepper({ step, steps }: { step: Step; steps: { key: Step; label: string }[] }) {
+  const idx = step === 'done' ? steps.length : steps.findIndex(s => s.key === step)
   return (
     <div className="flex items-center max-w-2xl">
-      {STEP_LABELS.map((s, i) => (
-        <div key={s.key} className={`flex items-center ${i < STEP_LABELS.length - 1 ? 'flex-1' : ''}`}>
+      {steps.map((s, i) => (
+        <div key={s.key} className={`flex items-center ${i < steps.length - 1 ? 'flex-1' : ''}`}>
           <div className="flex items-center gap-2.5 shrink-0">
             <span className={`w-7 h-7 rounded-full flex items-center justify-center text-[13px] font-bold shrink-0 ${
               i < idx ? 'bg-clear text-white' : i === idx ? 'bg-brand text-white' : 'border-[1.5px] border-hairline text-subtle'
@@ -156,7 +167,7 @@ function WizardStepper({ step }: { step: Step }) {
               {s.label}
             </span>
           </div>
-          {i < STEP_LABELS.length - 1 && <div className={`flex-1 h-0.5 mx-3.5 ${i < idx ? 'bg-clear' : 'bg-hairline'}`} />}
+          {i < steps.length - 1 && <div className={`flex-1 h-0.5 mx-3.5 ${i < idx ? 'bg-clear' : 'bg-hairline'}`} />}
         </div>
       ))}
     </div>
@@ -167,6 +178,7 @@ export default function UploadPage() {
   const ready = useRequireRole(['employee'])
   const fileRef = useRef<HTMLInputElement>(null)
 
+  const [mode, setMode] = useState<Mode>('file')
   const [step, setStep] = useState<Step>('upload')
   const [file, setFile] = useState<File | null>(null)
   const [parseError, setParseError] = useState('')
@@ -174,6 +186,7 @@ export default function UploadPage() {
   const [raw, setRaw] = useState<string[][]>([])
   const [hIdx, setHIdx] = useState(0)
   const [mapping, setMapping] = useState<Record<TargetField, string>>(EMPTY_MAPPING)
+  const [manual, setManual] = useState<Record<TargetField, string>>(EMPTY_MAPPING)
   const [checking, setChecking] = useState(false)
   const [validation, setValidation] = useState<ValidationResult | null>(null)
   const [pendingSession, setPendingSession] = useState<PendingSession | null>(null)
@@ -215,6 +228,18 @@ export default function UploadPage() {
     }
   }
 
+  async function checkAndValidate(businesses: Business[], issues: RowIssue[], sessionId: string, today: string) {
+    const { data: existing, error } = await supabase.from('businesses').select('name, address')
+    if (error) throw new Error(`שגיאה בבדיקת כפילויות: ${error.message}`)
+
+    const keys = new Set((existing ?? []).map((b: { name: string; address: string }) => `${b.name}|${b.address}`))
+    const toAdd = businesses.filter(b => !keys.has(`${b.name}|${b.address}`))
+
+    setPendingSession({ sessionId, today, allParsed: businesses })
+    setValidation({ toAdd, duplicates: businesses.length - toAdd.length, issues })
+    setStep('validate')
+  }
+
   async function proceedToValidate() {
     setChecking(true)
     setSubmitError('')
@@ -222,16 +247,7 @@ export default function UploadPage() {
       const sessionId = `session-${Date.now()}`
       const today = new Date().toISOString()
       const { businesses, issues } = buildBusinesses(raw, hIdx, headers, mapping, sessionId, today)
-
-      const { data: existing, error } = await supabase.from('businesses').select('name, address')
-      if (error) throw new Error(`שגיאה בבדיקת כפילויות: ${error.message}`)
-
-      const keys = new Set((existing ?? []).map((b: { name: string; address: string }) => `${b.name}|${b.address}`))
-      const toAdd = businesses.filter(b => !keys.has(`${b.name}|${b.address}`))
-
-      setPendingSession({ sessionId, today, allParsed: businesses })
-      setValidation({ toAdd, duplicates: businesses.length - toAdd.length, issues })
-      setStep('validate')
+      await checkAndValidate(businesses, issues, sessionId, today)
     } catch (e) {
       setSubmitError(e instanceof Error ? e.message : 'שגיאה באימות הקובץ')
     } finally {
@@ -239,16 +255,54 @@ export default function UploadPage() {
     }
   }
 
+  async function proceedManualToValidate() {
+    setChecking(true)
+    setSubmitError('')
+    try {
+      const sessionId = `session-manual-${Date.now()}`
+      const today = new Date().toISOString()
+      const rating = manual.suspicionRating || 'דרוש בדיקה'
+      const business: Business = {
+        id: `${sessionId}-0`,
+        name: manual.name.trim(),
+        type: manual.type.trim(),
+        address: manual.address.trim(),
+        neighborhood: normalizeNeighborhood(manual.neighborhood) ?? '',
+        matchedAddress: manual.matchedAddress.trim(),
+        propertyOwners: '',
+        unitCount: manual.unitCount.trim(),
+        suspicionRating: rating,
+        suspicionDetail: manual.suspicionDetail.trim(),
+        noSuspicionReason: manual.noSuspicionReason.trim(),
+        link1: manual.link1.trim(),
+        link2: manual.link2.trim(),
+        link3: manual.link3.trim(),
+        arnonaStatus: mapSuspicionRatingToStatus(rating),
+        uploadDate: today,
+        uploadSessionId: sessionId,
+        sentToInspector: null,
+        surveyResultDetail: null,
+        source: 'manual',
+      }
+      await checkAndValidate([business], [], sessionId, today)
+    } catch (e) {
+      setSubmitError(e instanceof Error ? e.message : 'שגיאה באימות הנתונים')
+    } finally {
+      setChecking(false)
+    }
+  }
+
   async function confirmUpload() {
-    if (!validation || !file || !pendingSession) return
+    if (!validation || !pendingSession) return
     setSubmitting(true)
     setSubmitError('')
     try {
       const { toAdd } = validation
       const { sessionId, today, allParsed } = pendingSession
+      const fileName = file?.name ?? 'הוספה ידנית'
       const session: UploadSession = {
         id: sessionId,
-        fileName: file.name,
+        fileName,
         uploadDate: today,
         totalCount: toAdd.length,
         suspiciousCount: toAdd.filter(b => b.arnonaStatus === 'suspicious').length,
@@ -277,7 +331,7 @@ export default function UploadPage() {
       }
 
       clearCache('businesses', 'sessions')
-      setDoneSummary({ added: toAdd.length, skipped: session.skippedCount, assigned, fileName: file.name })
+      setDoneSummary({ added: toAdd.length, skipped: session.skippedCount, assigned, fileName })
       setStep('done')
     } catch (e) {
       setSubmitError(e instanceof Error ? e.message : 'שגיאה בהעלאת הנתונים')
@@ -294,6 +348,7 @@ export default function UploadPage() {
     setRaw([])
     setHIdx(0)
     setMapping(EMPTY_MAPPING)
+    setManual(EMPTY_MAPPING)
     setValidation(null)
     setPendingSession(null)
     setAutoAssign(false)
@@ -311,44 +366,116 @@ export default function UploadPage() {
           <FileSpreadsheet size={13} strokeWidth={2} />
           {file.name} · <span className="num">{(file.size / (1024 * 1024)).toFixed(1)}</span> MB
         </span>
-      ) : 'קובץ בפורמט דוח נכסים לבדיקה — עמודות: שם העסק, כתובת, שכונה, סוג עסק, דירוג אינדיקציה, קישורים'}
+      ) : mode === 'manual'
+        ? 'הוספת עסק בודד לבדיקה — ישירות למאגר, בלי קובץ אקסל'
+        : 'קובץ בפורמט דוח נכסים לבדיקה — עמודות: שם העסק, כתובת, שכונה, סוג עסק, דירוג אינדיקציה, קישורים'}
       actions={step !== 'upload' && step !== 'done' && (
         <Button variant="ghost" onClick={resetWizard}>ביטול</Button>
       )}
     >
       {step !== 'done' && (
         <div className="mb-6">
-          <WizardStepper step={step} />
+          <WizardStepper step={step} steps={mode === 'file' ? FILE_STEPS : MANUAL_STEPS} />
         </div>
       )}
 
       {step === 'upload' && (
-        <Card>
-          <div
-            onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files?.[0]; if (f) handleFile(f) }}
-            onDragOver={e => e.preventDefault()}
-            onClick={() => fileRef.current?.click()}
-            className="border-2 border-dashed border-hairline rounded-2xl py-16 px-10 text-center cursor-pointer hover:border-brand/40 hover:bg-brand/[0.02] transition-colors max-w-xl mx-auto"
-          >
-            <span className="w-14 h-14 rounded-2xl bg-brand/10 flex items-center justify-center mx-auto mb-4">
-              <Upload size={24} className="text-brand" strokeWidth={1.8} />
-            </span>
-            <p className="text-[16px] font-bold text-ink mb-1.5">גרור קובץ אקסל לכאן</p>
-            <p className="text-[13px] text-subtle">או לחץ לבחירת קובץ · פורמט xlsx./xls.</p>
-            <input
-              ref={fileRef}
-              type="file"
-              accept=".xlsx,.xls"
-              onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f) }}
-              className="hidden"
-            />
+        <>
+          <div className="inline-flex bg-surface border border-hairline rounded-xl p-1 mb-5 gap-0.5">
+            <button
+              type="button"
+              onClick={() => setMode('file')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-[13.5px] font-semibold transition-colors ${
+                mode === 'file' ? 'bg-brand text-white shadow-[0_3px_10px_rgba(26,86,219,0.3)]' : 'text-graphite'
+              }`}
+            >
+              <FileSpreadsheet size={15} strokeWidth={2} /> העלאת קובץ אקסל
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode('manual')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-[13.5px] font-semibold transition-colors ${
+                mode === 'manual' ? 'bg-brand text-white shadow-[0_3px_10px_rgba(26,86,219,0.3)]' : 'text-graphite'
+              }`}
+            >
+              <Pencil size={15} strokeWidth={2} /> הוספה ידנית של עסק
+            </button>
           </div>
-          {parseError && (
-            <div className="max-w-xl mx-auto mt-4 px-4 py-3 rounded-lg bg-high/[0.06] border border-high/25 text-[13px] text-high font-semibold text-center">
-              {parseError}
-            </div>
+
+          {mode === 'file' ? (
+            <Card>
+              <div
+                onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files?.[0]; if (f) handleFile(f) }}
+                onDragOver={e => e.preventDefault()}
+                onClick={() => fileRef.current?.click()}
+                className="border-2 border-dashed border-hairline rounded-2xl py-16 px-10 text-center cursor-pointer hover:border-brand/40 hover:bg-brand/[0.02] transition-colors max-w-xl mx-auto"
+              >
+                <span className="w-14 h-14 rounded-2xl bg-brand/10 flex items-center justify-center mx-auto mb-4">
+                  <Upload size={24} className="text-brand" strokeWidth={1.8} />
+                </span>
+                <p className="text-[16px] font-bold text-ink mb-1.5">גרור קובץ אקסל לכאן</p>
+                <p className="text-[13px] text-subtle">או לחץ לבחירת קובץ · פורמט xlsx./xls.</p>
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept=".xlsx,.xls"
+                  onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f) }}
+                  className="hidden"
+                />
+              </div>
+              {parseError && (
+                <div className="max-w-xl mx-auto mt-4 px-4 py-3 rounded-lg bg-high/[0.06] border border-high/25 text-[13px] text-high font-semibold text-center">
+                  {parseError}
+                </div>
+              )}
+            </Card>
+          ) : (
+            <Card padded={false}>
+              <div className="px-5 py-4 border-b border-hairline flex items-center justify-between gap-3">
+                <div>
+                  <p className="font-bold text-[14.5px]">פרטי העסק שאותר</p>
+                  <p className="text-[12px] text-subtle mt-1">מלאו את הפרטים הידועים — שדות עם * הם שדות חובה</p>
+                </div>
+                <Badge tone="clear" className="shrink-0">יסומן כ&quot;הוזן ידנית&quot;</Badge>
+              </div>
+
+              <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {MANUAL_FIELD_DEFS.map(fd => (
+                  <div key={fd.key} className={fd.key === 'name' || fd.key === 'address' || fd.key === 'suspicionDetail' ? 'sm:col-span-2' : ''}>
+                    <label className="block text-[12.5px] font-semibold text-ink mb-1.5">
+                      {fd.label}{fd.required && <span className="text-high"> *</span>}
+                    </label>
+                    {fd.key === 'neighborhood' ? (
+                      <Select value={manual.neighborhood} onChange={e => setManual(m => ({ ...m, neighborhood: e.target.value }))} className="w-full">
+                        <option value="">— לא ידוע —</option>
+                        {JERUSALEM_NEIGHBORHOODS.map(n => <option key={n} value={n}>{n}</option>)}
+                      </Select>
+                    ) : fd.key === 'suspicionRating' ? (
+                      <Select value={manual.suspicionRating} onChange={e => setManual(m => ({ ...m, suspicionRating: e.target.value }))} className="w-full">
+                        <option value="">דרוש בדיקה (ברירת מחדל)</option>
+                        {RATING_OPTIONS.map(r => <option key={r} value={r}>{r}</option>)}
+                      </Select>
+                    ) : (
+                      <Input
+                        value={manual[fd.key]}
+                        onChange={e => setManual(m => ({ ...m, [fd.key]: e.target.value }))}
+                        placeholder={fd.required ? fd.label : 'אופציונלי'}
+                        className="w-full"
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <div className="px-5 py-3.5 border-t border-hairline bg-canvas flex items-center gap-3">
+                <Button onClick={proceedManualToValidate} disabled={!manual.name.trim() || !manual.address.trim() || checking}>
+                  {checking ? 'בודק...' : 'המשך לאישור'}
+                </Button>
+                {submitError && <span className="text-[12.5px] text-high font-semibold">{submitError}</span>}
+              </div>
+            </Card>
           )}
-        </Card>
+        </>
       )}
 
       {step === 'mapping' && (
@@ -539,7 +666,9 @@ export default function UploadPage() {
             <Button onClick={confirmUpload} disabled={submitting || validation.toAdd.length === 0}>
               {submitting ? 'מעלה...' : `אישור והעלאת ${validation.toAdd.length} נכסים`}
             </Button>
-            <Button variant="secondary" onClick={() => setStep('mapping')}>חזרה למיפוי</Button>
+            <Button variant="secondary" onClick={() => setStep(mode === 'file' ? 'mapping' : 'upload')}>
+              {mode === 'file' ? 'חזרה למיפוי' : 'חזרה לעריכת הפרטים'}
+            </Button>
             {submitError && <span className="text-[12.5px] text-high font-semibold">{submitError}</span>}
           </div>
         </>
@@ -551,16 +680,20 @@ export default function UploadPage() {
             <span className="w-14 h-14 rounded-full bg-clear/10 flex items-center justify-center">
               <Check size={26} className="text-clear" strokeWidth={3} />
             </span>
-            <p className="text-[18px] font-bold text-ink">הקובץ הועלה בהצלחה</p>
+            <p className="text-[18px] font-bold text-ink">{mode === 'manual' ? 'העסק נוסף בהצלחה' : 'הקובץ הועלה בהצלחה'}</p>
             <p className="text-[13.5px] text-charcoal max-w-md">
-              נוספו <span className="num font-bold text-ink">{doneSummary.added}</span> עסקים חדשים מתוך {doneSummary.fileName}
+              {mode === 'manual' ? (
+                <>נוסף <span className="num font-bold text-ink">{doneSummary.added}</span> עסק חדש למאגר</>
+              ) : (
+                <>נוספו <span className="num font-bold text-ink">{doneSummary.added}</span> עסקים חדשים מתוך {doneSummary.fileName}</>
+              )}
               {doneSummary.skipped > 0 && <> · <span className="num font-bold">{doneSummary.skipped}</span> כפולים דולגו</>}
               {doneSummary.assigned > 0 && <> · <span className="num font-bold text-brand">{doneSummary.assigned}</span> הוקצו אוטומטית לסוקר</>}
             </p>
             <div className="flex items-center gap-3 mt-3 flex-wrap justify-center">
               <Button href="/">עבור לדשבורד</Button>
               <Button variant="secondary" href="/files">צפה בקבצים</Button>
-              <Button variant="ghost" onClick={resetWizard}>העלה קובץ נוסף</Button>
+              <Button variant="ghost" onClick={resetWizard}>{mode === 'manual' ? 'הוסף עסק נוסף' : 'העלה קובץ נוסף'}</Button>
             </div>
           </div>
         </Card>

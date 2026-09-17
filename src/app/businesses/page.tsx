@@ -17,12 +17,14 @@ const ALL_RATINGS = ['גבוה', 'בינוני', 'דרוש בדיקה', 'לא ח
 const RATING_TONE: Record<string, BadgeTone> = { 'גבוה': 'high', 'בינוני': 'mid', 'לא חשוד': 'clear' }
 const INSPECTOR_OPTIONS = ['נשלח לסוקר', 'לא נשלח לסוקר', 'הוחלט לא לשלוח לסקר'] as const
 const SURVEY_RESULT_OPTIONS = ['נמצא פער בסיווג', 'נמצא פער שטח + סיווג', 'נמצא פער שטח', 'לא נמצא עסק/פער שטח']
+const SOURCE_LABEL: Record<Business['source'], string> = { manual: 'הוזן ידנית', excel: 'קובץ אקסל' }
+const SOURCE_OPTIONS: Business['source'][] = ['excel', 'manual']
 
 function linkCount(b: Business): number {
   return [b.link1, b.link2, b.link3].filter(Boolean).length
 }
 
-type SortKey = 'name' | 'type' | 'address' | 'neighborhood' | 'suspicionRating' | 'unitCount' | 'linksCount' | 'uploadDate' | 'sentToInspector' | 'surveyResultDetail'
+type SortKey = 'name' | 'type' | 'address' | 'neighborhood' | 'suspicionRating' | 'unitCount' | 'linksCount' | 'uploadDate' | 'sentToInspector' | 'surveyResultDetail' | 'source'
 type SortDir = 'asc' | 'desc'
 
 const COLUMNS: { key: SortKey | null; label: string; accessor?: (b: Business) => string | number }[] = [
@@ -34,6 +36,7 @@ const COLUMNS: { key: SortKey | null; label: string; accessor?: (b: Business) =>
   { key: 'suspicionRating', label: 'דירוג אינדיקציה', accessor: b => ALL_RATINGS.indexOf(b.suspicionRating) },
   { key: 'unitCount', label: 'יחידות', accessor: b => parseFloat(b.unitCount) || 0 },
   { key: 'uploadDate', label: 'תאריך', accessor: b => b.uploadDate },
+  { key: 'source', label: 'מקור', accessor: b => SOURCE_LABEL[b.source] },
   { key: 'sentToInspector', label: 'סוקר', accessor: b => b.sentToInspector ?? '' },
   { key: 'surveyResultDetail', label: 'תוצאת סקר', accessor: b => b.surveyResultDetail ?? '' },
 ]
@@ -80,6 +83,7 @@ export default function BusinessesPage() {
   const [typeFilter, setTypeFilter] = useState('הכל')
   const [neighborhoodFilter, setNeighborhoodFilter] = useState('הכל')
   const [inspectorFilter, setInspectorFilter] = useState('הכל')
+  const [sourceFilter, setSourceFilter] = useState('הכל')
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [expanded, setExpanded] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -115,9 +119,10 @@ export default function BusinessesPage() {
       && (typeFilter === 'הכל' || b.type === typeFilter)
       && (neighborhoodFilter === 'הכל' || b.neighborhood === neighborhoodFilter)
       && (inspectorFilter === 'הכל' || (b.sentToInspector ?? 'לא נשלח לסוקר') === inspectorFilter)
-  }), [businesses, search, ratingFilter, typeFilter, neighborhoodFilter, inspectorFilter])
+      && (sourceFilter === 'הכל' || b.source === sourceFilter)
+  }), [businesses, search, ratingFilter, typeFilter, neighborhoodFilter, inspectorFilter, sourceFilter])
 
-  const activeFilterCount = [ratingFilter, typeFilter, neighborhoodFilter, inspectorFilter].filter(f => f !== 'הכל').length
+  const activeFilterCount = [ratingFilter, typeFilter, neighborhoodFilter, inspectorFilter, sourceFilter].filter(f => f !== 'הכל').length
 
   const sorted = useMemo(() => {
     if (!sortKey) return filtered
@@ -185,6 +190,7 @@ export default function BusinessesPage() {
       'כתובת תואמת': b.matchedAddress, 'דירוג אינדיקציה': b.suspicionRating, 'פירוט האינדיקציה': b.suspicionDetail,
       'סיבת אי-אינדיקציה': b.noSuspicionReason, 'מספר יחידות': b.unitCount, 'בעלי נכסים': b.propertyOwners,
       'קישור 1': b.link1, 'קישור 2': b.link2, 'קישור 3': b.link3, 'תאריך העלאה': formatDate(b.uploadDate),
+      'מקור': SOURCE_LABEL[b.source],
       'נשלח לסוקר': b.sentToInspector ?? 'לא נשלח לסוקר', 'תוצאת סקר': b.surveyResultDetail ?? '',
     }))
     const ws = XLSX.utils.json_to_sheet(rows)
@@ -306,7 +312,7 @@ export default function BusinessesPage() {
               <Button
                 variant="ghost"
                 icon={<X size={15} strokeWidth={1.9} />}
-                onClick={() => { setSearch(''); setRatingFilter('הכל'); setTypeFilter('הכל'); setNeighborhoodFilter('הכל'); setInspectorFilter('הכל') }}
+                onClick={() => { setSearch(''); setRatingFilter('הכל'); setTypeFilter('הכל'); setNeighborhoodFilter('הכל'); setInspectorFilter('הכל'); setSourceFilter('הכל') }}
               >
                 נקה סינון
               </Button>
@@ -338,6 +344,10 @@ export default function BusinessesPage() {
               <Select value={inspectorFilter} onChange={e => setInspectorFilter(e.target.value)}>
                 <option value="הכל">כל סטטוסי הסוקר</option>
                 {INSPECTOR_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+              </Select>
+              <Select value={sourceFilter} onChange={e => setSourceFilter(e.target.value)}>
+                <option value="הכל">כל המקורות</option>
+                {SOURCE_OPTIONS.map(s => <option key={s} value={s}>{SOURCE_LABEL[s]}</option>)}
               </Select>
             </div>
           )}
@@ -387,7 +397,7 @@ export default function BusinessesPage() {
                 </thead>
                 <tbody className="divide-y divide-hairline">
                   {sorted.length === 0 ? (
-                    <tr><td colSpan={13} className="text-center py-12 text-graphite">לא נמצאו תוצאות</td></tr>
+                    <tr><td colSpan={14} className="text-center py-12 text-graphite">לא נמצאו תוצאות</td></tr>
                   ) : sorted.map(b => (
                     <RowGroup key={b.id}>
                       <tr
@@ -408,6 +418,9 @@ export default function BusinessesPage() {
                         </td>
                         <td className="px-3.5 py-3 text-graphite">{b.unitCount || '—'}</td>
                         <td className="px-3.5 py-3 text-graphite text-[12px]">{formatDate(b.uploadDate)}</td>
+                        <td className="px-3.5 py-3">
+                          <Badge tone={b.source === 'manual' ? 'mid' : 'neutral'}>{SOURCE_LABEL[b.source]}</Badge>
+                        </td>
                         <td className="px-3.5 py-3" onClick={e => e.stopPropagation()}>
                           <Select
                             value={b.sentToInspector ?? 'לא נשלח לסוקר'}
@@ -441,7 +454,7 @@ export default function BusinessesPage() {
 
                       {expanded === b.id && (
                         <tr className="bg-canvas">
-                          <td colSpan={13} className="px-8 py-5">
+                          <td colSpan={14} className="px-8 py-5">
                             {editingId === b.id ? (
                               <div>
                                 <div className="grid grid-cols-2 gap-x-10 gap-y-3">
