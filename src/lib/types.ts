@@ -5,7 +5,6 @@ export interface Business {
   address: string
   neighborhood: string
   matchedAddress: string
-  propertyOwners: string
   unitCount: string
   suspicionRating: string
   suspicionDetail: string

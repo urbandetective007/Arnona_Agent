@@ -22,7 +22,7 @@ type Mode = 'file' | 'manual'
 
 type TargetField =
   | 'name' | 'address' | 'neighborhood' | 'type' | 'suspicionRating' | 'suspicionDetail'
-  | 'noSuspicionReason' | 'propertyOwners' | 'matchedAddress' | 'unitCount' | 'link1' | 'link2' | 'link3'
+  | 'noSuspicionReason' | 'matchedAddress' | 'unitCount' | 'link1' | 'link2' | 'link3'
 
 const FIELD_DEFS: { key: TargetField; label: string; required: boolean; hint: string }[] = [
   { key: 'name', label: 'שם העסק', required: true, hint: 'שם העסק' },
@@ -32,7 +32,6 @@ const FIELD_DEFS: { key: TargetField; label: string; required: boolean; hint: st
   { key: 'suspicionRating', label: 'דירוג אינדיקציה', required: false, hint: 'דירוג אינדיקציה' },
   { key: 'suspicionDetail', label: 'פירוט האינדיקציה', required: false, hint: 'פירוט האינדיקציה' },
   { key: 'noSuspicionReason', label: 'סיבת אי-אינדיקציה', required: false, hint: 'סיבת אי-אינדיקציה' },
-  { key: 'propertyOwners', label: 'שמות בעלי נכסים', required: false, hint: 'שמות בעלי נכסים' },
   { key: 'matchedAddress', label: 'כתובת תואמת במערכת הגבייה', required: false, hint: 'כתובת תואמת במערכת הגבייה' },
   { key: 'unitCount', label: "מס' דירות", required: false, hint: "מס' דירות" },
   { key: 'link1', label: 'קישור 1', required: false, hint: 'קישור 1' },
@@ -41,12 +40,12 @@ const FIELD_DEFS: { key: TargetField; label: string; required: boolean; hint: st
 ]
 
 // Fields shown in the manual-entry form — same set as FIELD_DEFS minus
-// propertyOwners and noSuspicionReason, which the manual flow doesn't collect.
-const MANUAL_FIELD_DEFS = FIELD_DEFS.filter(fd => fd.key !== 'propertyOwners' && fd.key !== 'noSuspicionReason')
+// noSuspicionReason, which the manual flow doesn't collect.
+const MANUAL_FIELD_DEFS = FIELD_DEFS.filter(fd => fd.key !== 'noSuspicionReason')
 
 const EMPTY_MAPPING: Record<TargetField, string> = {
   name: '', address: '', neighborhood: '', type: '', suspicionRating: '', suspicionDetail: '',
-  noSuspicionReason: '', propertyOwners: '', matchedAddress: '', unitCount: '', link1: '', link2: '', link3: '',
+  noSuspicionReason: '', matchedAddress: '', unitCount: '', link1: '', link2: '', link3: '',
 }
 
 // Manual entries default to the highest rating rather than the file flow's
@@ -128,7 +127,6 @@ function buildBusinesses(
       address,
       neighborhood,
       matchedAddress: getCol(row, headers, mapping.matchedAddress),
-      propertyOwners: getCol(row, headers, mapping.propertyOwners),
       unitCount: getCol(row, headers, mapping.unitCount),
       suspicionRating: rating,
       suspicionDetail: getCol(row, headers, mapping.suspicionDetail),
@@ -317,7 +315,6 @@ export default function UploadPage() {
         address: manual.address.trim(),
         neighborhood: normalizeNeighborhood(manual.neighborhood) ?? '',
         matchedAddress: manual.matchedAddress.trim(),
-        propertyOwners: '',
         unitCount: manual.unitCount.trim(),
         suspicionRating: rating,
         suspicionDetail: manual.suspicionDetail.trim(),

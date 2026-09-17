@@ -57,7 +57,7 @@ export default function MapPage() {
 
   const filtered = useMemo(() => businesses.filter(b => {
     const q = search.toLowerCase()
-    const matchesSearch = !q || [b.name, b.address, b.type, b.neighborhood ?? '', b.propertyOwners ?? ''].some(s => s.toLowerCase().includes(q))
+    const matchesSearch = !q || [b.name, b.address, b.type, b.neighborhood ?? ''].some(s => s.toLowerCase().includes(q))
     return matchesSearch
       && (ratingFilter === 'הכל' || b.suspicionRating === ratingFilter)
       && (typeFilter === 'הכל' || b.type === typeFilter)

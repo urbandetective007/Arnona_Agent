@@ -113,7 +113,7 @@ export default function BusinessesPage() {
 
   const filtered = useMemo(() => businesses.filter(b => {
     const q = search.toLowerCase()
-    const matchesSearch = !q || [b.name, b.address, b.type, b.neighborhood ?? '', b.propertyOwners ?? ''].some(s => s.toLowerCase().includes(q))
+    const matchesSearch = !q || [b.name, b.address, b.type, b.neighborhood ?? ''].some(s => s.toLowerCase().includes(q))
     return matchesSearch
       && (ratingFilter === 'הכל' || b.suspicionRating === ratingFilter)
       && (typeFilter === 'הכל' || b.type === typeFilter)
@@ -188,7 +188,7 @@ export default function BusinessesPage() {
     const rows = filtered.map(b => ({
       'שם העסק': b.name, 'סוג עסק': b.type, 'כתובת': b.address, 'שכונה': b.neighborhood,
       'כתובת תואמת במערכת הגבייה': b.matchedAddress, 'דירוג אינדיקציה': b.suspicionRating, 'פירוט האינדיקציה': b.suspicionDetail,
-      'סיבת אי-אינדיקציה': b.noSuspicionReason, 'מספר יחידות': b.unitCount, 'בעלי נכסים': b.propertyOwners,
+      'סיבת אי-אינדיקציה': b.noSuspicionReason, 'מספר יחידות': b.unitCount,
       'קישור 1': b.link1, 'קישור 2': b.link2, 'קישור 3': b.link3, 'תאריך העלאה': formatDate(b.uploadDate),
       'מקור': SOURCE_LABEL[b.source],
       'נשלח לסוקר': b.sentToInspector ?? 'לא נשלח לסוקר', 'תוצאת סקר': b.surveyResultDetail ?? '',
@@ -470,7 +470,6 @@ export default function BusinessesPage() {
                                   <EditField label="קישור 1" value={editForm.link1 ?? ''} onChange={v => setEditForm(f => ({ ...f, link1: v }))} />
                                   <EditField label="קישור 2" value={editForm.link2 ?? ''} onChange={v => setEditForm(f => ({ ...f, link2: v }))} />
                                   <EditField label="קישור 3" value={editForm.link3 ?? ''} onChange={v => setEditForm(f => ({ ...f, link3: v }))} />
-                                  <EditTextArea label="בעלי נכסים" value={editForm.propertyOwners ?? ''} onChange={v => setEditForm(f => ({ ...f, propertyOwners: v }))} />
                                   <EditTextArea label="פירוט האינדיקציה" value={editForm.suspicionDetail ?? ''} onChange={v => setEditForm(f => ({ ...f, suspicionDetail: v }))} />
                                   <EditTextArea label="סיבת אי-אינדיקציה" value={editForm.noSuspicionReason ?? ''} onChange={v => setEditForm(f => ({ ...f, noSuspicionReason: v }))} />
                                 </div>
@@ -487,9 +486,8 @@ export default function BusinessesPage() {
                                   b.unitCount && ['מספר יחידות', b.unitCount],
                                   b.suspicionDetail && ['פירוט האינדיקציה', b.suspicionDetail],
                                   b.noSuspicionReason && ['סיבת אי-אינדיקציה', b.noSuspicionReason],
-                                  b.propertyOwners && ['בעלי נכסים', b.propertyOwners],
                                 ].filter(Boolean) as [string, string][]).map(([label, value]) => {
-                                  const full = ['פירוט האינדיקציה', 'סיבת אי-אינדיקציה', 'בעלי נכסים'].includes(label)
+                                  const full = ['פירוט האינדיקציה', 'סיבת אי-אינדיקציה'].includes(label)
                                   return (
                                     <div key={label} className={full ? 'col-span-2' : ''}>
                                       <span className="font-semibold text-charcoal">{label}: </span>
