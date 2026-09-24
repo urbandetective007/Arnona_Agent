@@ -148,3 +148,19 @@ h1, h2, h3, h4 {
   transform: scale(1.15) translateY(-2px);
   filter: drop-shadow(0px 4px 8px rgba(0,0,0,0.4)) !important;
 }
+
+/* Cross-filter transitions: chart rows that newly enter a chart (e.g. a
+   neighborhood joining the top-6 after a filter) fade in instead of popping. */
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: none; }
+}
+.animate-fade-in { animation: fade-in 350ms ease-out both; }
+
+/* Donut slices sweep to their new share when the page is cross-filtered. */
+.donut-arc { transition: stroke-dasharray 500ms ease-out, stroke-dashoffset 500ms ease-out, opacity 150ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in { animation: none; }
+  .donut-arc, .transition-\[width\] { transition: none !important; }
+}
