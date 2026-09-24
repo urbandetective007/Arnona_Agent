@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import type { Business } from '@/lib/types'
@@ -24,12 +24,14 @@ function getCleanAddress(address: string): string {
 const LIVE_GEOCODE_CACHE_KEY = 'arnona_live_geocode_cache_v1'
 const NOMINATIM_DELAY_MS = 1100 // respect Nominatim's ~1 req/sec usage policy
 
-type Coords = { lat: number; lon: number }
+// `approx` marks a location we couldn't confirm inside Jerusalem — still
+// drawn (so a bad address is visible, not silently dropped) but flagged.
+type Coords = { lat: number; lon: number; approx?: boolean }
 
 // Every property is in Jerusalem. A free-text Nominatim search can still
 // land on a same-named street in another city (e.g. "שמואל הנביא" in Beit
-// Shemesh), so live lookups are bounded to this box and anything outside
-// it is treated as "not found" rather than drawn in the wrong city.
+// Shemesh), so live lookups first search inside this box; only if nothing
+// is found there do we fall back to an unbounded search, flagged approx.
 const JERUSALEM_BOUNDS = { south: 31.70, north: 31.90, west: 35.07, east: 35.32 }
 
 function isInJerusalem(c: Coords): boolean {
@@ -42,10 +44,11 @@ function loadLiveGeocodeCache(): Record<string, Coords | null> {
   try {
     const raw = localStorage.getItem(LIVE_GEOCODE_CACHE_KEY)
     const cache: Record<string, Coords | null> = raw ? JSON.parse(raw) : {}
-    // Drop results remembered before lookups were bounded to Jerusalem, so
-    // those addresses get re-geocoded correctly instead of staying misplaced.
+    // Re-geocode results remembered before lookups were bounded to
+    // Jerusalem (out of bounds, not yet flagged), so they get a chance to
+    // resolve inside the city first.
     for (const [addr, coords] of Object.entries(cache)) {
-      if (coords && !isInJerusalem(coords)) delete cache[addr]
+      if (coords && !coords.approx && !isInJerusalem(coords)) delete cache[addr]
     }
     return cache
   } catch {
@@ -58,18 +61,14 @@ function saveLiveGeocodeCache(cache: Record<string, Coords | null>) {
   try { localStorage.setItem(LIVE_GEOCODE_CACHE_KEY, JSON.stringify(cache)) } catch {}
 }
 
-async function geocodeLive(cleanAddress: string): Promise<Coords | null> {
-  const query = cleanAddress.includes('ירושלים') ? cleanAddress : `${cleanAddress}, ירושלים`
-  try {
+async function nominatimSearch(query: string, bounded: boolean): Promise<Coords | null> {
+  const params = new URLSearchParams({ format: 'json', limit: '1', q: query, countrycodes: 'il' })
+  if (bounded) {
     const { west, north, east, south } = JERUSALEM_BOUNDS
-    const params = new URLSearchParams({
-      format: 'json',
-      limit: '1',
-      q: query,
-      countrycodes: 'il',
-      viewbox: `${west},${north},${east},${south}`,
-      bounded: '1',
-    })
+    params.set('viewbox', `${west},${north},${east},${south}`)
+    params.set('bounded', '1')
+  }
+  try {
     const res = await fetch(
       `https://nominatim.openstreetmap.org/search?${params}`,
       { headers: { 'Accept-Language': 'he,en;q=0.9' } }
@@ -77,13 +76,24 @@ async function geocodeLive(cleanAddress: string): Promise<Coords | null> {
     if (!res.ok) return null
     const data = await res.json()
     if (Array.isArray(data) && data[0]) {
-      const coords = { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) }
-      return isInJerusalem(coords) ? coords : null
+      return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) }
     }
     return null
   } catch {
     return null
   }
+}
+
+async function geocodeLive(cleanAddress: string): Promise<Coords | null> {
+  const query = cleanAddress.includes('ירושלים') ? cleanAddress : `${cleanAddress}, ירושלים`
+  const inCity = await nominatimSearch(query, true)
+  if (inCity && isInJerusalem(inCity)) return inCity
+  // Nothing inside Jerusalem — fall back to the best match anywhere, so the
+  // property still shows up (flagged) and the bad address can be noticed.
+  await new Promise(r => setTimeout(r, NOMINATIM_DELAY_MS))
+  const anywhere = await nominatimSearch(query, false)
+  if (!anywhere) return null
+  return isInJerusalem(anywhere) ? anywhere : { ...anywhere, approx: true }
 }
 
 // Suspicion colors mapping
@@ -97,11 +107,17 @@ const SUSPICION_COLORS: Record<string, string> = {
 const DEFAULT_COLOR = '#9ca3af' // Gray
 
 // SVG marker creator function
-const createMarkerIcon = (color: string) => {
+// `uncertain` adds an amber "!" badge — the location couldn't be confirmed
+// inside Jerusalem, so the pin may be in the wrong place.
+const createMarkerIcon = (color: string, uncertain = false) => {
   return L.divIcon({
     html: `
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="32" height="32" style="filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.3));">
         <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" fill="${color}"/>
+        ${uncertain ? `
+        <circle cx="18.5" cy="5" r="4.6" fill="#f59e0b" stroke="#fff" stroke-width="1.2"/>
+        <text x="18.5" y="7.3" text-anchor="middle" font-size="6.5" font-weight="700" fill="#fff" font-family="Arial, sans-serif">!</text>
+        ` : ''}
       </svg>
     `,
     className: 'custom-leaflet-marker',
@@ -116,7 +132,7 @@ export default function JerusalemMap({ businesses }: JerusalemMapProps) {
   const mapInstanceRef = useRef<L.Map | null>(null)
   const markerGroupRef = useRef<L.LayerGroup | null>(null)
   
-  const [coordsCache, setCoordsCache] = useState<Record<string, { lat: number; lon: number } | null>>({})
+  const [coordsCache, setCoordsCache] = useState<Record<string, Coords | null>>({})
   const [cacheLoaded, setCacheLoaded] = useState(false)
   const [liveCache, setLiveCache] = useState<Record<string, Coords | null>>({})
   const geocodingQueueRef = useRef<Set<string>>(new Set())
@@ -130,27 +146,40 @@ export default function JerusalemMap({ businesses }: JerusalemMapProps) {
   // Fallback: geocode any address missing from BOTH the static cache and the
   // live cache, one at a time (Nominatim rate limit), so no business is ever
   // silently dropped just because the static geocoded_addresses.json is stale.
+  //
+  // A single long-lived worker drains a pending list. (Previously each run of
+  // this effect started its own loop and was cancelled as soon as its first
+  // result updated liveCache — the remaining addresses stayed marked as
+  // queued and were never looked up, so only one address resolved per visit.)
+  const pendingRef = useRef<string[]>([])
+  const workerRunningRef = useRef(false)
+  const unmountedRef = useRef(false)
+
+  useEffect(() => {
+    unmountedRef.current = false
+    return () => { unmountedRef.current = true }
+  }, [])
+
   useEffect(() => {
     if (!cacheLoaded) return
 
-    const toQueue: string[] = []
     businesses.forEach(b => {
       const cleanAddr = getCleanAddress(b.address)
       if (!cleanAddr) return
       if (cleanAddr in coordsCache) return
       if (cleanAddr in liveCache) return
       if (geocodingQueueRef.current.has(cleanAddr)) return
-      toQueue.push(cleanAddr)
+      geocodingQueueRef.current.add(cleanAddr)
+      pendingRef.current.push(cleanAddr)
     })
-    if (toQueue.length === 0) return
-    toQueue.forEach(a => geocodingQueueRef.current.add(a))
+    if (workerRunningRef.current || pendingRef.current.length === 0) return
 
-    let cancelled = false
+    workerRunningRef.current = true
     ;(async () => {
-      for (const addr of toQueue) {
-        if (cancelled) break
+      while (pendingRef.current.length > 0 && !unmountedRef.current) {
+        const addr = pendingRef.current.shift()!
         const result = await geocodeLive(addr)
-        if (cancelled) break
+        if (unmountedRef.current) break
         setLiveCache(prev => {
           const next = { ...prev, [addr]: result }
           saveLiveGeocodeCache(next)
@@ -158,9 +187,8 @@ export default function JerusalemMap({ businesses }: JerusalemMapProps) {
         })
         await new Promise(r => setTimeout(r, NOMINATIM_DELAY_MS))
       }
+      workerRunningRef.current = false
     })()
-
-    return () => { cancelled = true }
   }, [businesses, coordsCache, liveCache, cacheLoaded])
 
   // Load coordinates cache once on mount
@@ -225,11 +253,17 @@ export default function JerusalemMap({ businesses }: JerusalemMapProps) {
 
       if (coords && coords.lat && coords.lon) {
         const color = SUSPICION_COLORS[b.suspicionRating] || DEFAULT_COLOR
-        const icon = createMarkerIcon(color)
+        const uncertain = coords.approx === true || !isInJerusalem(coords)
+        const icon = createMarkerIcon(color, uncertain)
 
         const popupContent = `
           <div style="font-family: var(--font-manrope), sans-serif; text-align: right; direction: rtl; min-width: 200px;">
             <h3 style="margin: 0 0 6px 0; font-size: 14px; font-weight: 700; color: var(--ink);">${b.name}</h3>
+            ${uncertain ? `
+            <p style="margin: 0 0 8px 0; font-size: 11px; color: #92400e; line-height: 1.35; background: #fffbeb; border: 1px solid #fcd34d; padding: 6px; border-radius: 4px;">
+              <strong>מיקום לא ודאי:</strong> הכתובת לא אותרה בירושלים, והנקודה מוצגת לפי התוצאה הקרובה שנמצאה — ייתכן שבעיר אחרת. כדאי לבדוק את הכתובת.
+            </p>
+            ` : ''}
             <p style="margin: 0 0 4px 0; font-size: 12px; color: var(--charcoal);">
               <strong>סוג עסק:</strong> ${b.type || 'לא ידוע'}
             </p>
@@ -296,8 +330,44 @@ export default function JerusalemMap({ businesses }: JerusalemMapProps) {
     }
   }, [businesses, coordsCache, liveCache, cacheLoaded])
 
+  // Surface location problems instead of hiding them: how many pins sit at
+  // an unconfirmed location, and how many properties couldn't be placed.
+  const locationIssues = useMemo(() => {
+    let uncertain = 0
+    let notFound = 0
+    businesses.forEach(b => {
+      const cleanAddr = getCleanAddress(b.address)
+      if (!cleanAddr) { notFound++; return }
+      const inStatic = cleanAddr in coordsCache
+      const inLive = cleanAddr in liveCache
+      if (!inStatic && !inLive) return // still being looked up
+      const coords = coordsCache[cleanAddr] ?? liveCache[cleanAddr]
+      if (!coords) notFound++
+      else if (coords.approx === true || !isInJerusalem(coords)) uncertain++
+    })
+    return { uncertain, notFound }
+  }, [businesses, coordsCache, liveCache])
+
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%', minHeight: '500px' }}>
+      {cacheLoaded && (locationIssues.uncertain > 0 || locationIssues.notFound > 0) && (
+        <div
+          dir="rtl"
+          style={{
+            position: 'absolute', top: 12, right: 12, zIndex: 1000,
+            background: '#fffbeb', border: '1px solid #fcd34d', color: '#92400e',
+            borderRadius: 8, padding: '6px 10px', fontSize: 12, lineHeight: 1.5,
+            boxShadow: '0 2px 6px rgba(0,0,0,0.08)', maxWidth: 260,
+          }}
+        >
+          {locationIssues.uncertain > 0 && (
+            <div><strong>{locationIssues.uncertain}</strong> נכסים במיקום לא ודאי (מסומנים ב-!)</div>
+          )}
+          {locationIssues.notFound > 0 && (
+            <div><strong>{locationIssues.notFound}</strong> נכסים שלא אותרו ואינם מוצגים במפה</div>
+          )}
+        </div>
+      )}
       <div 
         ref={mapRef} 
         style={{ 
