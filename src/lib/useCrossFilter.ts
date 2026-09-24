@@ -131,7 +131,7 @@ export function chartItemProps<T, D extends string>(
     tabIndex: 0,
     'aria-pressed': selected,
     'aria-label': label,
-    title: 'לחיצה לסינון הדף · Ctrl+לחיצה לבחירה מרובה',
+    title: 'לחיצה לסינון הדף · לבחירה מרובה: Ctrl + לחיצה',
     'data-selected': selected || undefined,
     onClick: (e: MouseEvent) => cf.toggle(dim, value, e.ctrlKey || e.metaKey),
     onKeyDown: (e: KeyboardEvent) => {

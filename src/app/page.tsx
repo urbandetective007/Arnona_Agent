@@ -10,7 +10,7 @@ import type { Business, UploadSession } from '@/lib/types'
 import { supabase, dbToBusiness, dbToSession } from '@/lib/supabase'
 import { getCache, setCache } from '@/lib/cache'
 import { timeAgo, parseUploadDate } from '@/lib/dateUtils'
-import { Card, StatCard, Button, Spinner, EmptyState, Pill, Sparkline, CrossFilterBar } from '@/components/ui'
+import { Card, StatCard, Button, Spinner, EmptyState, Pill, Sparkline, CrossFilterBar, AnimatedNumber } from '@/components/ui'
 import { useCrossFilter, chartItemProps } from '@/lib/useCrossFilter'
 
 const RANGE_OPTIONS = [
@@ -330,7 +330,7 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
             label="נכסים במעקב"
-            value={<span className="num">{stats.total.toLocaleString('he')}</span>}
+            value={<span className="num"><AnimatedNumber value={stats.total} /></span>}
             icon={<Building2 size={16} className="text-subtle" strokeWidth={1.8} />}
             sparkline={<Sparkline values={stats.totalHistory} color="#296ef9" />}
             footer={businesses.length !== stats.total && (
@@ -342,22 +342,22 @@ export default function Dashboard() {
           />
           <StatCard
             label="אינדיקציה גבוהה"
-            value={<span className="num text-high">{stats.high.toLocaleString('he')}</span>}
+            value={<span className="num text-high"><AnimatedNumber value={stats.high} /></span>}
             icon={<span className="w-1.5 h-1.5 rounded-full bg-high" />}
             sparkline={<Sparkline values={stats.indicationHistory} color="#c8102e" />}
             footer={
               <span className="text-[12px] text-subtle">
-                <span className="num">{stats.total > 0 ? Math.round((stats.high / stats.total) * 100) : 0}%</span> מכלל הנכסים
+                <span className="num"><AnimatedNumber value={stats.total > 0 ? Math.round((stats.high / stats.total) * 100) : 0} suffix="%" /></span> מכלל הנכסים
               </span>
             }
           />
           <StatCard
             label="נשלחו לסוקר"
-            value={<span className="num">{stats.sent.length.toLocaleString('he')}</span>}
+            value={<span className="num"><AnimatedNumber value={stats.sent.length} /></span>}
             icon={<Send size={16} className="text-subtle" strokeWidth={1.8} />}
             footer={
               <span className="text-[12px] text-subtle">
-                <span className="num">{stats.pendingAssignment.length}</span> באינדיקציה עדיין לא הוקצו
+                <span className="num"><AnimatedNumber value={stats.pendingAssignment.length} /></span> באינדיקציה עדיין לא הוקצו
               </span>
             }
           />
@@ -367,14 +367,14 @@ export default function Dashboard() {
             icon={<ClipboardCheck size={16} className="text-[#b9cdf7]" strokeWidth={1.8} />}
             value={
               <span className="flex items-baseline gap-1.5">
-                <span className="num">{stats.sent.length > 0 ? Math.round((stats.reported.length / stats.sent.length) * 100) : 0}%</span>
-                <span className="num text-[12.5px] text-[#a9c1f4] font-normal">{stats.reported.length} מתוך {stats.sent.length} דיווחים</span>
+                <span className="num"><AnimatedNumber value={stats.sent.length > 0 ? Math.round((stats.reported.length / stats.sent.length) * 100) : 0} suffix="%" /></span>
+                <span className="num text-[12.5px] text-[#a9c1f4] font-normal"><AnimatedNumber value={stats.reported.length} /> מתוך <AnimatedNumber value={stats.sent.length} /> דיווחים</span>
               </span>
             }
             footer={
               <div className="h-1.5 bg-white/15 rounded-full overflow-hidden flex w-36">
                 <span
-                  className="bg-white block h-full"
+                  className="transition-[width] duration-500 ease-out bg-white block h-full"
                   style={{ width: `${stats.sent.length > 0 ? (stats.reported.length / stats.sent.length) * 100 : 0}%` }}
                 />
               </div>
@@ -401,10 +401,10 @@ export default function Dashboard() {
                 className={`${item.className} rounded-[10px] p-3 border ${stage.tone === 'clear' ? 'bg-clear/[0.06] border-clear/25' : 'bg-canvas border-[#e8edf4]'} ${item['aria-pressed'] ? 'ring-2 ring-brand-light' : ''}`}
               >
                 <div className={`text-xs font-semibold ${stage.tone === 'clear' ? 'text-clear' : 'text-graphite'}`}>{stage.label}</div>
-                <div className={`num text-2xl font-bold mt-1 ${stage.tone === 'clear' ? 'text-clear' : 'text-ink'}`}>{stage.value}</div>
+                <div className={`num text-2xl font-bold mt-1 ${stage.tone === 'clear' ? 'text-clear' : 'text-ink'}`}><AnimatedNumber value={stage.value} /></div>
                 <div className={`h-1 rounded-full mt-2.5 overflow-hidden ${stage.tone === 'clear' ? 'bg-clear/20' : 'bg-[#eef1f5]'}`}>
                   <span
-                    className={`block h-full ${stage.tone === 'clear' ? 'bg-clear' : 'bg-brand-light'}`}
+                    className={`transition-[width] duration-500 ease-out block h-full ${stage.tone === 'clear' ? 'bg-clear' : 'bg-brand-light'}`}
                     style={{ width: `${(stage.value / funnelMax) * 100}%` }}
                   />
                 </div>
@@ -417,7 +417,7 @@ export default function Dashboard() {
               <TrendingUp size={17} className="text-mid shrink-0" strokeWidth={1.9} />
               <span className="text-[13px] text-[#7c3a12]">
                 <strong className="font-bold">צוואר בקבוק:</strong>{' '}
-                <span className="num">{stats.pendingAssignment.length}</span> נכסים באינדיקציה מחכים להקצאה לסוקר.
+                <span className="num"><AnimatedNumber value={stats.pendingAssignment.length} /></span> נכסים באינדיקציה מחכים להקצאה לסוקר.
               </span>
               {canEdit && (
                 <Link href="/businesses" className="me-auto text-[12.5px] font-semibold text-mid hover:underline">הקצה עכשיו ←</Link>
@@ -443,18 +443,18 @@ export default function Dashboard() {
                   const max = neighborhoodStats.hotNeighborhoods[0].count
                   const item = chartItemProps(cf, 'neighborhood', n.name, `${n.name}: ${n.count}`)
                   return (
-                    <div key={n.name} {...item} className={`${item.className} flex items-center gap-3 rounded-md ${item['aria-pressed'] ? 'bg-brand/[0.06]' : ''}`}>
+                    <div key={n.name} {...item} className={`${item.className} animate-fade-in flex items-center gap-3 rounded-md ${item['aria-pressed'] ? 'bg-brand/[0.06]' : ''}`}>
                       <span className="w-24 shrink-0 text-[13px] font-semibold text-ink truncate">{n.name}</span>
                       {/* A plain block width aligns to the row's own start edge (right,
                           under RTL) by default — bars read the same direction as the
                           text around them, growing from the right like the label does. */}
                       <div className="flex-1 h-[22px] bg-canvas rounded-md overflow-hidden">
                         <span
-                          className="block h-full rounded-md min-w-[10px]"
+                          className="transition-[width] duration-500 ease-out block h-full rounded-md min-w-[10px]"
                           style={{ width: `${(n.count / max) * 100}%`, background: 'linear-gradient(90deg, #a9c8ff 0%, #024ad8 100%)' }}
                         />
                       </div>
-                      <span className="num w-8 shrink-0 text-start text-[13px] font-bold text-brand">{n.count}</span>
+                      <span className="num w-8 shrink-0 text-start text-[13px] font-bold text-brand"><AnimatedNumber value={n.count} /></span>
                     </div>
                   )
                 })}
@@ -464,7 +464,7 @@ export default function Dashboard() {
               <div className="mt-auto pt-3.5 border-t border-[#eef1f5] flex items-center gap-2">
                 <Flame size={15} className="text-brand shrink-0" strokeWidth={1.9} />
                 <span className="text-[12.5px] text-charcoal">
-                  3 השכונות המובילות מרכזות <strong className="font-semibold num">{neighborhoodStats.topThreeShare}%</strong> מכלל הנכסים באינדיקציה.
+                  3 השכונות המובילות מרכזות <strong className="font-semibold num"><AnimatedNumber value={neighborhoodStats.topThreeShare} suffix="%" /></strong> מכלל הנכסים באינדיקציה.
                 </span>
               </div>
             )}
@@ -477,18 +477,22 @@ export default function Dashboard() {
               <div className="flex items-center gap-4">
                 <svg width="104" height="104" viewBox="0 0 42 42" className="shrink-0">
                   <circle cx="21" cy="21" r="15.9" fill="none" stroke="#f1f3f6" strokeWidth="6" />
-                  {pipelineArcs.filter(a => a.pct > 0).map(arc => (
+                  {pipelineArcs.map(arc => {
+                    const item = chartItemProps(cf, 'pipeline', arc.key, `${arc.label}: ${arc.count}`)
+                    return (
                     <circle
                       key={arc.key}
-                      {...chartItemProps(cf, 'pipeline', arc.key, `${arc.label}: ${arc.count}`)}
+                      {...item}
+                      className={`${item.className} donut-arc`}
+                      tabIndex={arc.pct > 0 ? 0 : -1}
                       cx="21" cy="21" r="15.9" fill="none"
                       stroke={arc.color} strokeWidth="6"
-                      strokeDasharray={`${arc.pct} ${100 - arc.pct}`}
-                      strokeDashoffset={arc.dashoffset}
+                      style={{ strokeDasharray: `${arc.pct} ${100 - arc.pct}`, strokeDashoffset: arc.dashoffset, pointerEvents: arc.pct > 0 ? undefined : 'none' }}
                       transform="rotate(-90 21 21)"
                     />
-                  ))}
-                  <text x="21" y="20.4" textAnchor="middle" style={{ font: "700 6px var(--font-num)", fill: '#0f1a28' }}>{pipelineTotal}</text>
+                    )
+                  })}
+                  <text x="21" y="20.4" textAnchor="middle" style={{ font: "700 6px var(--font-num)", fill: '#0f1a28' }}><AnimatedNumber value={pipelineTotal} /></text>
                   <text x="21" y="25" textAnchor="middle" style={{ font: "400 2.9px var(--font-sans)", fill: '#7c8ba0' }}>נכסים</text>
                 </svg>
                 <div className="flex flex-col gap-2">
@@ -498,7 +502,7 @@ export default function Dashboard() {
                     <div key={seg.key} {...item} className={`${item.className} flex items-center gap-2.5 rounded px-1 -mx-1 ${item['aria-pressed'] ? 'bg-brand/[0.06]' : ''}`}>
                       <span className="w-2 h-2 rounded-sm shrink-0" style={{ background: seg.color }} />
                       <span className="text-[12.5px] text-charcoal">{seg.label}</span>
-                      <span className="num text-[12.5px] font-bold text-ink">{seg.count}</span>
+                      <span className="num text-[12.5px] font-bold text-ink"><AnimatedNumber value={seg.count} /></span>
                     </div>
                     )
                   })}

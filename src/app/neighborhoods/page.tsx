@@ -7,7 +7,7 @@ import { useRequireRole } from '@/lib/useRequireRole'
 import type { Business } from '@/lib/types'
 import { supabase, dbToBusiness } from '@/lib/supabase'
 import { getCache, setCache } from '@/lib/cache'
-import { Card, StatCard, Spinner, EmptyState, CrossFilterBar } from '@/components/ui'
+import { Card, StatCard, Spinner, EmptyState, CrossFilterBar, AnimatedNumber } from '@/components/ui'
 import { useCrossFilter, chartItemProps } from '@/lib/useCrossFilter'
 
 const NEIGHBORHOOD_DIMS = {
@@ -80,7 +80,7 @@ export default function NeighborhoodsPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <StatCard
             label={cf.hasSelection() ? 'נכסים באינדיקציה בבחירה' : 'שכונות עם אינדיקציה'}
-            value={<span className="num">{(cf.hasSelection() ? selectedRows.reduce((sum, r) => sum + r.count, 0) : rows.length).toLocaleString('he')}</span>}
+            value={<span className="num"><AnimatedNumber value={cf.hasSelection() ? selectedRows.reduce((sum, r) => sum + r.count, 0) : rows.length} /></span>}
             icon={<MapPin size={16} className="text-subtle" strokeWidth={1.8} />}
           />
           <StatCard
@@ -88,7 +88,7 @@ export default function NeighborhoodsPage() {
             value={<span className="num">{selectedRows[0]?.neighborhood ?? '—'}</span>}
             icon={<Building2 size={16} className="text-subtle" strokeWidth={1.8} />}
             footer={selectedRows[0] && (
-              <span className="text-[12px] text-subtle"><span className="num font-semibold text-ink">{selectedRows[0].count}</span> נכסים באינדיקציה</span>
+              <span className="text-[12px] text-subtle"><span className="num font-semibold text-ink"><AnimatedNumber value={selectedRows[0].count} /></span> נכסים באינדיקציה</span>
             )}
           />
         </div>
@@ -105,18 +105,18 @@ export default function NeighborhoodsPage() {
               {rows.map((r, i) => {
                 const item = chartItemProps(cf, 'neighborhood', r.neighborhood, `${r.neighborhood}: ${r.count}`)
                 return (
-                <div key={r.neighborhood} {...item} className={`${item.className} flex items-center gap-3.5 px-2.5 py-2.5 rounded-lg ${item['aria-pressed'] ? 'bg-brand/[0.06]' : 'hover:bg-canvas'}`}>
+                <div key={r.neighborhood} {...item} className={`${item.className} animate-fade-in flex items-center gap-3.5 px-2.5 py-2.5 rounded-lg ${item['aria-pressed'] ? 'bg-brand/[0.06]' : 'hover:bg-canvas'}`}>
                   <span className="num w-6 shrink-0 text-[13px] font-bold text-subtle">{i + 1}</span>
                   <span className="w-32 shrink-0 text-[13.5px] font-semibold text-ink truncate">{r.neighborhood}</span>
                   <div className="flex-1 h-[22px] bg-canvas rounded-md overflow-hidden">
                     <span
-                      className="block h-full rounded-md min-w-[10px]"
+                      className="transition-[width] duration-500 ease-out block h-full rounded-md min-w-[10px]"
                       style={{ width: `${(r.count / maxCount) * 100}%`, background: 'linear-gradient(90deg, #a9c8ff 0%, #024ad8 100%)' }}
                     />
                   </div>
-                  <span className="num w-16 shrink-0 text-start text-[13px] font-bold text-brand">{r.count} נכסים</span>
+                  <span className="num w-16 shrink-0 text-start text-[13px] font-bold text-brand"><AnimatedNumber value={r.count} /> נכסים</span>
                   <span className="num w-12 shrink-0 text-start text-[12px] text-subtle">
-                    {totalIndication > 0 ? Math.round((r.count / totalIndication) * 100) : 0}%
+                    <AnimatedNumber value={totalIndication > 0 ? Math.round((r.count / totalIndication) * 100) : 0} suffix="%" />
                   </span>
                 </div>
                 )

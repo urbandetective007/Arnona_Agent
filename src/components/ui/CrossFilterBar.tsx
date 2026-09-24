@@ -9,6 +9,14 @@ interface CrossFilterBarProps<T, D extends string> {
   valueLabel?: (dim: D, value: string) => string
 }
 
+function Key({ children }: { children: string }) {
+  return (
+    <bdi>
+      <kbd className="inline-block mx-0.5 rounded border border-[#d5dce6] bg-surface px-1 text-[10.5px] leading-[1.35] font-sans text-graphite">{children}</kbd>
+    </bdi>
+  )
+}
+
 // The row of active chart-click filters at the top of a page. Renders
 // nothing until something is selected, so pages without an active
 // cross-filter look exactly as before.
@@ -40,7 +48,12 @@ export function CrossFilterBar<T, D extends string>({ cf, dimLabels, valueLabel 
       >
         נקה סינון
       </button>
-      <span className="w-full text-[11px] text-subtle">Ctrl+לחיצה על גרף לבחירה מרובה · Esc לניקוי</span>
+      {/* Starts with Hebrew and isolates the Latin key names in <bdi>, so the
+          line keeps a right-to-left reading order instead of "Ctrl+" jumping
+          to the left edge. */}
+      <span dir="rtl" className="w-full text-start text-[11px] text-subtle">
+        לבחירה מרובה: <Key>Ctrl</Key> + לחיצה על הגרף · לניקוי הסינון: <Key>Esc</Key>
+      </span>
     </div>
   )
 }
