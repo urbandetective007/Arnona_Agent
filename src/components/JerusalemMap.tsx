@@ -26,11 +26,28 @@ const NOMINATIM_DELAY_MS = 1100 // respect Nominatim's ~1 req/sec usage policy
 
 type Coords = { lat: number; lon: number }
 
+// Every property is in Jerusalem. A free-text Nominatim search can still
+// land on a same-named street in another city (e.g. "שמואל הנביא" in Beit
+// Shemesh), so live lookups are bounded to this box and anything outside
+// it is treated as "not found" rather than drawn in the wrong city.
+const JERUSALEM_BOUNDS = { south: 31.70, north: 31.90, west: 35.07, east: 35.32 }
+
+function isInJerusalem(c: Coords): boolean {
+  return c.lat >= JERUSALEM_BOUNDS.south && c.lat <= JERUSALEM_BOUNDS.north &&
+    c.lon >= JERUSALEM_BOUNDS.west && c.lon <= JERUSALEM_BOUNDS.east
+}
+
 function loadLiveGeocodeCache(): Record<string, Coords | null> {
   if (typeof window === 'undefined') return {}
   try {
     const raw = localStorage.getItem(LIVE_GEOCODE_CACHE_KEY)
-    return raw ? JSON.parse(raw) : {}
+    const cache: Record<string, Coords | null> = raw ? JSON.parse(raw) : {}
+    // Drop results remembered before lookups were bounded to Jerusalem, so
+    // those addresses get re-geocoded correctly instead of staying misplaced.
+    for (const [addr, coords] of Object.entries(cache)) {
+      if (coords && !isInJerusalem(coords)) delete cache[addr]
+    }
+    return cache
   } catch {
     return {}
   }
@@ -44,14 +61,24 @@ function saveLiveGeocodeCache(cache: Record<string, Coords | null>) {
 async function geocodeLive(cleanAddress: string): Promise<Coords | null> {
   const query = cleanAddress.includes('ירושלים') ? cleanAddress : `${cleanAddress}, ירושלים`
   try {
+    const { west, north, east, south } = JERUSALEM_BOUNDS
+    const params = new URLSearchParams({
+      format: 'json',
+      limit: '1',
+      q: query,
+      countrycodes: 'il',
+      viewbox: `${west},${north},${east},${south}`,
+      bounded: '1',
+    })
     const res = await fetch(
-      `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(query)}`,
+      `https://nominatim.openstreetmap.org/search?${params}`,
       { headers: { 'Accept-Language': 'he,en;q=0.9' } }
     )
     if (!res.ok) return null
     const data = await res.json()
     if (Array.isArray(data) && data[0]) {
-      return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) }
+      const coords = { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) }
+      return isInJerusalem(coords) ? coords : null
     }
     return null
   } catch {
