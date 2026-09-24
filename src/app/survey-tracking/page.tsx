@@ -8,7 +8,8 @@ import { useRequireRole } from '@/lib/useRequireRole'
 import type { Business } from '@/lib/types'
 import { supabase, dbToBusiness } from '@/lib/supabase'
 import { getCache, setCache } from '@/lib/cache'
-import { Card, StatCard, Badge, Table, Thead, Tbody, Tr, Th, Td, Spinner, EmptyState } from '@/components/ui'
+import { Card, StatCard, Badge, Table, Thead, Tbody, Tr, Th, Td, Spinner, EmptyState, CrossFilterBar } from '@/components/ui'
+import { useCrossFilter, chartItemProps } from '@/lib/useCrossFilter'
 import type { BadgeTone } from '@/components/ui'
 
 const RESULT_LABELS: Record<string, string> = {
@@ -24,6 +25,33 @@ const RESULT_COLORS: Record<string, string> = {
   'לא נמצא עסק/פער שטח': '#0f7a4a',
 }
 const RATING_TONE: Record<string, BadgeTone> = { 'גבוה': 'high', 'בינוני': 'mid' }
+
+// Cross-filter dimension for the results donut — clicking a result narrows
+// the KPIs and the pending table to properties with that result.
+const SURVEY_DIMS = {
+  result: (b: Business) => b.surveyResultDetail,
+}
+const DIM_LABELS = { result: 'ממצא' }
+
+function computeStats(businesses: Business[]) {
+  const sent = businesses.filter(b => b.sentToInspector === 'נשלח לסוקר')
+  const reported = sent.filter(b => b.surveyResultDetail)
+  const pending = sent.filter(b => !b.surveyResultDetail)
+  const gapFound = reported.filter(b => b.surveyResultDetail !== 'לא נמצא עסק/פער שטח')
+  const completionPct = sent.length > 0 ? Math.round((reported.length / sent.length) * 100) : 0
+  const accuracyPct = reported.length > 0 ? Math.round((gapFound.length / reported.length) * 100) : 0
+
+  const breakdown = new Map<string, number>()
+  reported.forEach(b => {
+    const key = b.surveyResultDetail as string
+    breakdown.set(key, (breakdown.get(key) ?? 0) + 1)
+  })
+  const resultSegments = [...breakdown.entries()]
+    .map(([key, count]) => ({ key, count, label: RESULT_LABELS[key] ?? key, color: RESULT_COLORS[key] ?? '#7c8ba0' }))
+    .sort((a, b) => b.count - a.count)
+
+  return { sent, reported, pending, gapFound, completionPct, accuracyPct, resultSegments }
+}
 
 export default function SurveyTrackingPage() {
   const ready = useRequireRole(['employee', 'manager'])
@@ -48,29 +76,16 @@ export default function SurveyTrackingPage() {
     })
   }, [])
 
-  const stats = useMemo(() => {
-    const sent = businesses.filter(b => b.sentToInspector === 'נשלח לסוקר')
-    const reported = sent.filter(b => b.surveyResultDetail)
-    const pending = sent.filter(b => !b.surveyResultDetail)
-    const gapFound = reported.filter(b => b.surveyResultDetail !== 'לא נמצא עסק/פער שטח')
-    const completionPct = sent.length > 0 ? Math.round((reported.length / sent.length) * 100) : 0
-    const accuracyPct = reported.length > 0 ? Math.round((gapFound.length / reported.length) * 100) : 0
+  const cf = useCrossFilter(businesses, SURVEY_DIMS)
+  const stats = useMemo(() => computeStats(cf.filtered), [cf.filtered])
+  // The donut ignores its own selection so all results stay visible, with
+  // the picked one highlighted.
+  const resultFiltered = cf.filteredExcept('result')
+  const donut = useMemo(() => computeStats(resultFiltered), [resultFiltered])
 
-    const breakdown = new Map<string, number>()
-    reported.forEach(b => {
-      const key = b.surveyResultDetail as string
-      breakdown.set(key, (breakdown.get(key) ?? 0) + 1)
-    })
-    const resultSegments = [...breakdown.entries()]
-      .map(([key, count]) => ({ key, count, label: RESULT_LABELS[key] ?? key, color: RESULT_COLORS[key] ?? '#7c8ba0' }))
-      .sort((a, b) => b.count - a.count)
-
-    return { sent, reported, pending, gapFound, completionPct, accuracyPct, resultSegments }
-  }, [businesses])
-
-  const arcs = stats.resultSegments.reduce<{ list: (typeof stats.resultSegments[number] & { pct: number; dashoffset: number })[]; offset: number }>(
+  const arcs = donut.resultSegments.reduce<{ list: (typeof donut.resultSegments[number] & { pct: number; dashoffset: number })[]; offset: number }>(
     (acc, seg) => {
-      const pct = stats.reported.length > 0 ? (seg.count / stats.reported.length) * 100 : 0
+      const pct = donut.reported.length > 0 ? (seg.count / donut.reported.length) * 100 : 0
       acc.list.push({ ...seg, pct, dashoffset: -acc.offset })
       acc.offset += pct
       return acc
@@ -91,6 +106,7 @@ export default function SurveyTrackingPage() {
   return (
     <AppShell title="מעקב תוצאות סקר" subtitle="מה קרה עם הנכסים שנשלחו לשטח">
       <div className="flex flex-col gap-5">
+        <CrossFilterBar cf={cf} dimLabels={DIM_LABELS} valueLabel={(_, v) => RESULT_LABELS[v] ?? v} />
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
@@ -127,7 +143,7 @@ export default function SurveyTrackingPage() {
             <span className="text-[14.5px] font-bold text-ink">פילוח ממצאי הסקר</span>
             <Link href="/businesses" className="text-[12.5px] font-semibold text-brand hover:text-brand-deep">כל הנכסים ←</Link>
           </div>
-          {stats.reported.length === 0 ? (
+          {donut.reported.length === 0 ? (
             <EmptyState title="עדיין אין תוצאות סקר שדווחו" description="ברגע שסוקר ידווח ממצא, הפילוח יופיע כאן." />
           ) : (
             <div className="flex items-center gap-6 max-w-sm">
@@ -136,6 +152,7 @@ export default function SurveyTrackingPage() {
                 {arcs.filter(a => a.pct > 0).map(arc => (
                   <circle
                     key={arc.key}
+                    {...chartItemProps(cf, 'result', arc.key, `${arc.label}: ${arc.count}`)}
                     cx="21" cy="21" r="15.9" fill="none"
                     stroke={arc.color} strokeWidth="6.5"
                     strokeDasharray={`${arc.pct} ${100 - arc.pct}`}
@@ -143,17 +160,20 @@ export default function SurveyTrackingPage() {
                     transform="rotate(-90 21 21)"
                   />
                 ))}
-                <text x="21" y="20.4" textAnchor="middle" style={{ font: "700 6px var(--font-num)", fill: '#0f1a28' }}>{stats.reported.length}</text>
+                <text x="21" y="20.4" textAnchor="middle" style={{ font: "700 6px var(--font-num)", fill: '#0f1a28' }}>{donut.reported.length}</text>
                 <text x="21" y="25" textAnchor="middle" style={{ font: "400 2.9px var(--font-sans)", fill: '#7c8ba0' }}>דיווחים</text>
               </svg>
               <div className="flex flex-col gap-2.5">
-                {stats.resultSegments.map(seg => (
-                  <div key={seg.key} className="flex items-center gap-2.5">
+                {donut.resultSegments.map(seg => {
+                  const item = chartItemProps(cf, 'result', seg.key, `${seg.label}: ${seg.count}`)
+                  return (
+                  <div key={seg.key} {...item} className={`${item.className} flex items-center gap-2.5 rounded px-1 -mx-1 ${item['aria-pressed'] ? 'bg-brand/[0.06]' : ''}`}>
                     <span className="w-2 h-2 rounded-sm shrink-0" style={{ background: seg.color }} />
                     <span className="text-[12.5px] text-charcoal">{seg.label}</span>
                     <span className="num text-[12.5px] font-bold text-ink">{seg.count}</span>
                   </div>
-                ))}
+                  )
+                })}
               </div>
             </div>
           )}
