@@ -110,6 +110,15 @@ export interface GeocodeOptions {
   delayMs: number
 }
 
+// Neighborhood spellings OSM uses: "וואדי אל-ג'וז" → "ואדי אל-ג'וז",
+// "אזור תעשייה עטרות" → "עטרות".
+function areaVariants(area: string): string[] {
+  const out = [area]
+  if (/(^|\s)וו/.test(area)) out.push(area.replace(/(^|\s)וו/g, '$1ו'))
+  if (area.startsWith('אזור תעשייה ')) out.push(area.slice('אזור תעשייה '.length))
+  return [...new Set(out)]
+}
+
 /**
  * Area to fall back to: the property's neighborhood, or else an area named
  * in the address itself ("גרמי ציון 15, פסגת זאב, ירושלים" → פסגת זאב).
@@ -155,8 +164,8 @@ export async function geocodeAddress(clean: string, area: string | null, opts: G
 
   // 3. The property's neighborhood (see neighborhoodHint), so it still
   //    shows in the right area.
-  if (area) {
-    const r = await run(area)
+  for (const a of area ? areaVariants(area) : []) {
+    const r = await run(a)
     if (r) return { lat: parseFloat(r.lat), lon: parseFloat(r.lon), precision: 'neighborhood' }
   }
 

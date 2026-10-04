@@ -211,7 +211,12 @@
   },
   "אליעזר בן יהודה 10": null,
   "אליעזר מרגולין 1": null,
-  "אלמקדיס 31": null,
+  "אלמקדיס 31": {
+    "lat": 31.7907895,
+    "lon": 35.2361949,
+    "precision": "neighborhood",
+    "verified": true
+  },
   "אלעזר המודעי 12": {
     "lat": 31.7614774,
     "lon": 35.2143782,
@@ -408,28 +413,87 @@
     "precision": "neighborhood",
     "verified": true
   },
-  "ב אונגר מאה שערים 6": null,
-  "ב אונגר מאה שערים 68": null,
-  "ב אונגר מאה שערים 7": null,
-  "ב אונגר מאה שערים 70": null,
-  "ב אונגר מאה שערים 71": null,
-  "ב אונגר מאה שערים 72": null,
-  "ב אונגר מאה שערים 75": null,
-  "ב אונגר מאה שערים 8": null,
-  "ב אונגר מאה שערים 83": null,
-  "ב אונגר מאה שערים 9": null,
+  "ב אונגר מאה שערים 6": {
+    "lat": 31.7884543,
+    "lon": 35.2187712,
+    "precision": "neighborhood",
+    "verified": true
+  },
+  "ב אונגר מאה שערים 68": {
+    "lat": 31.7884543,
+    "lon": 35.2187712,
+    "precision": "neighborhood",
+    "verified": true
+  },
+  "ב אונגר מאה שערים 7": {
+    "lat": 31.7884543,
+    "lon": 35.2187712,
+    "precision": "neighborhood",
+    "verified": true
+  },
+  "ב אונגר מאה שערים 70": {
+    "lat": 31.7884543,
+    "lon": 35.2187712,
+    "precision": "neighborhood",
+    "verified": true
+  },
+  "ב אונגר מאה שערים 71": {
+    "lat": 31.7884543,
+    "lon": 35.2187712,
+    "precision": "neighborhood",
+    "verified": true
+  },
+  "ב אונגר מאה שערים 72": {
+    "lat": 31.7884543,
+    "lon": 35.2187712,
+    "precision": "neighborhood",
+    "verified": true
+  },
+  "ב אונגר מאה שערים 75": {
+    "lat": 31.7884543,
+    "lon": 35.2187712,
+    "precision": "neighborhood",
+    "verified": true
+  },
+  "ב אונגר מאה שערים 8": {
+    "lat": 31.7884543,
+    "lon": 35.2187712,
+    "precision": "neighborhood",
+    "verified": true
+  },
+  "ב אונגר מאה שערים 83": {
+    "lat": 31.7884543,
+    "lon": 35.2187712,
+    "precision": "neighborhood",
+    "verified": true
+  },
+  "ב אונגר מאה שערים 9": {
+    "lat": 31.7884543,
+    "lon": 35.2187712,
+    "precision": "neighborhood",
+    "verified": true
+  },
   "באום שלמה 2": {
     "lat": 31.7217287,
-    "lon": 35.2184973
+    "lon": 35.2184973,
+    "precision": "exact",
+    "verified": true
   },
   "בארי 3": {
     "lat": 31.780469,
     "lon": 35.2153224
   },
-  "בורכוב 63": null,
+  "בורכוב 63": {
+    "lat": 31.7643601,
+    "lon": 35.1750449,
+    "precision": "neighborhood",
+    "verified": true
+  },
   "בזל 5": {
     "lat": 31.7846191,
-    "lon": 35.1927184
+    "lon": 35.1927184,
+    "precision": "exact",
+    "verified": true
   },
   "בית הדפוס 11": {
     "lat": 31.7858319,
@@ -441,7 +505,9 @@
   },
   "בית הדפוס 12 גבעת שאול": {
     "lat": 31.7860887,
-    "lon": 35.1889843
+    "lon": 35.1889843,
+    "precision": "exact",
+    "verified": true
   },
   "בית הדפוס 20": {
     "lat": 31.7862242,
@@ -453,7 +519,9 @@
   },
   "בית הדפוס 22 גבעת שאול": {
     "lat": 31.7864039,
-    "lon": 35.185592
+    "lon": 35.185592,
+    "precision": "exact",
+    "verified": true
   },
   "בית הדפוס 4": {
     "lat": 31.7862977,
@@ -461,19 +529,27 @@
   },
   "בית הכרם 15": {
     "lat": 31.7807004,
-    "lon": 35.1912309
+    "lon": 35.1912309,
+    "precision": "exact",
+    "verified": true
   },
   "בית הכרם 16": {
     "lat": 31.7807327,
-    "lon": 35.1906969
+    "lon": 35.1906969,
+    "precision": "exact",
+    "verified": true
   },
   "בית הכרם 25": {
     "lat": 31.7803614,
-    "lon": 35.1897223
+    "lon": 35.1897223,
+    "precision": "exact",
+    "verified": true
   },
   "בית הערבה 3": {
     "lat": 31.7506381,
-    "lon": 35.222175
+    "lon": 35.222175,
+    "precision": "exact",
+    "verified": true
   },
   "בית וגן 18": {
     "lat": 31.7708898,
@@ -481,7 +557,9 @@
   },
   "בית וגן 25": {
     "lat": 31.7701692,
-    "lon": 35.1841075
+    "lon": 35.1841075,
+    "precision": "exact",
+    "verified": true
   },
   "בית וגן 40": {
     "lat": 31.7686253,
@@ -489,19 +567,27 @@
   },
   "בית וגן 52": {
     "lat": 31.7673759,
-    "lon": 35.1845942
+    "lon": 35.1845942,
+    "precision": "exact",
+    "verified": true
   },
   "בית וגן 74": {
     "lat": 31.765597,
-    "lon": 35.1857259
+    "lon": 35.1857259,
+    "precision": "exact",
+    "verified": true
   },
   "בית וגן 76": {
     "lat": 31.765514,
-    "lon": 35.1859487
+    "lon": 35.1859487,
+    "precision": "exact",
+    "verified": true
   },
   "בית וגן 96": {
     "lat": 31.7637249,
-    "lon": 35.1874792
+    "lon": 35.1874792,
+    "precision": "exact",
+    "verified": true
   },
   "בית\"ר 2": {
     "lat": 31.7552638,
@@ -510,6 +596,12 @@
   "בלפור 13": {
     "lat": 31.7723734,
     "lon": 35.2171361
+  },
+  "בן זאב 10": {
+    "lat": 31.816575,
+    "lon": 35.1910256,
+    "precision": "exact",
+    "verified": true
   },
   "בן יהודה 1": {
     "lat": 31.7815411,
@@ -529,7 +621,9 @@
   },
   "בן יהודה 26": {
     "lat": 31.7812704,
-    "lon": 35.2165616
+    "lon": 35.2165616,
+    "precision": "exact",
+    "verified": true
   },
   "בן יהודה 3": {
     "lat": 31.781744,
@@ -539,7 +633,12 @@
     "lat": 31.7811283,
     "lon": 35.2157765
   },
-  "בן מימון 8": null,
+  "בן מימון 8": {
+    "lat": 31.774668,
+    "lon": 35.217444,
+    "precision": "street",
+    "verified": true
+  },
   "בני בתירא 11": {
     "lat": 31.7576291,
     "lon": 35.2041151
@@ -548,9 +647,23 @@
     "lat": 31.7714346,
     "lon": 35.2099736
   },
+  "בצלאל בצראווי 27": {
+    "lat": 31.821263,
+    "lon": 35.2485718,
+    "precision": "neighborhood",
+    "verified": true
+  },
   "בר גיורא 5": {
     "lat": 31.7892104,
-    "lon": 35.2115921
+    "lon": 35.2115921,
+    "precision": "exact",
+    "verified": true
+  },
+  "בר כוכבא 24": {
+    "lat": 31.8072259,
+    "lon": 35.2382569,
+    "precision": "exact",
+    "verified": true
   },
   "בר כוכבא 48": {
     "lat": 31.8069831,
@@ -558,15 +671,21 @@
   },
   "ברכת אברהם 16": {
     "lat": 31.8121084,
-    "lon": 35.2165477
+    "lon": 35.2165477,
+    "precision": "exact",
+    "verified": true
   },
   "ברכת אברהם 22": {
     "lat": 31.8118405,
-    "lon": 35.2171762
+    "lon": 35.2171762,
+    "precision": "exact",
+    "verified": true
   },
   "ברכת אברהם 4": {
     "lat": 31.812465,
-    "lon": 35.2175195
+    "lon": 35.2175195,
+    "precision": "exact",
+    "verified": true
   },
   "ברל לוקר 25": {
     "lat": 31.749352,
@@ -574,75 +693,109 @@
   },
   "ברניקי 7": {
     "lat": 31.7571985,
-    "lon": 35.2004053
+    "lon": 35.2004053,
+    "precision": "exact",
+    "verified": true
   },
   "ברנשטיין פרץ 22": {
     "lat": 31.7584492,
-    "lon": 35.1867161
+    "lon": 35.1867161,
+    "precision": "exact",
+    "verified": true
   },
   "ברנשטיין פרץ 46": {
     "lat": 31.7591223,
-    "lon": 35.1878277
+    "lon": 35.1878277,
+    "precision": "exact",
+    "verified": true
   },
   "ברנשטיין פרץ 6": {
     "lat": 31.7578655,
-    "lon": 35.1858524
+    "lon": 35.1858524,
+    "precision": "exact",
+    "verified": true
   },
   "ברנשטיין-פרץ 46": {
     "lat": 31.7591223,
     "lon": 35.1878277
   },
   "ג'ורג' וושינגטון 21": {
-    "lat": 31.773249,
-    "lon": 35.2206166
+    "lat": 31.773688,
+    "lon": 35.2202032,
+    "precision": "street",
+    "verified": true
   },
   "ג'ורג' וושינגטון 4": {
-    "lat": 31.773249,
-    "lon": 35.2206166
+    "lat": 31.773688,
+    "lon": 35.2202032,
+    "precision": "street",
+    "verified": true
   },
   "גבעת קנדה 16": {
-    "lat": 31.737908,
-    "lon": 35.1890134
+    "lat": 31.7385024,
+    "lon": 35.1883987,
+    "precision": "exact",
+    "verified": true
   },
   "גבעת קנדה 31": {
     "lat": 31.7379535,
-    "lon": 35.1878002
+    "lon": 35.1878002,
+    "precision": "exact",
+    "verified": true
   },
   "גבעת שאול 24": {
     "lat": 31.7921816,
-    "lon": 35.1932086
+    "lon": 35.1932086,
+    "precision": "exact",
+    "verified": true
   },
   "גבעת שאול 25": {
     "lat": 31.792438,
-    "lon": 35.1909027
+    "lon": 35.1909027,
+    "precision": "exact",
+    "verified": true
   },
   "גדוד חרמש 15": {
     "lat": 31.830196,
-    "lon": 35.2417976
+    "lon": 35.2417976,
+    "precision": "exact",
+    "verified": true
   },
   "גדוד חרמש 16": {
     "lat": 31.8302267,
-    "lon": 35.2425246
+    "lon": 35.2425246,
+    "precision": "exact",
+    "verified": true
   },
   "גדוד חרמש 8": {
     "lat": 31.8298943,
-    "lon": 35.24152
+    "lon": 35.24152,
+    "precision": "exact",
+    "verified": true
   },
   "גולדה מאיר 1": {
-    "lat": 31.7976213,
-    "lon": 35.2179514
+    "lat": 31.7993697,
+    "lon": 35.2161527,
+    "precision": "street",
+    "verified": true
   },
   "גולומב 23": {
     "lat": 31.7597676,
-    "lon": 35.1788234
+    "lon": 35.1788234,
+    "precision": "exact",
+    "verified": true
   },
   "גלבר 14": {
     "lat": 31.7596901,
-    "lon": 35.1808595
+    "lon": 35.1808595,
+    "precision": "exact",
+    "verified": true
   },
   "גרוזנברג 14": {
-    "lat": 31.7823731,
-    "lon": 35.2243426
+    "lat": 31.7823802,
+    "lon": 35.2243615,
+    "precision": "street",
+    "verified": true
   },
   "גרוסברג 5": {
     "lat": 31.7957509,
@@ -650,71 +803,105 @@
   },
   "גרינברג חיים 5": {
     "lat": 31.8166714,
-    "lon": 35.1915421
+    "lon": 35.1915421,
+    "precision": "exact",
+    "verified": true
   },
   "גרמי ציון 15": {
     "lat": 31.8209371,
-    "lon": 35.2564798
+    "lon": 35.2564798,
+    "precision": "exact",
+    "verified": true
   },
   "גרמי ציון 20": {
     "lat": 31.8200416,
-    "lon": 35.2570408
+    "lon": 35.2570408,
+    "precision": "exact",
+    "verified": true
   },
   "גרמי ציון 21": {
     "lat": 31.8217271,
-    "lon": 35.2558963
+    "lon": 35.2558963,
+    "precision": "exact",
+    "verified": true
   },
   "גת 10": {
     "lat": 31.7864285,
-    "lon": 35.1966912
+    "lon": 35.1966912,
+    "precision": "exact",
+    "verified": true
   },
   "דב גרונר 12": {
     "lat": 31.7501896,
-    "lon": 35.2364001
+    "lon": 35.2364001,
+    "precision": "exact",
+    "verified": true
   },
   "דב גרונר 17": {
     "lat": 31.7511493,
-    "lon": 35.2361824
+    "lon": 35.2361824,
+    "precision": "street",
+    "verified": true
   },
   "דב גרונר 22": {
     "lat": 31.7515401,
-    "lon": 35.236144
+    "lon": 35.236144,
+    "precision": "exact",
+    "verified": true
   },
   "דב גרונר 26": {
     "lat": 31.7518889,
-    "lon": 35.235887
+    "lon": 35.235887,
+    "precision": "exact",
+    "verified": true
   },
   "דב גרונר 3": {
     "lat": 31.7490539,
-    "lon": 35.2362508
+    "lon": 35.2362508,
+    "precision": "exact",
+    "verified": true
   },
   "דב גרונר 5": {
     "lat": 31.7493731,
-    "lon": 35.2361981
+    "lon": 35.2361981,
+    "precision": "exact",
+    "verified": true
   },
   "דב גרונר 7": {
     "lat": 31.7497837,
-    "lon": 35.2361577
+    "lon": 35.2361577,
+    "precision": "exact",
+    "verified": true
   },
   "דברי חיים 19": {
     "lat": 31.7976616,
-    "lon": 35.2083756
+    "lon": 35.2083756,
+    "precision": "exact",
+    "verified": true
   },
   "דברי חיים 20": {
     "lat": 31.7979627,
-    "lon": 35.2086228
+    "lon": 35.2086228,
+    "precision": "exact",
+    "verified": true
   },
   "דברי חיים 23": {
     "lat": 31.7979044,
-    "lon": 35.2075668
+    "lon": 35.2075668,
+    "precision": "exact",
+    "verified": true
   },
   "דברי חיים 25": {
-    "lat": 31.7965254,
-    "lon": 35.2100482
+    "lat": 31.7979352,
+    "lon": 35.2082919,
+    "precision": "street",
+    "verified": true
   },
   "דברי חיים 30": {
     "lat": 31.7982647,
-    "lon": 35.2072331
+    "lon": 35.2072331,
+    "precision": "exact",
+    "verified": true
   },
   "דוד המלך 19": {
     "lat": 31.7755165,
@@ -722,7 +909,9 @@
   },
   "דוד ילין 5": {
     "lat": 31.7860974,
-    "lon": 35.2169397
+    "lon": 35.2169397,
+    "precision": "exact",
+    "verified": true
   },
   "דוד מרץ 33": {
     "lat": 31.7607295,
@@ -738,11 +927,15 @@
   },
   "דיסקין 1": {
     "lat": 31.7751383,
-    "lon": 35.2104262
+    "lon": 35.2104262,
+    "precision": "exact",
+    "verified": true
   },
   "דיסקין 12": {
     "lat": 31.776424,
-    "lon": 35.2106349
+    "lon": 35.2106349,
+    "precision": "street",
+    "verified": true
   },
   "דיסקין 5": {
     "lat": 31.7757899,
@@ -754,43 +947,99 @@
   },
   "דיסקין 9א": {
     "lat": 31.7764969,
-    "lon": 35.2103785
+    "lon": 35.2103785,
+    "precision": "exact",
+    "verified": true
   },
-  "דיר אבו טור 0": null,
-  "דיר אבו טור 20": null,
-  "דישראלי 4": null,
-  "דישראלי 5": null,
-  "דלה פרגולה 11": null,
-  "דלה פרגולה 21": null,
-  "דלה פרגולה 25": null,
-  "דלה פרגולה 8": null,
+  "דיר אבו טור 0": {
+    "lat": 31.7608325,
+    "lon": 35.2265029,
+    "precision": "street",
+    "verified": true
+  },
+  "דיר אבו טור 20": {
+    "lat": 31.7608325,
+    "lon": 35.2265029,
+    "precision": "street",
+    "verified": true
+  },
+  "דישראלי 4": {
+    "lat": 31.7708162,
+    "lon": 35.2176794,
+    "precision": "neighborhood",
+    "verified": true
+  },
+  "דישראלי 5": {
+    "lat": 31.7708162,
+    "lon": 35.2176794,
+    "precision": "neighborhood",
+    "verified": true
+  },
+  "דלה פרגולה 11": {
+    "lat": 31.735352,
+    "lon": 35.177274,
+    "precision": "street",
+    "verified": true
+  },
+  "דלה פרגולה 21": {
+    "lat": 31.735352,
+    "lon": 35.177274,
+    "precision": "street",
+    "verified": true
+  },
+  "דלה פרגולה 25": {
+    "lat": 31.735352,
+    "lon": 35.177274,
+    "precision": "street",
+    "verified": true
+  },
+  "דלה פרגולה 8": {
+    "lat": 31.735352,
+    "lon": 35.177274,
+    "precision": "street",
+    "verified": true
+  },
   "דניאל 4": {
     "lat": 31.7555317,
-    "lon": 35.2231471
+    "lon": 35.2231471,
+    "precision": "exact",
+    "verified": true
   },
   "דרזנר יחיאל 401": {
     "lat": 31.7471639,
-    "lon": 35.2326557
+    "lon": 35.2326557,
+    "precision": "street",
+    "verified": true
   },
   "דרזנר יחיאל 6": {
     "lat": 31.7476828,
-    "lon": 35.232742
+    "lon": 35.232742,
+    "precision": "exact",
+    "verified": true
   },
   "דרך בית לחם 106": {
     "lat": 31.7545077,
-    "lon": 35.2197638
+    "lon": 35.2197638,
+    "precision": "exact",
+    "verified": true
   },
   "דרך בית לחם 121": {
     "lat": 31.7476999,
-    "lon": 35.2164113
+    "lon": 35.2164113,
+    "precision": "exact",
+    "verified": true
   },
   "דרך בית לחם 125": {
     "lat": 31.74716,
-    "lon": 35.2163224
+    "lon": 35.2163224,
+    "precision": "exact",
+    "verified": true
   },
   "דרך בית לחם 37": {
-    "lat": 31.7452702,
-    "lon": 35.2150669
+    "lat": 31.7555226,
+    "lon": 35.2204425,
+    "precision": "street",
+    "verified": true
   },
   "דרך בית לחם 62": {
     "lat": 31.7541353,
@@ -798,72 +1047,113 @@
   },
   "דרך בית לחם 71": {
     "lat": 31.7550389,
-    "lon": 35.2203547
+    "lon": 35.2203547,
+    "precision": "exact",
+    "verified": true
   },
   "דרך בית לחם 8": {
-    "lat": 31.754006,
-    "lon": 35.219614
+    "lat": 31.7555226,
+    "lon": 35.2204425,
+    "precision": "street",
+    "verified": true
   },
   "דרך בית לחם 9": {
     "lat": 31.7628549,
-    "lon": 35.2233253
+    "lon": 35.2233253,
+    "precision": "exact",
+    "verified": true
   },
   "דרך בית לחם 98": {
     "lat": 31.755239,
-    "lon": 35.220159
+    "lon": 35.220159,
+    "precision": "exact",
+    "verified": true
   },
   "דרך ג'בל מוכבר 42": {
     "lat": 31.7615294,
-    "lon": 35.2466181
+    "lon": 35.2466181,
+    "precision": "street",
+    "verified": true
   },
   "דרך ג'בל מוכבר 73": {
     "lat": 31.7615294,
-    "lon": 35.2466181
+    "lon": 35.2466181,
+    "precision": "street",
+    "verified": true
   },
   "דרך האחיות 12": {
     "lat": 31.7528981,
-    "lon": 35.1801389
+    "lon": 35.1801389,
+    "precision": "street",
+    "verified": true
   },
   "דרך האחיות 27": {
-    "lat": 31.7553622,
-    "lon": 35.1814894
+    "lat": 31.7529089,
+    "lon": 35.1800071,
+    "precision": "street",
+    "verified": true
   },
-  "דרך האילנות 7": null,
+  "דרך האילנות 7": {
+    "lat": 31.7492021,
+    "lon": 35.2213986,
+    "precision": "neighborhood",
+    "verified": true
+  },
   "דרך החורש 12": {
     "lat": 31.8110877,
-    "lon": 35.1916017
+    "lon": 35.1916017,
+    "precision": "street",
+    "verified": true
   },
   "דרך החורש 15": {
     "lat": 31.8110877,
-    "lon": 35.1916017
+    "lon": 35.1916017,
+    "precision": "street",
+    "verified": true
   },
   "דרך החורש 2": {
     "lat": 31.8110877,
-    "lon": 35.1916017
+    "lon": 35.1916017,
+    "precision": "street",
+    "verified": true
+  },
+  "דרך החורש 32": {
+    "lat": 31.8110877,
+    "lon": 35.1916017,
+    "precision": "street",
+    "verified": true
   },
   "דרך החורש 4": {
     "lat": 31.8110877,
-    "lon": 35.1916017
+    "lon": 35.1916017,
+    "precision": "street",
+    "verified": true
   },
   "דרך חברון 101": {
     "lat": 31.754855,
     "lon": 35.2216657
   },
   "דרך חברון 37": {
-    "lat": 31.7640471,
-    "lon": 35.2254295
+    "lat": 31.7273102,
+    "lon": 35.2047827,
+    "precision": "street",
+    "verified": true
   },
   "דרך חברון 68": {
     "lat": 31.7576952,
     "lon": 35.2225547
   },
   "דרך כרמית 10": {
-    "lat": 31.7627089,
-    "lon": 35.1691313
+    "lat": 31.7609295,
+    "lon": 35.1672375,
+    "precision": "street",
+    "verified": true
   },
   "דרך כרמית 16": {
     "lat": 31.7622912,
-    "lon": 35.1691056
+    "lon": 35.1691056,
+    "precision": "exact",
+    "verified": true
   },
   "דרך עזה 5": {
     "lat": 31.771129,
@@ -871,23 +1161,33 @@
   },
   "האוזנר גדעון 10": {
     "lat": 31.7587201,
-    "lon": 35.1908474
+    "lon": 35.1908474,
+    "precision": "exact",
+    "verified": true
   },
   "האוזנר גדעון 2": {
     "lat": 31.7583017,
-    "lon": 35.1899265
+    "lon": 35.1899265,
+    "precision": "exact",
+    "verified": true
   },
   "האוזנר גדעון 23": {
     "lat": 31.7596068,
-    "lon": 35.1917195
+    "lon": 35.1917195,
+    "precision": "exact",
+    "verified": true
   },
   "האוזנר גדעון 40": {
     "lat": 31.7594378,
-    "lon": 35.1922481
+    "lon": 35.1922481,
+    "precision": "street",
+    "verified": true
   },
   "האוזנר גדעון 55": {
     "lat": 31.7583219,
-    "lon": 35.191265
+    "lon": 35.191265,
+    "precision": "exact",
+    "verified": true
   },
   "האומן 24": {
     "lat": 31.7511941,
@@ -902,8 +1202,10 @@
     "lon": 35.2066146
   },
   "האומן 36": {
-    "lat": 31.7457667,
-    "lon": 35.2136013
+    "lat": 31.7483339,
+    "lon": 35.2116388,
+    "precision": "street",
+    "verified": true
   },
   "האומן 9": {
     "lat": 31.7485189,
@@ -915,19 +1217,27 @@
   },
   "האחות זלמה 10": {
     "lat": 31.748261,
-    "lon": 35.1709172
+    "lon": 35.1709172,
+    "precision": "exact",
+    "verified": true
   },
   "האחות זלמה 20": {
     "lat": 31.7484419,
-    "lon": 35.1689528
+    "lon": 35.1689528,
+    "precision": "exact",
+    "verified": true
   },
   "האחות זלמה 49": {
     "lat": 31.7481029,
-    "lon": 35.1696666
+    "lon": 35.1696666,
+    "precision": "street",
+    "verified": true
   },
   "האחים להרן 1": {
     "lat": 31.8099266,
-    "lon": 35.1955533
+    "lon": 35.1955533,
+    "precision": "exact",
+    "verified": true
   },
   "האייל 71": {
     "lat": 31.7483366,
@@ -935,48 +1245,83 @@
   },
   "האמרכלים 27": {
     "lat": 31.7881119,
-    "lon": 35.2143388
+    "lon": 35.2143388,
+    "precision": "exact",
+    "verified": true
   },
   "הארבעה 22": {
     "lat": 31.8292982,
-    "lon": 35.2429977
+    "lon": 35.2429977,
+    "precision": "exact",
+    "verified": true
   },
   "הארבעה 40": {
     "lat": 31.8320754,
-    "lon": 35.2428623
+    "lon": 35.2428623,
+    "precision": "exact",
+    "verified": true
   },
   "הארזים 13": {
     "lat": 31.7794473,
     "lon": 35.1855545
   },
-  "הארנון 17": null,
+  "הארזים 4": {
+    "lat": 31.7805238,
+    "lon": 35.1874448,
+    "precision": "exact",
+    "verified": true
+  },
+  "הארנון 17": {
+    "lat": 31.7831454,
+    "lon": 35.2123968,
+    "precision": "neighborhood",
+    "verified": true
+  },
   "הבבא סאלי 4": {
     "lat": 31.7215511,
-    "lon": 35.2287101
+    "lon": 35.2287101,
+    "precision": "street",
+    "verified": true
   },
   "הבנאי 26": {
     "lat": 31.7772936,
-    "lon": 35.1926425
+    "lon": 35.1926425,
+    "precision": "exact",
+    "verified": true
   },
   "הגאונים 11": {
     "lat": 31.7761723,
-    "lon": 35.2111683
+    "lon": 35.2111683,
+    "precision": "exact",
+    "verified": true
   },
   "הגדוד העברי 5": {
     "lat": 31.767302,
-    "lon": 35.2126573
+    "lon": 35.2126573,
+    "precision": "exact",
+    "verified": true
   },
   "הגן הטכנולוגי 1": {
     "lat": 31.7502016,
-    "lon": 35.1864885
+    "lon": 35.1864885,
+    "precision": "street",
+    "verified": true
   },
   "הגננת 218": {
     "lat": 31.7305056,
     "lon": 35.1894652
   },
+  "הדף היומי 604": {
+    "lat": 31.8149881,
+    "lon": 35.2055518,
+    "precision": "exact",
+    "verified": true
+  },
   "ההגנה 23": {
-    "lat": 31.8018938,
-    "lon": 35.2382993
+    "lat": 31.8033425,
+    "lon": 35.2373872,
+    "precision": "street",
+    "verified": true
   },
   "החבצלת 6": {
     "lat": 31.7824342,
@@ -991,32 +1336,52 @@
     "lon": 35.1905988
   },
   "החרמון 2": {
-    "lat": 31.7833798,
-    "lon": 35.2130293
+    "lat": 31.7833651,
+    "lon": 35.2130271,
+    "precision": "street",
+    "verified": true
+  },
+  "הטייסים 10": {
+    "lat": 31.76787,
+    "lon": 35.2073271,
+    "precision": "exact",
+    "verified": true
   },
   "הכפיר 7": {
-    "lat": 31.7517305,
-    "lon": 35.1838049
+    "lat": 31.7521046,
+    "lon": 35.1848894,
+    "precision": "street",
+    "verified": true
   },
   "הכרכום 16": {
     "lat": 31.7560717,
-    "lon": 35.1731945
+    "lon": 35.1731945,
+    "precision": "exact",
+    "verified": true
   },
   "הכרכום 17": {
     "lat": 31.7564716,
-    "lon": 35.1731419
+    "lon": 35.1731419,
+    "precision": "exact",
+    "verified": true
   },
   "הכרמל 30": {
     "lat": 31.7835741,
-    "lon": 35.2132624
+    "lon": 35.2132624,
+    "precision": "exact",
+    "verified": true
   },
   "הל\"ה 15": {
     "lat": 31.7655936,
-    "lon": 35.2103385
+    "lon": 35.2103385,
+    "precision": "exact",
+    "verified": true
   },
   "הלוי אליעזר 20": {
     "lat": 31.7859025,
-    "lon": 35.1936334
+    "lon": 35.1936334,
+    "precision": "exact",
+    "verified": true
   },
   "הלל 11": {
     "lat": 31.7803929,
@@ -1036,7 +1401,9 @@
   },
   "הלל 2": {
     "lat": 31.7804179,
-    "lon": 35.2159981
+    "lon": 35.2159981,
+    "precision": "exact",
+    "verified": true
   },
   "הלל 23": {
     "lat": 31.7802551,
@@ -1068,11 +1435,15 @@
   },
   "המ\"ג 28": {
     "lat": 31.7940374,
-    "lon": 35.2000223
+    "lon": 35.2000223,
+    "precision": "exact",
+    "verified": true
   },
   "המבשר 12": {
     "lat": 31.7722777,
-    "lon": 35.2254644
+    "lon": 35.2254644,
+    "precision": "exact",
+    "verified": true
   },
   "המג 28": {
     "lat": 31.7960712,
@@ -1084,31 +1455,45 @@
   },
   "המור 1": {
     "lat": 31.7343764,
-    "lon": 35.2000257
+    "lon": 35.2000257,
+    "precision": "exact",
+    "verified": true
   },
   "המחנכת 19": {
     "lat": 31.7379982,
-    "lon": 35.1790368
+    "lon": 35.1790368,
+    "precision": "exact",
+    "verified": true
   },
   "המחנכת 55": {
     "lat": 31.736662,
-    "lon": 35.1775211
+    "lon": 35.1775211,
+    "precision": "exact",
+    "verified": true
   },
   "המחנכת 6": {
     "lat": 31.7392828,
-    "lon": 35.1796323
+    "lon": 35.1796323,
+    "precision": "exact",
+    "verified": true
   },
   "המחנכת 64": {
     "lat": 31.7369745,
-    "lon": 35.1780134
+    "lon": 35.1780134,
+    "precision": "exact",
+    "verified": true
   },
   "המחנכת 66": {
     "lat": 31.7371996,
-    "lon": 35.1783858
+    "lon": 35.1783858,
+    "precision": "exact",
+    "verified": true
   },
   "המייסדים 11": {
     "lat": 31.7776531,
-    "lon": 35.1888741
+    "lon": 35.1888741,
+    "precision": "exact",
+    "verified": true
   },
   "המלך ג'ורג' 16": {
     "lat": 31.7822339,
@@ -1128,77 +1513,131 @@
   },
   "המעפילים 17": {
     "lat": 31.7623135,
-    "lon": 35.2046425
+    "lon": 35.2046425,
+    "precision": "exact",
+    "verified": true
   },
   "המעפילים 7": {
     "lat": 31.7629382,
-    "lon": 35.2064492
+    "lon": 35.2064492,
+    "precision": "exact",
+    "verified": true
+  },
+  "המפקד 12": {
+    "lat": 31.7671708,
+    "lon": 35.2264373,
+    "precision": "street",
+    "verified": true
   },
   "המתנחלים בהר 21": {
     "lat": 31.7932307,
-    "lon": 35.1696782
+    "lon": 35.1696782,
+    "precision": "street",
+    "verified": true
   },
   "הנביאים 11": {
     "lat": 31.7838365,
-    "lon": 35.2251349
+    "lon": 35.2251349,
+    "precision": "exact",
+    "verified": true
   },
   "הנביאים 22": {
-    "lat": 31.7819954,
-    "lon": 35.2292657
+    "lat": 31.7845405,
+    "lon": 35.2182269,
+    "precision": "street",
+    "verified": true
   },
   "הנטקה 52": {
     "lat": 31.7669398,
-    "lon": 35.1742602
+    "lon": 35.1742602,
+    "precision": "exact",
+    "verified": true
   },
   "הנטקה 64": {
     "lat": 31.7653943,
-    "lon": 35.1735663
+    "lon": 35.1735663,
+    "precision": "exact",
+    "verified": true
   },
   "הנטקה 72": {
     "lat": 31.764738,
-    "lon": 35.1730894
+    "lon": 35.1730894,
+    "precision": "exact",
+    "verified": true
   },
   "הנטקה 80": {
     "lat": 31.7635119,
-    "lon": 35.1728188
+    "lon": 35.1728188,
+    "precision": "exact",
+    "verified": true
   },
   "הנייד╗꠲7": null,
   "הנייד╗꠳": null,
   "הנמר 11": {
     "lat": 31.7510528,
-    "lon": 35.1804059
+    "lon": 35.1804059,
+    "precision": "exact",
+    "verified": true
   },
   "הנמר 17": {
     "lat": 31.7518317,
-    "lon": 35.1806372
+    "lon": 35.1806372,
+    "precision": "exact",
+    "verified": true
   },
   "הנרד 13": {
     "lat": 31.7561838,
-    "lon": 35.1719442
+    "lon": 35.1719442,
+    "precision": "exact",
+    "verified": true
   },
   "הנרד 2": {
     "lat": 31.7568079,
-    "lon": 35.1706435
+    "lon": 35.1706435,
+    "precision": "exact",
+    "verified": true
   },
   "הנרד 22": {
     "lat": 31.7556387,
-    "lon": 35.1723488
+    "lon": 35.1723488,
+    "precision": "exact",
+    "verified": true
   },
   "הנרד 25": {
     "lat": 31.7559018,
-    "lon": 35.1738539
+    "lon": 35.1738539,
+    "precision": "exact",
+    "verified": true
+  },
+  "הנשיא 11": {
+    "lat": 31.7693155,
+    "lon": 35.2132196,
+    "precision": "exact",
+    "verified": true
+  },
+  "הנשיא 15": {
+    "lat": 31.7688879,
+    "lon": 35.2135925,
+    "precision": "exact",
+    "verified": true
   },
   "הנשיא 6": {
     "lat": 31.7693995,
-    "lon": 35.2135878
+    "lon": 35.2135878,
+    "precision": "exact",
+    "verified": true
   },
   "הנשיא 8": {
     "lat": 31.7694357,
-    "lon": 35.2134701
+    "lon": 35.2134701,
+    "precision": "exact",
+    "verified": true
   },
   "הסביון 7": {
     "lat": 31.7541157,
-    "lon": 35.166168
+    "lon": 35.166168,
+    "precision": "exact",
+    "verified": true
   },
   "הסורג 2": {
     "lat": 31.7803104,
@@ -1206,48 +1645,74 @@
   },
   "הפורצים 23": {
     "lat": 31.7653301,
-    "lon": 35.2089869
+    "lon": 35.2089869,
+    "precision": "exact",
+    "verified": true
   },
   "הפטריארכיה הארמנית 67": {
-    "lat": 31.7748544,
-    "lon": 35.2287234
+    "lat": 31.7748515,
+    "lon": 35.228713,
+    "precision": "street",
+    "verified": true
   },
   "הפלמ\"ח 21": {
     "lat": 31.7672103,
     "lon": 35.2111597
   },
+  "הפלמ\"ח 46": {
+    "lat": 31.7656596,
+    "lon": 35.2085383,
+    "precision": "exact",
+    "verified": true
+  },
   "הקבלן 27": {
     "lat": 31.7899649,
-    "lon": 35.1746272
+    "lon": 35.1746272,
+    "precision": "exact",
+    "verified": true
   },
   "הקבלן 28": {
     "lat": 31.7900099,
-    "lon": 35.1761271
+    "lon": 35.1761271,
+    "precision": "exact",
+    "verified": true
   },
   "הקבלן 39": {
     "lat": 31.7902031,
-    "lon": 35.1765013
+    "lon": 35.1765013,
+    "precision": "exact",
+    "verified": true
   },
   "הקבלן 47": {
     "lat": 31.7897317,
-    "lon": 35.177441
+    "lon": 35.177441,
+    "precision": "exact",
+    "verified": true
   },
   "הקבלן 49": {
     "lat": 31.7894889,
-    "lon": 35.1776298
+    "lon": 35.1776298,
+    "precision": "exact",
+    "verified": true
   },
   "הקבלן 61": {
     "lat": 31.7880126,
-    "lon": 35.1784616
+    "lon": 35.1784616,
+    "precision": "exact",
+    "verified": true
   },
   "הקליר 6": {
     "lat": 31.7765715,
-    "lon": 35.2109174
+    "lon": 35.2109174,
+    "precision": "exact",
+    "verified": true
   },
   "הרב אבידע 5": null,
   "הרב הרצוג 10": {
-    "lat": 31.7652795,
-    "lon": 35.2027055
+    "lat": 31.7687297,
+    "lon": 35.2059519,
+    "precision": "street",
+    "verified": true
   },
   "הרב הרצוג 35": {
     "lat": 31.7690576,
@@ -1259,72 +1724,106 @@
   },
   "הרב הרצוג 83": {
     "lat": 31.7638765,
-    "lon": 35.2011772
+    "lon": 35.2011772,
+    "precision": "exact",
+    "verified": true
   },
   "הרב זווין 11": {
     "lat": 31.8414591,
-    "lon": 35.2477194
+    "lon": 35.2477194,
+    "precision": "exact",
+    "verified": true
   },
   "הרב זווין 49": {
     "lat": 31.8417126,
-    "lon": 35.2495852
+    "lon": 35.2495852,
+    "precision": "exact",
+    "verified": true
   },
   "הרב חיים ברלין 47": null,
   "הרב יוסף חיים שרים 1": {
     "lat": 31.7585117,
-    "lon": 35.1824158
+    "lon": 35.1824158,
+    "precision": "exact",
+    "verified": true
   },
   "הרב יוסף חיים שרים 20": {
     "lat": 31.7576262,
-    "lon": 35.1833302
+    "lon": 35.1833302,
+    "precision": "exact",
+    "verified": true
   },
   "הרב יוסף שרים 5": {
-    "lat": 31.7583459,
-    "lon": 35.1824437
+    "lat": 31.7598705,
+    "lon": 35.1826481,
+    "precision": "exact",
+    "verified": true
   },
   "הרב כלפון משה הכהן 10": {
     "lat": 31.7208871,
-    "lon": 35.2245873
+    "lon": 35.2245873,
+    "precision": "street",
+    "verified": true
   },
   "הרב כלפון משה הכהן 18": {
     "lat": 31.7208871,
-    "lon": 35.2245873
+    "lon": 35.2245873,
+    "precision": "street",
+    "verified": true
   },
   "הרב כלפון משה הכהן 28": {
     "lat": 31.7208871,
-    "lon": 35.2245873
+    "lon": 35.2245873,
+    "precision": "street",
+    "verified": true
   },
   "הרב כלפון משה הכהן 8": {
     "lat": 31.7208871,
-    "lon": 35.2245873
+    "lon": 35.2245873,
+    "precision": "street",
+    "verified": true
   },
   "הרב מן ההר 13": {
     "lat": 31.7220074,
-    "lon": 35.2252691
+    "lon": 35.2252691,
+    "precision": "street",
+    "verified": true
   },
   "הרב מן ההר 17": {
-    "lat": 31.722396,
-    "lon": 35.230085
+    "lat": 31.7220074,
+    "lon": 35.2252691,
+    "precision": "street",
+    "verified": true
   },
   "הרב עוזיאל 127": {
     "lat": 31.7633252,
-    "lon": 35.1894544
+    "lon": 35.1894544,
+    "precision": "exact",
+    "verified": true
   },
   "הרב עוזיאל 35": {
     "lat": 31.7700112,
-    "lon": 35.1850035
+    "lon": 35.1850035,
+    "precision": "exact",
+    "verified": true
   },
   "הרב פטאל 26": {
     "lat": 31.8149259,
-    "lon": 35.2163914
+    "lon": 35.2163914,
+    "precision": "street",
+    "verified": true
   },
   "הרב פטאל 46": {
     "lat": 31.8149259,
-    "lon": 35.2163914
+    "lon": 35.2163914,
+    "precision": "street",
+    "verified": true
   },
   "הרב צבי יהודה 9": {
     "lat": 31.7871565,
-    "lon": 35.197085
+    "lon": 35.197085,
+    "precision": "exact",
+    "verified": true
   },
   "הרב קוק 8": {
     "lat": 31.7827697,
@@ -1332,81 +1831,133 @@
   },
   "הרב ריינס 15": {
     "lat": 31.7893231,
-    "lon": 35.1961058
+    "lon": 35.1961058,
+    "precision": "exact",
+    "verified": true
   },
   "הרב ריינס 5": {
     "lat": 31.7896098,
-    "lon": 35.1970676
+    "lon": 35.1970676,
+    "precision": "exact",
+    "verified": true
   },
   "הרב שמואל ברוך 17": {
-    "lat": 31.7863498,
-    "lon": 35.2071138
+    "lat": 31.7853327,
+    "lon": 35.2095452,
+    "precision": "street",
+    "verified": true
   },
-  "הרב שמואל נתן 12": null,
-  "הרב שמואל נתן 4": null,
+  "הרב שמואל נתן 12": {
+    "lat": 31.7488212,
+    "lon": 35.1706473,
+    "precision": "exact",
+    "verified": true
+  },
+  "הרב שמואל נתן 4": {
+    "lat": 31.7491437,
+    "lon": 35.1693164,
+    "precision": "exact",
+    "verified": true
+  },
   "הרב שמעון אגסי": {
     "lat": 31.7824122,
-    "lon": 35.1753911
+    "lon": 35.1753911,
+    "precision": "street",
+    "verified": true
   },
   "הרב שמעון אגסי 25": {
     "lat": 31.7830257,
-    "lon": 35.1749504
+    "lon": 35.1749504,
+    "precision": "exact",
+    "verified": true
   },
   "הרב שמעון אגסי 27": {
     "lat": 31.7827563,
-    "lon": 35.1751698
+    "lon": 35.1751698,
+    "precision": "exact",
+    "verified": true
   },
   "הרב שמעון אגסי 29": {
     "lat": 31.782524,
-    "lon": 35.1754716
+    "lon": 35.1754716,
+    "precision": "exact",
+    "verified": true
+  },
+  "הרב שמעון אגסי 32": {
+    "lat": 31.7823013,
+    "lon": 35.1754361,
+    "precision": "exact",
+    "verified": true
   },
   "הרב שמעון אגסי 8": {
     "lat": 31.7856017,
-    "lon": 35.1750652
+    "lon": 35.1750652,
+    "precision": "exact",
+    "verified": true
   },
   "הרב שרירא גאון 10": {
     "lat": 31.7884774,
-    "lon": 35.1929959
+    "lon": 35.1929959,
+    "precision": "exact",
+    "verified": true
   },
   "הרב שרירא גאון 4": {
     "lat": 31.7883978,
-    "lon": 35.1937069
+    "lon": 35.1937069,
+    "precision": "exact",
+    "verified": true
   },
   "הרב שרירא גאון 7": {
     "lat": 31.7882804,
-    "lon": 35.1931836
+    "lon": 35.1931836,
+    "precision": "exact",
+    "verified": true
   },
   "הרוזמרין 1": {
     "lat": 31.7329723,
-    "lon": 35.1953776
+    "lon": 35.1953776,
+    "precision": "exact",
+    "verified": true
   },
   "הרוזמרין 2": {
     "lat": 31.7325245,
-    "lon": 35.1953681
+    "lon": 35.1953681,
+    "precision": "exact",
+    "verified": true
   },
   "הרוזמרין 4": {
     "lat": 31.732478,
-    "lon": 35.1956132
+    "lon": 35.1956132,
+    "precision": "exact",
+    "verified": true
   },
   "הרכבים 3": {
     "lat": 31.7526407,
     "lon": 35.2125576
   },
   "הרן 14": {
-    "lat": 31.7904954,
-    "lon": 35.1943455
+    "lat": 31.7639524,
+    "lon": 35.1763937,
+    "precision": "exact",
+    "verified": true
   },
   "הרן 4": {
-    "lat": 31.7963793,
-    "lon": 35.2091569
+    "lat": 31.7649719,
+    "lon": 35.1758274,
+    "precision": "exact",
+    "verified": true
   },
   "הרצל 112": {
     "lat": 31.7789355,
-    "lon": 35.1862827
+    "lon": 35.1862827,
+    "precision": "exact",
+    "verified": true
   },
   "הרצל 114": {
     "lat": 31.7785802,
-    "lon": 35.1859851
+    "lon": 35.1859851,
+    "precision": "exact",
+    "verified": true
   },
   "הרצל 41": {
     "lat": 31.7868488,
@@ -1414,7 +1965,9 @@
   },
   "הרצל 62": {
     "lat": 31.7834394,
-    "lon": 35.192979
+    "lon": 35.192979,
+    "precision": "exact",
+    "verified": true
   },
   "הרצל 74": {
     "lat": 31.7828968,
@@ -1422,11 +1975,15 @@
   },
   "הרצל 88": {
     "lat": 31.7821573,
-    "lon": 35.189154
+    "lon": 35.189154,
+    "precision": "exact",
+    "verified": true
   },
   "הרצל 9": {
-    "lat": 31.7860668,
-    "lon": 35.1981543
+    "lat": 31.7727031,
+    "lon": 35.1821561,
+    "precision": "street",
+    "verified": true
   },
   "הרצל 96": {
     "lat": 31.7810597,
@@ -1434,19 +1991,27 @@
   },
   "הרקפת 1": {
     "lat": 31.7545789,
-    "lon": 35.1680149
+    "lon": 35.1680149,
+    "precision": "exact",
+    "verified": true
   },
   "הרקפת 16": {
     "lat": 31.7537605,
-    "lon": 35.166299
+    "lon": 35.166299,
+    "precision": "exact",
+    "verified": true
   },
   "הרקפת 7": {
     "lat": 31.7537659,
-    "lon": 35.1668569
+    "lon": 35.1668569,
+    "precision": "exact",
+    "verified": true
   },
   "הררי רפול 7": {
     "lat": 31.8218133,
-    "lon": 35.255457
+    "lon": 35.255457,
+    "precision": "exact",
+    "verified": true
   },
   "השישה עשר 35": {
     "lat": 31.8285516,
@@ -1454,7 +2019,9 @@
   },
   "השלשלת 63": {
     "lat": 31.7768313,
-    "lon": 35.2323579
+    "lon": 35.2323579,
+    "precision": "street",
+    "verified": true
   },
   "התעשיה 8": {
     "lat": 31.7485539,
@@ -1462,15 +2029,27 @@
   },
   "ויקטור ויוליוס 7": {
     "lat": 31.8407834,
-    "lon": 35.2425781
+    "lon": 35.2425781,
+    "precision": "exact",
+    "verified": true
   },
   "חבקוק 12": {
     "lat": 31.7886835,
-    "lon": 35.2205877
+    "lon": 35.2205877,
+    "precision": "exact",
+    "verified": true
+  },
+  "חזון איש 21": {
+    "lat": 31.8072881,
+    "lon": 35.2217301,
+    "precision": "exact",
+    "verified": true
   },
   "חזקיהו המלך 27": {
     "lat": 31.7614235,
-    "lon": 35.2104178
+    "lon": 35.2104178,
+    "precision": "exact",
+    "verified": true
   },
   "חזקיהו המלך 3": {
     "lat": 31.7631883,
@@ -1486,12 +2065,16 @@
     "lon": 35.2019726
   },
   "יגאל אלון 35": {
-    "lat": 31.8124282,
-    "lon": 35.2009151
+    "lat": 31.80861,
+    "lon": 35.2004567,
+    "precision": "street",
+    "verified": true
   },
   "יד חרוצים 1": {
     "lat": 31.7543936,
-    "lon": 35.2176179
+    "lon": 35.2176179,
+    "precision": "exact",
+    "verified": true
   },
   "יד חרוצים 10": {
     "lat": 31.7537794,
@@ -1505,21 +2088,39 @@
     "lat": 31.7530542,
     "lon": 35.2171027
   },
+  "יהושע פראוור 14": {
+    "lat": 31.819999,
+    "lon": 35.1871784,
+    "precision": "exact",
+    "verified": true
+  },
   "יואל 8": {
     "lat": 31.7889631,
     "lon": 35.2202872
   },
   "יוסי בן יועזר 25": {
     "lat": 31.7564412,
-    "lon": 35.2087521
+    "lon": 35.2087521,
+    "precision": "exact",
+    "verified": true
   },
   "יוסי בן יועזר 42": {
-    "lat": 31.756468,
-    "lon": 35.2086462
+    "lat": 31.7564699,
+    "lon": 35.208649,
+    "precision": "street",
+    "verified": true
   },
   "יוסי בן יועזר 65": {
     "lat": 31.7518238,
-    "lon": 35.2050733
+    "lon": 35.2050733,
+    "precision": "exact",
+    "verified": true
+  },
+  "יוסף צבי הרץ 37": {
+    "lat": 31.817248,
+    "lon": 35.2037089,
+    "precision": "street",
+    "verified": true
   },
   "יחזקאל 1": {
     "lat": 31.7885727,
@@ -1531,7 +2132,9 @@
   },
   "ים סוף 14": {
     "lat": 31.8006667,
-    "lon": 35.2208343
+    "lon": 35.2208343,
+    "precision": "exact",
+    "verified": true
   },
   "ים סוף 17": {
     "lat": 31.8003367,
@@ -1544,6 +2147,12 @@
   "יעקב מאיר 11": {
     "lat": 31.7881514,
     "lon": 35.2159311
+  },
+  "יעקב מאיר 13": {
+    "lat": 31.7879269,
+    "lon": 35.215823,
+    "precision": "exact",
+    "verified": true
   },
   "יפו 216": {
     "lat": 31.7890021,
@@ -1569,9 +2178,17 @@
     "lat": 31.7841441,
     "lon": 35.2146792
   },
+  "יצחק אולשן 7": {
+    "lat": 31.8180566,
+    "lon": 35.1862956,
+    "precision": "exact",
+    "verified": true
+  },
   "ירמיהו 42": {
     "lat": 31.7922716,
-    "lon": 35.2071049
+    "lon": 35.2071049,
+    "precision": "exact",
+    "verified": true
   },
   "ירמיהו 43": {
     "lat": 31.7897832,
@@ -1581,13 +2198,21 @@
     "lat": 31.7909283,
     "lon": 35.2012779
   },
+  "ישראל זרחי 54": {
+    "lat": 31.8168239,
+    "lon": 35.1894157,
+    "precision": "exact",
+    "verified": true
+  },
   "כורש 14": {
     "lat": 31.7790616,
     "lon": 35.2234251
   },
   "כיסופים 801": {
-    "lat": 31.819071,
-    "lon": 35.1946679
+    "lat": 31.8157434,
+    "lon": 35.1978202,
+    "precision": "street",
+    "verified": true
   },
   "כנפי נשרים 13": {
     "lat": 31.7874323,
@@ -1603,15 +2228,19 @@
   },
   "כנפי נשרים 24א": {
     "lat": 31.787849,
-    "lon": 35.1866516
+    "lon": 35.1866516,
+    "precision": "exact",
+    "verified": true
   },
   "כנפי נשרים 31": {
     "lat": 31.7871198,
     "lon": 35.1823307
   },
   "כנפי נשרים 41": {
-    "lat": 31.7877018,
-    "lon": 35.1875959
+    "lat": 31.7876069,
+    "lon": 35.1831644,
+    "precision": "street",
+    "verified": true
   },
   "כנפי נשרים 62": {
     "lat": 31.7876409,
@@ -1621,41 +2250,61 @@
     "lat": 31.78761,
     "lon": 35.1809595
   },
+  "לואי ליפסקי 39": {
+    "lat": 31.8164018,
+    "lon": 35.2033324,
+    "precision": "exact",
+    "verified": true
+  },
   "לוי אשכול 14": {
     "lat": 31.8004337,
     "lon": 35.228394
   },
   "לויד ג'ורג' 2": {
     "lat": 31.7652692,
-    "lon": 35.2218194
+    "lon": 35.2218194,
+    "precision": "exact",
+    "verified": true
   },
   "מאה שערים 120": {
     "lat": 31.7851179,
     "lon": 35.2247768
   },
   "מאה שערים 16": {
-    "lat": 31.7865608,
-    "lon": 35.2208052
+    "lat": 31.7884543,
+    "lon": 35.2187712,
+    "precision": "street",
+    "verified": true
   },
   "מאה שערים 17": {
     "lat": 31.7880891,
-    "lon": 35.2202214
+    "lon": 35.2202214,
+    "precision": "exact",
+    "verified": true
   },
   "מאיר גרוסמן 16": {
     "lat": 31.7583579,
-    "lon": 35.1697493
+    "lon": 35.1697493,
+    "precision": "exact",
+    "verified": true
   },
   "מאיר גרוסמן 22": {
     "lat": 31.7573421,
-    "lon": 35.1705873
+    "lon": 35.1705873,
+    "precision": "exact",
+    "verified": true
   },
   "מאיר גרשון 47": {
     "lat": 31.8199497,
-    "lon": 35.2502006
+    "lon": 35.2502006,
+    "precision": "exact",
+    "verified": true
   },
   "מאיר שחם 2": {
     "lat": 31.7790917,
-    "lon": 35.2170956
+    "lon": 35.2170956,
+    "precision": "street",
+    "verified": true
   },
   "מבוא העולה 16": {
     "lat": 31.7620496,
@@ -1663,11 +2312,15 @@
   },
   "מבוא העולה 18": {
     "lat": 31.7620496,
-    "lon": 35.2053439
+    "lon": 35.2053439,
+    "precision": "street",
+    "verified": true
   },
   "מדבר סיני 70": {
     "lat": 31.8011454,
-    "lon": 35.2314735
+    "lon": 35.2314735,
+    "precision": "exact",
+    "verified": true
   },
   "מוריה 4": {
     "lat": 31.7890189,
@@ -1677,52 +2330,214 @@
     "lat": 31.7813591,
     "lon": 35.2146068
   },
+  "מעלות דפנה 123": {
+    "lat": 31.7933736,
+    "lon": 35.2246764,
+    "precision": "street",
+    "verified": true
+  },
+  "מקור חיים 34": {
+    "lat": 31.7546867,
+    "lon": 35.2114765,
+    "precision": "exact",
+    "verified": true
+  },
+  "מקסיקו 2": {
+    "lat": 31.7593831,
+    "lon": 35.1685401,
+    "precision": "exact",
+    "verified": true
+  },
   "מרדכי בן הלל 14": {
     "lat": 31.7813456,
-    "lon": 35.2176389
+    "lon": 35.2176389,
+    "precision": "exact",
+    "verified": true
   },
   "מרדכי היהודי 21": {
     "lat": 31.7586688,
-    "lon": 35.2223548
+    "lon": 35.2223548,
+    "precision": "exact",
+    "verified": true
   },
   "משה דיין 30": {
     "lat": 31.8337801,
-    "lon": 35.2344834
+    "lon": 35.2344834,
+    "precision": "exact",
+    "verified": true
   },
   "משה דיין 72": {
     "lat": 31.8287029,
-    "lon": 35.2385798
+    "lon": 35.2385798,
+    "precision": "exact",
+    "verified": true
+  },
+  "נהר פרת 17": {
+    "lat": 31.783056,
+    "lon": 35.2093442,
+    "precision": "exact",
+    "verified": true
+  },
+  "נהר פרת 19": {
+    "lat": 31.7830088,
+    "lon": 35.2093233,
+    "precision": "exact",
+    "verified": true
+  },
+  "נהר פרת 20": {
+    "lat": 31.7832684,
+    "lon": 35.2092622,
+    "precision": "exact",
+    "verified": true
+  },
+  "נהר פרת 22": {
+    "lat": 31.783124,
+    "lon": 35.2090798,
+    "precision": "exact",
+    "verified": true
+  },
+  "נהר פרת 3": {
+    "lat": 31.7840091,
+    "lon": 35.209987,
+    "precision": "exact",
+    "verified": true
   },
   "נווה יעקב 611": {
     "lat": 31.842212,
-    "lon": 35.24206
+    "lon": 35.24206,
+    "precision": "street",
+    "verified": true
   },
-  "נור אדין 10": null,
+  "נור אדין 10": {
+    "lat": 31.7907895,
+    "lon": 35.2361949,
+    "precision": "neighborhood",
+    "verified": true
+  },
   "ניל\"י 14": {
     "lat": 31.7673217,
-    "lon": 35.207893
+    "lon": 35.207893,
+    "precision": "exact",
+    "verified": true
   },
   "ניסן הרפז 12": {
     "lat": 31.7730917,
-    "lon": 35.1915846
+    "lon": 35.1915846,
+    "precision": "street",
+    "verified": true
+  },
+  "נלסון גליק 38": {
+    "lat": 31.8138395,
+    "lon": 35.193625,
+    "precision": "exact",
+    "verified": true
   },
   "נקר מאיר 21": {
     "lat": 31.7507228,
     "lon": 35.2409972
   },
-  "סוסניק אליעזר 9": null,
+  "סולם יעקב 10": {
+    "lat": 31.820575,
+    "lon": 35.2019692,
+    "precision": "exact",
+    "verified": true
+  },
+  "סוסניק אליעזר 9": {
+    "lat": 31.7933736,
+    "lon": 35.2246764,
+    "precision": "neighborhood",
+    "verified": true
+  },
+  "סורוצקין 41": {
+    "lat": 31.7993417,
+    "lon": 35.206298,
+    "precision": "exact",
+    "verified": true
+  },
   "סלאח א-דין 15": null,
   "סעדיה גאון 2": {
     "lat": 31.7726102,
-    "lon": 35.2103046
+    "lon": 35.2103046,
+    "precision": "exact",
+    "verified": true
+  },
+  "עבודת ישראל 4": {
+    "lat": 31.7876777,
+    "lon": 35.2199373,
+    "precision": "street",
+    "verified": true
+  },
+  "עובד 3": {
+    "lat": 31.7636553,
+    "lon": 35.2277023,
+    "precision": "exact",
+    "verified": true
+  },
+  "עובד 9": {
+    "lat": 31.7645117,
+    "lon": 35.2278849,
+    "precision": "exact",
+    "verified": true
+  },
+  "עובדיה מברטנורה 11": {
+    "lat": 31.7729371,
+    "lon": 35.2168695,
+    "precision": "exact",
+    "verified": true
+  },
+  "עובדיה מברטנורה 12": {
+    "lat": 31.7728017,
+    "lon": 35.2168317,
+    "precision": "exact",
+    "verified": true
+  },
+  "עובדיה מברטנורה 3": {
+    "lat": 31.7726916,
+    "lon": 35.2154085,
+    "precision": "exact",
+    "verified": true
+  },
+  "עוזיאל 26": {
+    "lat": 31.7696682,
+    "lon": 35.184786,
+    "precision": "exact",
+    "verified": true
   },
   "עוזיה 14": {
     "lat": 31.7626594,
-    "lon": 35.2157336
+    "lon": 35.2157336,
+    "precision": "exact",
+    "verified": true
+  },
+  "עוזיה 15": {
+    "lat": 31.7626513,
+    "lon": 35.2152597,
+    "precision": "exact",
+    "verified": true
+  },
+  "עזה 30": {
+    "lat": 31.772725,
+    "lon": 35.2143423,
+    "precision": "exact",
+    "verified": true
+  },
+  "עזה 32": {
+    "lat": 31.7725744,
+    "lon": 35.2141715,
+    "precision": "exact",
+    "verified": true
+  },
+  "עזה 45": {
+    "lat": 31.7706324,
+    "lon": 35.2123254,
+    "precision": "exact",
+    "verified": true
   },
   "עזה 53": {
     "lat": 31.7702442,
-    "lon": 35.2119699
+    "lon": 35.2119699,
+    "precision": "exact",
+    "verified": true
   },
   "עזרא 1": {
     "lat": 31.7899192,
@@ -1730,15 +2545,51 @@
   },
   "עזריה 1": {
     "lat": 31.7621505,
-    "lon": 35.2182866
+    "lon": 35.2182866,
+    "precision": "street",
+    "verified": true
+  },
+  "עידו הנביא 1": {
+    "lat": 31.7846461,
+    "lon": 35.2253131,
+    "precision": "exact",
+    "verified": true
+  },
+  "עידו הנביא 12": {
+    "lat": 31.7847761,
+    "lon": 35.2266057,
+    "precision": "exact",
+    "verified": true
+  },
+  "עידו הנביא 14": {
+    "lat": 31.7846862,
+    "lon": 35.2268437,
+    "precision": "exact",
+    "verified": true
+  },
+  "עידו הנביא 2": {
+    "lat": 31.7845981,
+    "lon": 35.2251484,
+    "precision": "exact",
+    "verified": true
   },
   "עין כרם 54": {
     "lat": 31.7676367,
-    "lon": 35.1639025
+    "lon": 35.1639025,
+    "precision": "street",
+    "verified": true
+  },
+  "עלית הנוער 17": {
+    "lat": 31.7643601,
+    "lon": 35.1750449,
+    "precision": "neighborhood",
+    "verified": true
   },
   "עלמא 6": {
     "lat": 31.7823383,
-    "lon": 35.2088968
+    "lon": 35.2088968,
+    "precision": "exact",
+    "verified": true
   },
   "עם ועולמו 3": {
     "lat": 31.7888313,
@@ -1750,7 +2601,9 @@
   },
   "עמק רפאים 53": {
     "lat": 31.7614589,
-    "lon": 35.2172201
+    "lon": 35.2172201,
+    "precision": "exact",
+    "verified": true
   },
   "עמק רפאים 8": {
     "lat": 31.7662178,
@@ -1758,21 +2611,39 @@
   },
   "עמק רפאים 9": {
     "lat": 31.7661102,
-    "lon": 35.2225115
+    "lon": 35.2225115,
+    "precision": "exact",
+    "verified": true
   },
   "עמרם גאון 3": {
     "lat": 31.7916944,
-    "lon": 35.1932566
+    "lon": 35.1932566,
+    "precision": "exact",
+    "verified": true
   },
-  "פאול גרינגר 25": null,
-  "פאול גרינגר 6": null,
+  "פאול גרינגר 25": {
+    "lat": 31.820224,
+    "lon": 35.2519697,
+    "precision": "neighborhood",
+    "verified": true
+  },
+  "פאול גרינגר 6": {
+    "lat": 31.820224,
+    "lon": 35.2519697,
+    "precision": "neighborhood",
+    "verified": true
+  },
   "פאול גרינינגר 7": {
     "lat": 31.8158643,
-    "lon": 35.2543316
+    "lon": 35.2543316,
+    "precision": "exact",
+    "verified": true
   },
   "פאול גרינינגר 8": {
     "lat": 31.8150524,
-    "lon": 35.2545088
+    "lon": 35.2545088,
+    "precision": "exact",
+    "verified": true
   },
   "פארן 4": {
     "lat": 31.8013655,
@@ -1782,10 +2653,21 @@
     "lat": 31.7854774,
     "lon": 35.2150633
   },
-  "פנחס גרייבסקי 6": null,
+  "פנחס גרייבסקי 6": {
+    "lat": 31.7911185,
+    "lon": 35.1931023,
+    "precision": "neighborhood",
+    "verified": true
+  },
   "צביה ויצחק 800": {
     "lat": 31.7304381,
     "lon": 35.1886104
+  },
+  "קדימה 31": {
+    "lat": 31.8142659,
+    "lon": 35.1979589,
+    "precision": "exact",
+    "verified": true
   },
   "קלרמון גאנו 1": {
     "lat": 31.7974215,
@@ -1797,7 +2679,9 @@
   },
   "קרן היסוד 13": {
     "lat": 31.7742416,
-    "lon": 35.218919
+    "lon": 35.218919,
+    "precision": "exact",
+    "verified": true
   },
   "קרן היסוד 27": {
     "lat": 31.7733591,
@@ -1823,22 +2707,41 @@
     "lat": 31.754407,
     "lon": 35.217947
   },
-  "ריבלין אליעזר 5": null,
+  "ריבלין אליעזר 5": {
+    "lat": 31.7807932,
+    "lon": 35.2204395,
+    "precision": "neighborhood",
+    "verified": true
+  },
   "רמב\"ן 5": {
     "lat": 31.7748418,
-    "lon": 35.216924
+    "lon": 35.216924,
+    "precision": "exact",
+    "verified": true
   },
   "רמבן 5": null,
   "רשב\"ג 26": {
     "lat": 31.7557181,
-    "lon": 35.2091847
+    "lon": 35.2091847,
+    "precision": "exact",
+    "verified": true
   },
   "ש\"י עגנון 8": {
     "lat": 31.7633129,
     "lon": 35.2040124
   },
-  "שדה תעופה עטרות 26": null,
-  "שדה תעופה עטרות 35": null,
+  "שדה תעופה עטרות 26": {
+    "lat": 31.8560785,
+    "lon": 35.2161956,
+    "precision": "neighborhood",
+    "verified": true
+  },
+  "שדה תעופה עטרות 35": {
+    "lat": 31.8560785,
+    "lon": 35.2161956,
+    "precision": "neighborhood",
+    "verified": true
+  },
   "שופן 1": {
     "lat": 31.7688983,
     "lon": 35.2139425
@@ -1849,11 +2752,27 @@
   },
   "שח\"ל 18": {
     "lat": 31.7601515,
-    "lon": 35.1974421
+    "lon": 35.1974421,
+    "precision": "exact",
+    "verified": true
   },
   "שטרן אברהם 45": {
     "lat": 31.7529269,
-    "lon": 35.1766322
+    "lon": 35.1766322,
+    "precision": "exact",
+    "verified": true
+  },
+  "שלאין 8": {
+    "lat": 31.7782339,
+    "lon": 35.1882138,
+    "precision": "exact",
+    "verified": true
+  },
+  "שלום סיון 8": {
+    "lat": 31.8207249,
+    "lon": 35.1894819,
+    "precision": "exact",
+    "verified": true
   },
   "שלומציון המלכה 1": {
     "lat": 31.7804311,
@@ -1871,12 +2790,42 @@
     "lat": 31.7799624,
     "lon": 35.2217539
   },
-  "שלמה זלמן דרוק 105": null,
-  "שלמה זלמן דרוק 56": null,
-  "שלמה זלמן דרוק 71": null,
-  "שלמה זלמן דרוק 79": null,
-  "שלמה זלמן דרוק 85": null,
-  "שלמה זלמן דרוק 87": null,
+  "שלמה זלמן דרוק 105": {
+    "lat": 31.813784,
+    "lon": 35.215335,
+    "precision": "street",
+    "verified": true
+  },
+  "שלמה זלמן דרוק 56": {
+    "lat": 31.813784,
+    "lon": 35.215335,
+    "precision": "street",
+    "verified": true
+  },
+  "שלמה זלמן דרוק 71": {
+    "lat": 31.813784,
+    "lon": 35.215335,
+    "precision": "street",
+    "verified": true
+  },
+  "שלמה זלמן דרוק 79": {
+    "lat": 31.813784,
+    "lon": 35.215335,
+    "precision": "street",
+    "verified": true
+  },
+  "שלמה זלמן דרוק 85": {
+    "lat": 31.813784,
+    "lon": 35.215335,
+    "precision": "street",
+    "verified": true
+  },
+  "שלמה זלמן דרוק 87": {
+    "lat": 31.813784,
+    "lon": 35.215335,
+    "precision": "street",
+    "verified": true
+  },
   "שמאי 13": {
     "lat": 31.7811277,
     "lon": 35.2180875
@@ -1889,25 +2838,127 @@
     "lat": 31.7811357,
     "lon": 35.2196279
   },
+  "שמאי 7": {
+    "lat": 31.7810997,
+    "lon": 35.2175396,
+    "precision": "exact",
+    "verified": true
+  },
+  "שמואל הנביא 1": {
+    "lat": 31.7961442,
+    "lon": 35.2193182,
+    "precision": "street",
+    "verified": true
+  },
+  "שמואל הנביא 101": {
+    "lat": 31.7961745,
+    "lon": 35.2191848,
+    "precision": "exact",
+    "verified": true
+  },
+  "שמואל הנביא 15": {
+    "lat": 31.7920372,
+    "lon": 35.2237606,
+    "precision": "street",
+    "verified": true
+  },
+  "שמואל הנביא 34": {
+    "lat": 31.7902291,
+    "lon": 35.2251488,
+    "precision": "exact",
+    "verified": true
+  },
+  "שמואל הנביא 5": {
+    "lat": 31.7962282,
+    "lon": 35.2193708,
+    "precision": "street",
+    "verified": true
+  },
+  "שמואל הנביא 68": {
+    "lat": 31.7928787,
+    "lon": 35.2230486,
+    "precision": "exact",
+    "verified": true
+  },
   "שמואל הנגיד 1": {
     "lat": 31.7804019,
     "lon": 35.2150506
   },
   "שמואל הנגיד 14": {
     "lat": 31.7797637,
-    "lon": 35.2145622
+    "lon": 35.2145622,
+    "precision": "exact",
+    "verified": true
+  },
+  "שמואל הנגיד 17": {
+    "lat": 31.778743,
+    "lon": 35.2149311,
+    "precision": "exact",
+    "verified": true
+  },
+  "שמואל הנגיד 19": {
+    "lat": 31.7785909,
+    "lon": 35.2149811,
+    "precision": "exact",
+    "verified": true
+  },
+  "שמואל הנגיד 20": {
+    "lat": 31.7790914,
+    "lon": 35.2143493,
+    "precision": "exact",
+    "verified": true
   },
   "שמואל הנגיד 7": {
     "lat": 31.7787895,
     "lon": 35.2152009
   },
+  "שמואל עדן 1": {
+    "lat": 31.8247604,
+    "lon": 35.2380554,
+    "precision": "exact",
+    "verified": true
+  },
+  "שמואל עדן 3": {
+    "lat": 31.8248519,
+    "lon": 35.2377151,
+    "precision": "exact",
+    "verified": true
+  },
+  "שמורק 10": {
+    "lat": 31.7659554,
+    "lon": 35.1765125,
+    "precision": "exact",
+    "verified": true
+  },
+  "שמעון אגסי 34": {
+    "lat": 31.782162,
+    "lon": 35.1756953,
+    "precision": "exact",
+    "verified": true
+  },
+  "שמעון אגסי 54": {
+    "lat": 31.7826018,
+    "lon": 35.1791338,
+    "precision": "exact",
+    "verified": true
+  },
   "שמעיה 1": {
     "lat": 31.7604878,
-    "lon": 35.2226589
+    "lon": 35.2226589,
+    "precision": "exact",
+    "verified": true
   },
   "שרי ישראל 12": {
     "lat": 31.7895778,
-    "lon": 35.2063581
+    "lon": 35.2063581,
+    "precision": "exact",
+    "verified": true
+  },
+  "שרי ישראל 3": {
+    "lat": 31.7905142,
+    "lon": 35.2080155,
+    "precision": "exact",
+    "verified": true
   },
   "ששת הימים 25": {
     "lat": 31.8038409,
