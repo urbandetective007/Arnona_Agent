@@ -5,80 +5,32 @@ import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import type { Business } from '@/lib/types'
 import {
-  cleanAddress, neighborhoodHint, geocodeAddress, nominatimSearchUrl, isInJerusalem, RateLimitError,
-  type Coords, type NominatimResult, type Precision,
+  cleanAddress, neighborhoodHint, isInJerusalem, isMissingEntry,
+  type LocationMap, type Precision,
 } from '@/lib/geocode'
+import type { GeocodeQueue, GeocodeItem } from '@/lib/geocodeQueue'
+import { fetchLocations, createLocationQueue } from '@/lib/locations'
 
 interface JerusalemMapProps {
   businesses: Business[]
 }
 
-// Fallback for addresses missing from the static geocoded_addresses.json cache
-// (refreshed by scripts/geocode-addresses.mjs): geocode live via Nominatim and
-// remember the result in this browser. v2 drops everything the old lookup
-// stored — including addresses wrongly recorded as "not found" when
-// Nominatim was merely rate-limiting us, and results outside Jerusalem.
-const LIVE_GEOCODE_CACHE_KEY = 'arnona_live_geocode_cache_v2'
-const OLD_LIVE_GEOCODE_CACHE_KEYS = ['arnona_live_geocode_cache_v1']
-const NOMINATIM_DELAY_MS = 1100 // respect Nominatim's ~1 req/sec usage policy
-const MISSING_RETRY_MS = 7 * 24 * 60 * 60 * 1000 // re-try "not found" addresses weekly
-const BACKOFF_START_MS = 30_000
-const BACKOFF_MAX_MS = 5 * 60_000
-
-type LiveEntry = Coords | { missingAt: number }
-
-function loadLiveGeocodeCache(): Record<string, LiveEntry> {
-  if (typeof window === 'undefined') return {}
-  try {
-    OLD_LIVE_GEOCODE_CACHE_KEYS.forEach(k => localStorage.removeItem(k))
-    const raw = localStorage.getItem(LIVE_GEOCODE_CACHE_KEY)
-    const cache: Record<string, LiveEntry> = raw ? JSON.parse(raw) : {}
-    const now = Date.now()
-    for (const [addr, entry] of Object.entries(cache)) {
-      if ('missingAt' in entry ? now - entry.missingAt > MISSING_RETRY_MS : !isInJerusalem(entry)) {
-        delete cache[addr]
-      }
-    }
-    return cache
-  } catch {
-    return {}
-  }
-}
-
-function saveLiveGeocodeCache(cache: Record<string, LiveEntry>) {
-  if (typeof window === 'undefined') return
-  try { localStorage.setItem(LIVE_GEOCODE_CACHE_KEY, JSON.stringify(cache)) } catch {}
-}
-
-async function nominatimSearch(query: string): Promise<NominatimResult[]> {
-  const res = await fetch(nominatimSearchUrl(query), { headers: { 'Accept-Language': 'he,en;q=0.9' } })
-  if (res.status === 429) throw new RateLimitError('429')
-  if (!res.ok) throw new Error(`HTTP ${res.status}`)
-  return res.json()
-}
+// Locations used to be kept in a static file and in each browser's
+// localStorage; they now live in the Supabase table address_locations.
+const OLD_BROWSER_CACHE_KEYS = ['arnona_live_geocode_cache_v1', 'arnona_live_geocode_cache_v2']
 
 type Placement =
-  | { state: 'placed'; coords: Coords; precision: Precision }
+  | { state: 'placed'; coords: { lat: number; lon: number }; precision: Precision }
   | { state: 'missing' }
   | { state: 'pending' }
 
 // Where to draw a business. Anything outside Jerusalem is ignored — every
 // property is in Jerusalem, so such a coordinate can only be a lookup error.
-function placementFor(
-  key: string,
-  staticCache: Record<string, Coords | null>,
-  liveCache: Record<string, LiveEntry>,
-): Placement {
-  const fromStatic = staticCache[key]
-  if (fromStatic && isInJerusalem(fromStatic)) {
-    return { state: 'placed', coords: fromStatic, precision: fromStatic.precision ?? 'exact' }
-  }
-  const live = liveCache[key]
-  if (live && !('missingAt' in live) && isInJerusalem(live)) {
-    return { state: 'placed', coords: live, precision: live.precision ?? 'exact' }
-  }
-  if (live && 'missingAt' in live) return { state: 'missing' }
-  return { state: 'pending' }
+function placementFor(key: string, locations: LocationMap): Placement {
+  const entry = locations[key]
+  if (!entry) return { state: 'pending' }
+  if (isMissingEntry(entry) || !isInJerusalem(entry)) return { state: 'missing' }
+  return { state: 'placed', coords: entry, precision: entry.precision }
 }
 
 // Suspicion colors mapping
@@ -180,88 +132,46 @@ export default function JerusalemMap({ businesses }: JerusalemMapProps) {
   // place so an open popup survives live geocoding results arriving.
   const markersRef = useRef<Map<string, { marker: L.Marker; sig: string }>>(new Map())
 
-  const [coordsCache, setCoordsCache] = useState<Record<string, Coords | null>>({})
-  const [cacheLoaded, setCacheLoaded] = useState(false)
-  const [liveCache, setLiveCache] = useState<Record<string, LiveEntry>>({})
-  const geocodingQueueRef = useRef<Set<string>>(new Set())
+  const [locations, setLocations] = useState<LocationMap>({})
+  const [locationsLoaded, setLocationsLoaded] = useState(false)
+  const queueRef = useRef<GeocodeQueue | null>(null)
   const hasFitBoundsRef = useRef(false)
 
-  // Load any previously live-geocoded addresses remembered in this browser
+  // Load the stored locations once. If the table can't be read the map still
+  // works: every address is then looked up live (and saving quietly fails).
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time cache hydration on mount, not a cascading update
-    setLiveCache(loadLiveGeocodeCache())
+    try { OLD_BROWSER_CACHE_KEYS.forEach(k => localStorage.removeItem(k)) } catch {}
+    let cancelled = false
+    fetchLocations()
+      .then(loaded => { if (!cancelled) setLocations(loaded) })
+      .catch(err => console.error('Error loading address locations:', err))
+      .finally(() => { if (!cancelled) setLocationsLoaded(true) })
+    return () => { cancelled = true }
   }, [])
 
-  // Live geocoding for addresses the static cache doesn't place. A single
-  // long-lived worker drains the queue one address at a time. Temporary
-  // failures (rate limiting, network) are never recorded as "not found":
-  // the address goes back on the queue and the worker pauses with backoff.
-  const pendingRef = useRef<{ key: string; area: string | null }[]>([])
-  const workerRunningRef = useRef(false)
-  const unmountedRef = useRef(false)
-
+  // Addresses with no stored location yet (e.g. an upload the employee left
+  // before it finished, or an address edited later) are looked up one at a
+  // time and saved, so the next viewer gets them instantly. Temporary
+  // failures (rate limiting, network) are retried with backoff and never
+  // recorded as "not found".
   useEffect(() => {
-    unmountedRef.current = false
-    return () => { unmountedRef.current = true }
+    const queue = createLocationQueue({
+      onResult: (key, entry) => setLocations(prev => ({ ...prev, [key]: entry })),
+    })
+    queueRef.current = queue
+    return () => { queueRef.current = null; void queue.stop() }
   }, [])
 
   useEffect(() => {
-    if (!cacheLoaded) return
-
+    if (!locationsLoaded || !queueRef.current) return
+    const items: GeocodeItem[] = []
     businesses.forEach(b => {
       const key = cleanAddress(b.address)
-      if (!key) return
-      if (placementFor(key, coordsCache, liveCache).state !== 'pending') return
-      if (geocodingQueueRef.current.has(key)) return
-      geocodingQueueRef.current.add(key)
-      pendingRef.current.push({ key, area: neighborhoodHint(b.address, b.neighborhood) })
+      if (!key || key in locations) return
+      items.push({ key, area: neighborhoodHint(b.address, b.neighborhood) })
     })
-    if (workerRunningRef.current || pendingRef.current.length === 0) return
-
-    workerRunningRef.current = true
-    ;(async () => {
-      let backoff = BACKOFF_START_MS
-      while (pendingRef.current.length > 0 && !unmountedRef.current) {
-        const item = pendingRef.current.shift()!
-        let entry: LiveEntry
-        try {
-          const result = await geocodeAddress(item.key, item.area, { search: nominatimSearch, delayMs: NOMINATIM_DELAY_MS })
-          entry = result ?? { missingAt: Date.now() }
-          backoff = BACKOFF_START_MS
-        } catch {
-          pendingRef.current.push(item)
-          await new Promise(r => setTimeout(r, backoff))
-          backoff = Math.min(backoff * 2, BACKOFF_MAX_MS)
-          continue
-        }
-        if (unmountedRef.current) break
-        setLiveCache(prev => {
-          const next = { ...prev, [item.key]: entry }
-          saveLiveGeocodeCache(next)
-          return next
-        })
-        await new Promise(r => setTimeout(r, NOMINATIM_DELAY_MS))
-      }
-      workerRunningRef.current = false
-    })()
-  }, [businesses, coordsCache, liveCache, cacheLoaded])
-
-  // Load coordinates cache once on mount
-  useEffect(() => {
-    fetch('/Arnona_Agent/geocoded_addresses.json')
-      .then(res => {
-        if (!res.ok) throw new Error('Failed to load geocoding cache')
-        return res.json()
-      })
-      .then(data => {
-        setCoordsCache(data)
-        setCacheLoaded(true)
-      })
-      .catch(err => {
-        console.error('Error fetching geocoded addresses:', err)
-        setCacheLoaded(true) // Set loaded even on error to run map initialization
-      })
-  }, [])
+    if (items.length > 0) queueRef.current.add(items)
+  }, [businesses, locations, locationsLoaded])
 
   // Initialize Map
   useEffect(() => {
@@ -299,7 +209,7 @@ export default function JerusalemMap({ businesses }: JerusalemMapProps) {
   // position or content changed are touched — never clearLayers() — so a
   // popup the user opened stays open while live results trickle in.
   useEffect(() => {
-    if (!mapInstanceRef.current || !markerGroupRef.current || !cacheLoaded) return
+    if (!mapInstanceRef.current || !markerGroupRef.current || !locationsLoaded) return
 
     const markerGroup = markerGroupRef.current
     const markers = markersRef.current
@@ -307,7 +217,7 @@ export default function JerusalemMap({ businesses }: JerusalemMapProps) {
     const bounds: L.LatLngExpression[] = []
 
     businesses.forEach(b => {
-      const placement = placementFor(cleanAddress(b.address), coordsCache, liveCache)
+      const placement = placementFor(cleanAddress(b.address), locations)
       if (placement.state !== 'placed') return
       const { coords, precision } = placement
       seen.add(b.id)
@@ -347,7 +257,7 @@ export default function JerusalemMap({ businesses }: JerusalemMapProps) {
       })
       hasFitBoundsRef.current = true
     }
-  }, [businesses, coordsCache, liveCache, cacheLoaded])
+  }, [businesses, locations, locationsLoaded])
 
   // Surface location problems instead of hiding them: pins shown only at
   // neighborhood level, and properties that couldn't be placed at all.
@@ -358,16 +268,16 @@ export default function JerusalemMap({ businesses }: JerusalemMapProps) {
     businesses.forEach(b => {
       const key = cleanAddress(b.address)
       if (!key) { notFound++; return }
-      const placement = placementFor(key, coordsCache, liveCache)
+      const placement = placementFor(key, locations)
       if (placement.state === 'missing') notFound++
       else if (placement.state === 'placed' && placement.precision === 'neighborhood') uncertain++
     })
     return { uncertain, notFound }
-  }, [businesses, coordsCache, liveCache])
+  }, [businesses, locations])
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%', minHeight: '500px' }}>
-      {cacheLoaded && (locationIssues.uncertain > 0 || locationIssues.notFound > 0) && (
+      {locationsLoaded && (locationIssues.uncertain > 0 || locationIssues.notFound > 0) && (
         <div
           dir="rtl"
           style={{
@@ -397,7 +307,7 @@ export default function JerusalemMap({ businesses }: JerusalemMapProps) {
           zIndex: 1
         }} 
       />
-      {!cacheLoaded && (
+      {!locationsLoaded && (
         <div style={{
           position: 'absolute',
           top: 0,

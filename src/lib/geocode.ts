@@ -1,8 +1,7 @@
-// Address → coordinates for the property map. Shared by the map component
-// (live lookups for addresses missing from public/geocoded_addresses.json)
-// and scripts/geocode-addresses.ts (which refreshes that file), so both
-// place addresses the same way. Deliberately import-free so plain Node can
-// load it.
+// Address → coordinates for the property map. Shared by the map component,
+// the upload page (which locates new addresses right after an upload) and
+// scripts/geocode-addresses.mjs, so all of them place addresses the same
+// way. Deliberately import-free so plain Node can load it.
 //
 // Every property is in Jerusalem, so a result anywhere else is a lookup
 // error, never a real location: searches are bounded to Jerusalem and a
@@ -18,6 +17,18 @@ export interface Coords {
   /** Missing on older static-cache entries, which are house-level. */
   precision?: Precision
 }
+
+/** A stored location: placed with a precision, or looked up and not found. */
+export type LocationEntry = (Coords & { precision: Precision }) | { missingAt: number }
+/** Locations by address key (see cleanAddress). */
+export type LocationMap = Record<string, LocationEntry>
+
+export function isMissingEntry(e: LocationEntry): e is { missingAt: number } {
+  return 'missingAt' in e
+}
+
+/** An address not found is looked up again after this long. */
+export const MISSING_RETRY_MS = 7 * 24 * 60 * 60 * 1000
 
 export const JERUSALEM_BOUNDS = { south: 31.70, north: 31.90, west: 35.07, east: 35.32 }
 
