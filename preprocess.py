@@ -1,3 +1,8 @@
+# DEPRECATED: superseded by scripts/geocode-addresses.mjs, which places
+# addresses with the same Jerusalem-only logic as the map
+# (src/lib/geocode.ts). This script can no longer read the businesses table
+# (row-level security blocks the anon key) and its unbounded lookups could
+# land on same-named streets in other cities.
 import os
 import json
 import urllib.parse

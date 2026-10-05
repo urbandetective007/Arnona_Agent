@@ -4,51 +4,40 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import type { Business } from '@/lib/types'
-import { normalizeAddress } from '@/lib/addressUtils'
+import {
+  cleanAddress, neighborhoodHint, geocodeAddress, nominatimSearchUrl, isInJerusalem, RateLimitError,
+  type Coords, type NominatimResult, type Precision,
+} from '@/lib/geocode'
 
 interface JerusalemMapProps {
   businesses: Business[]
 }
 
-// Clean address key to match geocoded_addresses.json
-function getCleanAddress(address: string): string {
-  if (!address) return ''
-  const base = address.split(',')[0].trim()
-  const norm = normalizeAddress(base)
-  return norm.replace(/\s+(דירה|דיר|דר|יח'|יחידה|קומה)\s+\d+.*/i, '').trim()
-}
-
-// Fallback for addresses missing from the static geocoded_addresses.json cache —
-// geocode live via Nominatim and remember the result in this browser, so the
-// map never silently drops a business just because the static cache is stale.
-const LIVE_GEOCODE_CACHE_KEY = 'arnona_live_geocode_cache_v1'
+// Fallback for addresses missing from the static geocoded_addresses.json cache
+// (refreshed by scripts/geocode-addresses.mjs): geocode live via Nominatim and
+// remember the result in this browser. v2 drops everything the old lookup
+// stored — including addresses wrongly recorded as "not found" when
+// Nominatim was merely rate-limiting us, and results outside Jerusalem.
+const LIVE_GEOCODE_CACHE_KEY = 'arnona_live_geocode_cache_v2'
+const OLD_LIVE_GEOCODE_CACHE_KEYS = ['arnona_live_geocode_cache_v1']
 const NOMINATIM_DELAY_MS = 1100 // respect Nominatim's ~1 req/sec usage policy
+const MISSING_RETRY_MS = 7 * 24 * 60 * 60 * 1000 // re-try "not found" addresses weekly
+const BACKOFF_START_MS = 30_000
+const BACKOFF_MAX_MS = 5 * 60_000
 
-// `approx` marks a location we couldn't confirm inside Jerusalem — still
-// drawn (so a bad address is visible, not silently dropped) but flagged.
-type Coords = { lat: number; lon: number; approx?: boolean }
+type LiveEntry = Coords | { missingAt: number }
 
-// Every property is in Jerusalem. A free-text Nominatim search can still
-// land on a same-named street in another city (e.g. "שמואל הנביא" in Beit
-// Shemesh), so live lookups first search inside this box; only if nothing
-// is found there do we fall back to an unbounded search, flagged approx.
-const JERUSALEM_BOUNDS = { south: 31.70, north: 31.90, west: 35.07, east: 35.32 }
-
-function isInJerusalem(c: Coords): boolean {
-  return c.lat >= JERUSALEM_BOUNDS.south && c.lat <= JERUSALEM_BOUNDS.north &&
-    c.lon >= JERUSALEM_BOUNDS.west && c.lon <= JERUSALEM_BOUNDS.east
-}
-
-function loadLiveGeocodeCache(): Record<string, Coords | null> {
+function loadLiveGeocodeCache(): Record<string, LiveEntry> {
   if (typeof window === 'undefined') return {}
   try {
+    OLD_LIVE_GEOCODE_CACHE_KEYS.forEach(k => localStorage.removeItem(k))
     const raw = localStorage.getItem(LIVE_GEOCODE_CACHE_KEY)
-    const cache: Record<string, Coords | null> = raw ? JSON.parse(raw) : {}
-    // Re-geocode results remembered before lookups were bounded to
-    // Jerusalem (out of bounds, not yet flagged), so they get a chance to
-    // resolve inside the city first.
-    for (const [addr, coords] of Object.entries(cache)) {
-      if (coords && !coords.approx && !isInJerusalem(coords)) delete cache[addr]
+    const cache: Record<string, LiveEntry> = raw ? JSON.parse(raw) : {}
+    const now = Date.now()
+    for (const [addr, entry] of Object.entries(cache)) {
+      if ('missingAt' in entry ? now - entry.missingAt > MISSING_RETRY_MS : !isInJerusalem(entry)) {
+        delete cache[addr]
+      }
     }
     return cache
   } catch {
@@ -56,44 +45,40 @@ function loadLiveGeocodeCache(): Record<string, Coords | null> {
   }
 }
 
-function saveLiveGeocodeCache(cache: Record<string, Coords | null>) {
+function saveLiveGeocodeCache(cache: Record<string, LiveEntry>) {
   if (typeof window === 'undefined') return
   try { localStorage.setItem(LIVE_GEOCODE_CACHE_KEY, JSON.stringify(cache)) } catch {}
 }
 
-async function nominatimSearch(query: string, bounded: boolean): Promise<Coords | null> {
-  const params = new URLSearchParams({ format: 'json', limit: '1', q: query, countrycodes: 'il' })
-  if (bounded) {
-    const { west, north, east, south } = JERUSALEM_BOUNDS
-    params.set('viewbox', `${west},${north},${east},${south}`)
-    params.set('bounded', '1')
-  }
-  try {
-    const res = await fetch(
-      `https://nominatim.openstreetmap.org/search?${params}`,
-      { headers: { 'Accept-Language': 'he,en;q=0.9' } }
-    )
-    if (!res.ok) return null
-    const data = await res.json()
-    if (Array.isArray(data) && data[0]) {
-      return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) }
-    }
-    return null
-  } catch {
-    return null
-  }
+async function nominatimSearch(query: string): Promise<NominatimResult[]> {
+  const res = await fetch(nominatimSearchUrl(query), { headers: { 'Accept-Language': 'he,en;q=0.9' } })
+  if (res.status === 429) throw new RateLimitError('429')
+  if (!res.ok) throw new Error(`HTTP ${res.status}`)
+  return res.json()
 }
 
-async function geocodeLive(cleanAddress: string): Promise<Coords | null> {
-  const query = cleanAddress.includes('ירושלים') ? cleanAddress : `${cleanAddress}, ירושלים`
-  const inCity = await nominatimSearch(query, true)
-  if (inCity && isInJerusalem(inCity)) return inCity
-  // Nothing inside Jerusalem — fall back to the best match anywhere, so the
-  // property still shows up (flagged) and the bad address can be noticed.
-  await new Promise(r => setTimeout(r, NOMINATIM_DELAY_MS))
-  const anywhere = await nominatimSearch(query, false)
-  if (!anywhere) return null
-  return isInJerusalem(anywhere) ? anywhere : { ...anywhere, approx: true }
+type Placement =
+  | { state: 'placed'; coords: Coords; precision: Precision }
+  | { state: 'missing' }
+  | { state: 'pending' }
+
+// Where to draw a business. Anything outside Jerusalem is ignored — every
+// property is in Jerusalem, so such a coordinate can only be a lookup error.
+function placementFor(
+  key: string,
+  staticCache: Record<string, Coords | null>,
+  liveCache: Record<string, LiveEntry>,
+): Placement {
+  const fromStatic = staticCache[key]
+  if (fromStatic && isInJerusalem(fromStatic)) {
+    return { state: 'placed', coords: fromStatic, precision: fromStatic.precision ?? 'exact' }
+  }
+  const live = liveCache[key]
+  if (live && !('missingAt' in live) && isInJerusalem(live)) {
+    return { state: 'placed', coords: live, precision: live.precision ?? 'exact' }
+  }
+  if (live && 'missingAt' in live) return { state: 'missing' }
+  return { state: 'pending' }
 }
 
 // Suspicion colors mapping
@@ -107,8 +92,8 @@ const SUSPICION_COLORS: Record<string, string> = {
 const DEFAULT_COLOR = '#9ca3af' // Gray
 
 // SVG marker creator function
-// `uncertain` adds an amber "!" badge — the location couldn't be confirmed
-// inside Jerusalem, so the pin may be in the wrong place.
+// `uncertain` adds an amber "!" badge — the address itself wasn't found, so
+// the pin marks the property's neighborhood rather than its building.
 const createMarkerIcon = (color: string, uncertain = false) => {
   return L.divIcon({
     html: `
@@ -127,31 +112,91 @@ const createMarkerIcon = (color: string, uncertain = false) => {
   })
 }
 
+function popupHtml(b: Business, precision: Precision): string {
+  return `
+      <div style="font-family: var(--font-manrope), sans-serif; text-align: right; direction: rtl; min-width: 200px;">
+        <h3 style="margin: 0 0 6px 0; font-size: 14px; font-weight: 700; color: var(--ink);">${b.name}</h3>
+        ${precision === 'neighborhood' ? `
+        <p style="margin: 0 0 8px 0; font-size: 11px; color: #92400e; line-height: 1.35; background: #fffbeb; border: 1px solid #fcd34d; padding: 6px; border-radius: 4px;">
+          <strong>מיקום משוער:</strong> הכתובת לא אותרה במפה, והנקודה מוצגת במרכז השכונה. כדאי לבדוק את הכתובת.
+        </p>
+        ` : ''}
+        <p style="margin: 0 0 4px 0; font-size: 12px; color: var(--charcoal);">
+          <strong>סוג עסק:</strong> ${b.type || 'לא ידוע'}
+        </p>
+        <p style="margin: 0 0 4px 0; font-size: 12px; color: var(--charcoal);">
+          <strong>כתובת:</strong> ${b.address}
+        </p>
+        ${precision === 'street' ? `
+        <p style="margin: 0 0 4px 0; font-size: 11px; color: var(--graphite);">מיקום לפי הרחוב (מספר הבית לא אותר במפה)</p>
+        ` : ''}
+        ${b.neighborhood ? `
+        <p style="margin: 0 0 4px 0; font-size: 12px; color: var(--charcoal);">
+          <strong>שכונה:</strong> ${b.neighborhood}
+        </p>
+        ` : ''}
+        <p style="margin: 0 0 6px 0; font-size: 12px; color: var(--charcoal);">
+          <strong>כתובת עירייה:</strong> ${b.matchedAddress || 'לא נמצאה'}
+        </p>
+        <div style="margin-bottom: 8px;">
+          <span style="
+            display: inline-block;
+            border-radius: 4px;
+            padding: 2px 8px;
+            font-size: 11px;
+            font-weight: 600;
+            color: ${b.suspicionRating === 'גבוה' ? '#b91c1c' : b.suspicionRating === 'בינוני' ? '#c2410c' : b.suspicionRating === 'לא חשוד' ? '#15803d' : '#4b5563'};
+            background-color: ${b.suspicionRating === 'גבוה' ? '#fef2f2' : b.suspicionRating === 'בינוני' ? '#fff7ed' : b.suspicionRating === 'לא חשוד' ? '#f0fdf4' : '#f3f4f6'};
+          ">
+            ${b.suspicionRating}
+          </span>
+        </div>
+        ${b.suspicionDetail ? `
+          <p style="margin: 0 0 8px 0; font-size: 11px; color: #b91c1c; line-height: 1.3; background: #fef2f2; padding: 6px; border-radius: 4px;">
+            ${b.suspicionDetail}
+          </p>
+        ` : ''}
+        ${b.noSuspicionReason ? `
+          <p style="margin: 0 0 8px 0; font-size: 11px; color: #15803d; line-height: 1.3; background: #f0fdf4; padding: 6px; border-radius: 4px;">
+            <strong>סיבה לאי-אינדיקציה:</strong> ${b.noSuspicionReason}
+          </p>
+        ` : ''}
+        ${[b.link1, b.link2, b.link3].filter(Boolean).length > 0 ? `
+          <div style="margin-top: 8px; border-top: 1px solid var(--hairline); padding-top: 8px;">
+            ${b.link1 ? `<div style="font-size: 11px; margin-bottom: 6px;"><strong>קישור 1:</strong> <a href="${b.link1}" target="_blank" rel="noopener noreferrer" style="color: var(--hp-blue); text-decoration: none; word-break: break-all;">${b.link1}</a></div>` : ''}
+            ${b.link2 ? `<div style="font-size: 11px; margin-bottom: 6px;"><strong>קישור 2:</strong> <a href="${b.link2}" target="_blank" rel="noopener noreferrer" style="color: var(--hp-blue); text-decoration: none; word-break: break-all;">${b.link2}</a></div>` : ''}
+            ${b.link3 ? `<div style="font-size: 11px; margin-bottom: 0;"><strong>קישור 3:</strong> <a href="${b.link3}" target="_blank" rel="noopener noreferrer" style="color: var(--hp-blue); text-decoration: none; word-break: break-all;">${b.link3}</a></div>` : ''}
+          </div>
+        ` : ''}
+      </div>
+`
+}
+
 export default function JerusalemMap({ businesses }: JerusalemMapProps) {
   const mapRef = useRef<HTMLDivElement>(null)
   const mapInstanceRef = useRef<L.Map | null>(null)
   const markerGroupRef = useRef<L.LayerGroup | null>(null)
-  
+  // Markers by business id, with a signature of what they show — updated in
+  // place so an open popup survives live geocoding results arriving.
+  const markersRef = useRef<Map<string, { marker: L.Marker; sig: string }>>(new Map())
+
   const [coordsCache, setCoordsCache] = useState<Record<string, Coords | null>>({})
   const [cacheLoaded, setCacheLoaded] = useState(false)
-  const [liveCache, setLiveCache] = useState<Record<string, Coords | null>>({})
+  const [liveCache, setLiveCache] = useState<Record<string, LiveEntry>>({})
   const geocodingQueueRef = useRef<Set<string>>(new Set())
   const hasFitBoundsRef = useRef(false)
 
   // Load any previously live-geocoded addresses remembered in this browser
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time cache hydration on mount, not a cascading update
     setLiveCache(loadLiveGeocodeCache())
   }, [])
 
-  // Fallback: geocode any address missing from BOTH the static cache and the
-  // live cache, one at a time (Nominatim rate limit), so no business is ever
-  // silently dropped just because the static geocoded_addresses.json is stale.
-  //
-  // A single long-lived worker drains a pending list. (Previously each run of
-  // this effect started its own loop and was cancelled as soon as its first
-  // result updated liveCache — the remaining addresses stayed marked as
-  // queued and were never looked up, so only one address resolved per visit.)
-  const pendingRef = useRef<string[]>([])
+  // Live geocoding for addresses the static cache doesn't place. A single
+  // long-lived worker drains the queue one address at a time. Temporary
+  // failures (rate limiting, network) are never recorded as "not found":
+  // the address goes back on the queue and the worker pauses with backoff.
+  const pendingRef = useRef<{ key: string; area: string | null }[]>([])
   const workerRunningRef = useRef(false)
   const unmountedRef = useRef(false)
 
@@ -164,24 +209,34 @@ export default function JerusalemMap({ businesses }: JerusalemMapProps) {
     if (!cacheLoaded) return
 
     businesses.forEach(b => {
-      const cleanAddr = getCleanAddress(b.address)
-      if (!cleanAddr) return
-      if (cleanAddr in coordsCache) return
-      if (cleanAddr in liveCache) return
-      if (geocodingQueueRef.current.has(cleanAddr)) return
-      geocodingQueueRef.current.add(cleanAddr)
-      pendingRef.current.push(cleanAddr)
+      const key = cleanAddress(b.address)
+      if (!key) return
+      if (placementFor(key, coordsCache, liveCache).state !== 'pending') return
+      if (geocodingQueueRef.current.has(key)) return
+      geocodingQueueRef.current.add(key)
+      pendingRef.current.push({ key, area: neighborhoodHint(b.address, b.neighborhood) })
     })
     if (workerRunningRef.current || pendingRef.current.length === 0) return
 
     workerRunningRef.current = true
     ;(async () => {
+      let backoff = BACKOFF_START_MS
       while (pendingRef.current.length > 0 && !unmountedRef.current) {
-        const addr = pendingRef.current.shift()!
-        const result = await geocodeLive(addr)
+        const item = pendingRef.current.shift()!
+        let entry: LiveEntry
+        try {
+          const result = await geocodeAddress(item.key, item.area, { search: nominatimSearch, delayMs: NOMINATIM_DELAY_MS })
+          entry = result ?? { missingAt: Date.now() }
+          backoff = BACKOFF_START_MS
+        } catch {
+          pendingRef.current.push(item)
+          await new Promise(r => setTimeout(r, backoff))
+          backoff = Math.min(backoff * 2, BACKOFF_MAX_MS)
+          continue
+        }
         if (unmountedRef.current) break
         setLiveCache(prev => {
-          const next = { ...prev, [addr]: result }
+          const next = { ...prev, [item.key]: entry }
           saveLiveGeocodeCache(next)
           return next
         })
@@ -229,8 +284,10 @@ export default function JerusalemMap({ businesses }: JerusalemMapProps) {
 
     mapInstanceRef.current = map
     markerGroupRef.current = markerGroup
+    const markers = markersRef.current
 
     return () => {
+      markers.clear()
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove()
         mapInstanceRef.current = null
@@ -238,86 +295,48 @@ export default function JerusalemMap({ businesses }: JerusalemMapProps) {
     }
   }, [])
 
-  // Update Markers when businesses change or cache loads
+  // Sync markers with the businesses and their placements. Only markers whose
+  // position or content changed are touched — never clearLayers() — so a
+  // popup the user opened stays open while live results trickle in.
   useEffect(() => {
     if (!mapInstanceRef.current || !markerGroupRef.current || !cacheLoaded) return
 
     const markerGroup = markerGroupRef.current
-    markerGroup.clearLayers()
-
+    const markers = markersRef.current
+    const seen = new Set<string>()
     const bounds: L.LatLngExpression[] = []
 
     businesses.forEach(b => {
-      const cleanAddr = getCleanAddress(b.address)
-      const coords = coordsCache[cleanAddr] ?? liveCache[cleanAddr]
+      const placement = placementFor(cleanAddress(b.address), coordsCache, liveCache)
+      if (placement.state !== 'placed') return
+      const { coords, precision } = placement
+      seen.add(b.id)
+      bounds.push([coords.lat, coords.lon])
 
-      if (coords && coords.lat && coords.lon) {
-        const color = SUSPICION_COLORS[b.suspicionRating] || DEFAULT_COLOR
-        const uncertain = coords.approx === true || !isInJerusalem(coords)
-        const icon = createMarkerIcon(color, uncertain)
+      const color = SUSPICION_COLORS[b.suspicionRating] || DEFAULT_COLOR
+      const html = popupHtml(b, precision)
+      const sig = `${coords.lat},${coords.lon}|${color}|${precision}|${html}`
+      const existing = markers.get(b.id)
+      if (existing?.sig === sig) return
 
-        const popupContent = `
-          <div style="font-family: var(--font-manrope), sans-serif; text-align: right; direction: rtl; min-width: 200px;">
-            <h3 style="margin: 0 0 6px 0; font-size: 14px; font-weight: 700; color: var(--ink);">${b.name}</h3>
-            ${uncertain ? `
-            <p style="margin: 0 0 8px 0; font-size: 11px; color: #92400e; line-height: 1.35; background: #fffbeb; border: 1px solid #fcd34d; padding: 6px; border-radius: 4px;">
-              <strong>מיקום לא ודאי:</strong> הכתובת לא אותרה בירושלים, והנקודה מוצגת לפי התוצאה הקרובה שנמצאה — ייתכן שבעיר אחרת. כדאי לבדוק את הכתובת.
-            </p>
-            ` : ''}
-            <p style="margin: 0 0 4px 0; font-size: 12px; color: var(--charcoal);">
-              <strong>סוג עסק:</strong> ${b.type || 'לא ידוע'}
-            </p>
-            <p style="margin: 0 0 4px 0; font-size: 12px; color: var(--charcoal);">
-              <strong>כתובת:</strong> ${b.address}
-            </p>
-            ${b.neighborhood ? `
-            <p style="margin: 0 0 4px 0; font-size: 12px; color: var(--charcoal);">
-              <strong>שכונה:</strong> ${b.neighborhood}
-            </p>
-            ` : ''}
-            <p style="margin: 0 0 6px 0; font-size: 12px; color: var(--charcoal);">
-              <strong>כתובת עירייה:</strong> ${b.matchedAddress || 'לא נמצאה'}
-            </p>
-            <div style="margin-bottom: 8px;">
-              <span style="
-                display: inline-block;
-                border-radius: 4px;
-                padding: 2px 8px;
-                font-size: 11px;
-                font-weight: 600;
-                color: ${b.suspicionRating === 'גבוה' ? '#b91c1c' : b.suspicionRating === 'בינוני' ? '#c2410c' : b.suspicionRating === 'לא חשוד' ? '#15803d' : '#4b5563'};
-                background-color: ${b.suspicionRating === 'גבוה' ? '#fef2f2' : b.suspicionRating === 'בינוני' ? '#fff7ed' : b.suspicionRating === 'לא חשוד' ? '#f0fdf4' : '#f3f4f6'};
-              ">
-                ${b.suspicionRating}
-              </span>
-            </div>
-            ${b.suspicionDetail ? `
-              <p style="margin: 0 0 8px 0; font-size: 11px; color: #b91c1c; line-height: 1.3; background: #fef2f2; padding: 6px; border-radius: 4px;">
-                ${b.suspicionDetail}
-              </p>
-            ` : ''}
-            ${b.noSuspicionReason ? `
-              <p style="margin: 0 0 8px 0; font-size: 11px; color: #15803d; line-height: 1.3; background: #f0fdf4; padding: 6px; border-radius: 4px;">
-                <strong>סיבה לאי-אינדיקציה:</strong> ${b.noSuspicionReason}
-              </p>
-            ` : ''}
-            ${[b.link1, b.link2, b.link3].filter(Boolean).length > 0 ? `
-              <div style="margin-top: 8px; border-top: 1px solid var(--hairline); padding-top: 8px;">
-                ${b.link1 ? `<div style="font-size: 11px; margin-bottom: 6px;"><strong>קישור 1:</strong> <a href="${b.link1}" target="_blank" rel="noopener noreferrer" style="color: var(--hp-blue); text-decoration: none; word-break: break-all;">${b.link1}</a></div>` : ''}
-                ${b.link2 ? `<div style="font-size: 11px; margin-bottom: 6px;"><strong>קישור 2:</strong> <a href="${b.link2}" target="_blank" rel="noopener noreferrer" style="color: var(--hp-blue); text-decoration: none; word-break: break-all;">${b.link2}</a></div>` : ''}
-                ${b.link3 ? `<div style="font-size: 11px; margin-bottom: 0;"><strong>קישור 3:</strong> <a href="${b.link3}" target="_blank" rel="noopener noreferrer" style="color: var(--hp-blue); text-decoration: none; word-break: break-all;">${b.link3}</a></div>` : ''}
-              </div>
-            ` : ''}
-          </div>
-        `
-
-        const marker = L.marker([coords.lat, coords.lon], { icon })
-          .bindPopup(popupContent)
-          .addTo(markerGroup)
-
-        bounds.push([coords.lat, coords.lon])
+      const icon = createMarkerIcon(color, precision === 'neighborhood')
+      if (existing) {
+        existing.marker.setLatLng([coords.lat, coords.lon])
+        existing.marker.setIcon(icon)
+        existing.marker.setPopupContent(html)
+        existing.sig = sig
+      } else {
+        const marker = L.marker([coords.lat, coords.lon], { icon }).bindPopup(html).addTo(markerGroup)
+        markers.set(b.id, { marker, sig })
       }
     })
+
+    for (const [id, { marker }] of markers) {
+      if (!seen.has(id)) {
+        markerGroup.removeLayer(marker)
+        markers.delete(id)
+      }
+    }
 
     // Auto fit map bounds once, the first time we have markers — avoid
     // re-zooming every time a straggling live-geocoded marker trickles in
@@ -330,20 +349,18 @@ export default function JerusalemMap({ businesses }: JerusalemMapProps) {
     }
   }, [businesses, coordsCache, liveCache, cacheLoaded])
 
-  // Surface location problems instead of hiding them: how many pins sit at
-  // an unconfirmed location, and how many properties couldn't be placed.
+  // Surface location problems instead of hiding them: pins shown only at
+  // neighborhood level, and properties that couldn't be placed at all.
+  // Addresses still being looked up (or waiting out rate limiting) don't count.
   const locationIssues = useMemo(() => {
     let uncertain = 0
     let notFound = 0
     businesses.forEach(b => {
-      const cleanAddr = getCleanAddress(b.address)
-      if (!cleanAddr) { notFound++; return }
-      const inStatic = cleanAddr in coordsCache
-      const inLive = cleanAddr in liveCache
-      if (!inStatic && !inLive) return // still being looked up
-      const coords = coordsCache[cleanAddr] ?? liveCache[cleanAddr]
-      if (!coords) notFound++
-      else if (coords.approx === true || !isInJerusalem(coords)) uncertain++
+      const key = cleanAddress(b.address)
+      if (!key) { notFound++; return }
+      const placement = placementFor(key, coordsCache, liveCache)
+      if (placement.state === 'missing') notFound++
+      else if (placement.state === 'placed' && placement.precision === 'neighborhood') uncertain++
     })
     return { uncertain, notFound }
   }, [businesses, coordsCache, liveCache])
@@ -361,7 +378,7 @@ export default function JerusalemMap({ businesses }: JerusalemMapProps) {
           }}
         >
           {locationIssues.uncertain > 0 && (
-            <div><strong>{locationIssues.uncertain}</strong> נכסים במיקום לא ודאי (מסומנים ב-!)</div>
+            <div><strong>{locationIssues.uncertain}</strong> נכסים מוצגים במרכז השכונה בלבד (מסומנים ב-!)</div>
           )}
           {locationIssues.notFound > 0 && (
             <div><strong>{locationIssues.notFound}</strong> נכסים שלא אותרו ואינם מוצגים במפה</div>
