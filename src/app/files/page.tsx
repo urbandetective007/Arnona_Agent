@@ -1,48 +1,24 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { FileSpreadsheet, Trash2, Upload as UploadIcon } from 'lucide-react'
 import { AppShell } from '@/components/AppShell'
 import { useRequireRole } from '@/lib/useRequireRole'
-import type { Business, UploadSession } from '@/lib/types'
-import { supabase, dbToBusiness, dbToSession, sessionToDb } from '@/lib/supabase'
-import { getCache, setCache } from '@/lib/cache'
+import type { UploadSession } from '@/lib/types'
+import { supabase, sessionToDb } from '@/lib/supabase'
+import { useBusinesses } from '@/lib/useBusinesses'
+import { setCache } from '@/lib/cache'
 import { formatDate } from '@/lib/dateUtils'
-import { Card, Badge, Button, Spinner, EmptyState } from '@/components/ui'
+import { Card, Badge, Button, Spinner, EmptyState, LoadingMoreBanner } from '@/components/ui'
 import type { BadgeTone } from '@/components/ui'
 
 const RATING_TONE: Record<string, BadgeTone> = { 'גבוה': 'high', 'בינוני': 'mid', 'לא חשוד': 'clear' }
 
 export default function FilesPage() {
   const ready = useRequireRole(['employee'])
-  // Reading sessionStorage in a lazy useState initializer would give the
-  // server (build-time prerender) and the client's first paint different
-  // values, since sessionStorage doesn't exist on the server — a hydration
-  // mismatch. Starting empty on both sides and hydrating from cache inside
-  // an effect (client-only) keeps the very first render identical.
-  const [sessions, setSessions] = useState<UploadSession[]>([])
-  const [businesses, setBusinesses] = useState<Business[]>([])
+  const { businesses, setBusinesses, sessions, setSessions, loading, loadingMore } = useBusinesses({ sessions: true })
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    const cachedS = getCache<UploadSession[]>('sessions')
-    const cachedB = getCache<Business[]>('businesses')
-    if (cachedS && cachedB) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time cache hydration on mount, not a cascading update
-      setSessions(cachedS)
-      setBusinesses(cachedB)
-      setLoading(false)
-    }
-    Promise.all([
-      supabase.from('upload_sessions').select('*'),
-      supabase.from('businesses').select('*'),
-    ]).then(([{ data: sData }, { data: bData }]) => {
-      if (sData) { const s = sData.map(dbToSession); setSessions(s); setCache('sessions', s) }
-      if (bData) { const b = bData.map(dbToBusiness); setBusinesses(b); setCache('businesses', b) }
-      setLoading(false)
-    })
-  }, [])
 
   async function deleteSession(id: string) {
     if (!confirm('למחוק את הקובץ וכל העסקים שלו?')) return
@@ -110,6 +86,7 @@ export default function FilesPage() {
         )
       }
     >
+      {loadingMore && <div className="mb-4"><LoadingMoreBanner progress={loadingMore} /></div>}
       {sessions.length === 0 && businesses.length === 0 ? (
         <Card>
           <EmptyState

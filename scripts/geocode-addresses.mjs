@@ -13,14 +13,32 @@
 //         where address is not null and address <> '') t
 //
 // Every address is placed with the same logic the map and the upload page use
-// (src/lib/geocode.ts): inside Jerusalem only, house → street → neighborhood.
-// The SQL upserts, so running it again simply refreshes those rows; review it
-// and run it in the Supabase SQL editor.
+// (src/lib/geocode.ts): inside Jerusalem only, house → street, choosing among
+// same-named streets the one closest to the property's neighborhood. An
+// address that can't be placed is stored as "not found" (the map then shows
+// it at the center of its neighborhood). The SQL upserts, so running it again
+// simply refreshes those rows — hand-placed (manual) rows are never changed;
+// review it and run it in the Supabase SQL editor.
 //
 // Behind a proxy, run with NODE_USE_ENV_PROXY=1 so fetch uses HTTPS_PROXY.
 
 import fs from 'node:fs'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { cleanAddress, neighborhoodHint, geocodeAddress, nominatimSearchUrl, RateLimitError } from '../src/lib/geocode.ts'
+
+const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
+const readJson = file => JSON.parse(fs.readFileSync(path.join(ROOT, 'data', file), 'utf8'))
+const registry = readJson('jerusalem_neighborhoods.json')
+const centers = readJson('jerusalem_neighborhood_centers.json')
+
+// Same rules as normalizeNeighborhood in src/lib/neighborhoods.ts.
+function neighborhoodCenter(raw) {
+  const name = (raw ?? '').trim()
+  if (!name || registry.clearValues.includes(name)) return null
+  const canonical = registry.neighborhoods.includes(name) ? name : registry.aliases[name]
+  return (canonical && centers[canonical]) || null
+}
 
 const USER_AGENT = 'ArnonaAgentProject/1.0 (Jerusalem municipality property map)'
 const DELAY_MS = 1300
@@ -52,26 +70,26 @@ async function withRetry(fn) {
 }
 
 // One entry per clean address (the table's key); first non-empty hint wins.
-const todo = new Map()
+const todo = new Map() // key → center of the property's neighborhood (or null)
 for (const line of fs.readFileSync(inputFile, 'utf8').split('\n')) {
   if (!line.trim()) continue
   const [address, neighborhood = ''] = line.split('¦')
   const key = cleanAddress(address)
   if (!key) continue
-  const hint = neighborhoodHint(address, neighborhood)
-  if (!todo.has(key) || (!todo.get(key) && hint)) todo.set(key, hint)
+  const near = neighborhoodCenter(neighborhoodHint(address, neighborhood))
+  if (!todo.has(key) || (!todo.get(key) && near)) todo.set(key, near)
 }
 
 const sql = s => `'${s.replace(/'/g, "''")}'`
 const rows = []
-const stats = { exact: 0, street: 0, neighborhood: 0, notFound: 0 }
+const stats = { exact: 0, street: 0, notFound: 0 }
 const notFound = []
 
 let i = 0
-for (const [key, hint] of todo) {
+for (const [key, near] of todo) {
   i++
   process.stdout.write(`[${i}/${todo.size}] ${key} … `)
-  const result = await withRetry(() => geocodeAddress(key, hint, { search, delayMs: DELAY_MS }))
+  const result = await withRetry(() => geocodeAddress(key, { search, delayMs: DELAY_MS }, near))
   await sleep(DELAY_MS)
   if (result) {
     stats[result.precision]++
@@ -91,7 +109,8 @@ if (rows.length > 0) {
     rows.join(',\n') + '\n' +
     'on conflict (address_key) do update set\n' +
     '  lat = excluded.lat, lon = excluded.lon, precision = excluded.precision,\n' +
-    '  status = excluded.status, updated_at = now();\n')
+    '  status = excluded.status, updated_at = now()\n' +
+    "  where not address_locations.manual;\n")
 }
 
 console.log(`\nWrote ${rows.length} rows to ${outFile}`)

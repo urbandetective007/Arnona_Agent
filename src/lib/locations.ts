@@ -4,59 +4,64 @@ import {
   type LocationEntry, type LocationMap, type NominatimResult, type Precision,
 } from './geocode'
 import { createGeocodeQueue, type GeocodeQueueOptions } from './geocodeQueue'
+import { fetchAllRows } from './fetchAll'
 
 // Property locations live in the Supabase table address_locations — one row
 // per cleaned address (see cleanAddress), shared by every user. Addresses are
 // located once, right after an upload (see the upload page); the map fills in
 // any that are still missing.
 
-const PAGE_SIZE = 1000 // Supabase returns at most 1000 rows per request
-
-interface LocationRow {
+interface LocationRow extends Record<string, unknown> {
   address_key: string
   lat: number | null
   lon: number | null
-  precision: Precision | null
+  precision: Precision | 'neighborhood' | null
+  /** Placed by hand on the map; such a row is never overwritten by an automatic lookup (database trigger). */
+  manual: boolean
   status: 'placed' | 'not_found'
   updated_at: string
 }
 
 /**
- * All stored locations. "Not found" rows older than MISSING_RETRY_MS are left
- * out, so those addresses get looked up again. Throws if the table can't be read.
+ * All stored locations (read in pages — see fetchAll). Left out, so that the
+ * address is looked up again: "not found" rows older than MISSING_RETRY_MS,
+ * and old rows that stored a neighborhood-level pin (those are derived from
+ * the record's current neighborhood now, see placement.ts).
+ * Throws if the table can't be read.
  */
 export async function fetchLocations(): Promise<LocationMap> {
+  const rows = await fetchAllRows<LocationRow>('address_locations', {
+    select: 'address_key, lat, lon, precision, manual, status, updated_at',
+    orderBy: 'address_key',
+  })
   const map: LocationMap = {}
   const now = Date.now()
-  for (let from = 0; ; from += PAGE_SIZE) {
-    const { data, error } = await supabase
-      .from('address_locations')
-      .select('address_key, lat, lon, precision, status, updated_at')
-      .order('address_key')
-      .range(from, from + PAGE_SIZE - 1)
-    if (error) throw new Error(error.message)
-    for (const row of (data ?? []) as LocationRow[]) {
-      if (row.status === 'placed' && row.lat !== null && row.lon !== null && row.precision) {
-        if (isInJerusalem({ lat: row.lat, lon: row.lon })) {
-          map[row.address_key] = { lat: row.lat, lon: row.lon, precision: row.precision }
-        }
-      } else if (row.status === 'not_found') {
-        const missingAt = Date.parse(row.updated_at)
-        if (now - missingAt <= MISSING_RETRY_MS) map[row.address_key] = { missingAt }
+  for (const row of rows) {
+    if (row.status === 'placed' && row.lat !== null && row.lon !== null && row.precision && row.precision !== 'neighborhood') {
+      if (isInJerusalem({ lat: row.lat, lon: row.lon })) {
+        map[row.address_key] = { lat: row.lat, lon: row.lon, precision: row.manual ? 'manual' : row.precision }
       }
+    } else if (row.status === 'not_found') {
+      const missingAt = Date.parse(row.updated_at)
+      if (now - missingAt <= MISSING_RETRY_MS) map[row.address_key] = { missingAt }
     }
-    if (!data || data.length < PAGE_SIZE) return map
   }
+  return map
 }
 
 /** Upserts finished lookups. Throws on failure. */
 export async function saveLocations(rows: { key: string; entry: LocationEntry }[]): Promise<void> {
   if (rows.length === 0) return
   const updated_at = new Date().toISOString()
+  // A hand-placed location is stored as an exact one with manual = true.
   const payload = rows.map(({ key, entry }) =>
     'missingAt' in entry
-      ? { address_key: key, lat: null, lon: null, precision: null, status: 'not_found', updated_at }
-      : { address_key: key, lat: entry.lat, lon: entry.lon, precision: entry.precision, status: 'placed', updated_at },
+      ? { address_key: key, lat: null, lon: null, precision: null, manual: false, status: 'not_found', updated_at }
+      : {
+          address_key: key, lat: entry.lat, lon: entry.lon,
+          precision: entry.precision === 'manual' ? 'exact' : entry.precision,
+          manual: entry.precision === 'manual', status: 'placed', updated_at,
+        },
   )
   const { error } = await supabase.from('address_locations').upsert(payload, { onConflict: 'address_key' })
   if (error) throw new Error(error.message)

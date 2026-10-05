@@ -15,8 +15,8 @@ import {
 export interface GeocodeItem {
   /** Address key, see cleanAddress. */
   key: string
-  /** Neighborhood fallback, see neighborhoodHint. */
-  area: string | null
+  /** Center of the property's neighborhood, to pick the right one among same-named streets. */
+  near?: { lat: number; lon: number } | null
 }
 
 export interface GeocodeQueueOptions {
@@ -93,7 +93,7 @@ export function createGeocodeQueue(opts: GeocodeQueueOptions): GeocodeQueue {
       const item = queue.shift()!
       let entry: LocationEntry
       try {
-        const coords = await geocodeAddress(item.key, item.area, { search: opts.search, delayMs })
+        const coords = await geocodeAddress(item.key, { search: opts.search, delayMs }, item.near)
         entry = coords
           ? { lat: coords.lat, lon: coords.lon, precision: coords.precision ?? 'exact' }
           : { missingAt: Date.now() }

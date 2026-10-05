@@ -1,16 +1,15 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { Building2, Flame, Send, ClipboardCheck, ArrowUpRight, TrendingUp, Upload, FileText, Download, HelpCircle } from 'lucide-react'
 import { AppShell } from '@/components/AppShell'
 import { useRequireRole } from '@/lib/useRequireRole'
 import { useRole } from '@/lib/useRole'
-import type { Business, UploadSession } from '@/lib/types'
-import { supabase, dbToBusiness, dbToSession } from '@/lib/supabase'
-import { getCache, setCache } from '@/lib/cache'
+import type { Business } from '@/lib/types'
+import { useBusinesses } from '@/lib/useBusinesses'
 import { timeAgo, parseUploadDate } from '@/lib/dateUtils'
-import { Card, StatCard, Button, Spinner, EmptyState, Pill, Sparkline, CrossFilterBar, AnimatedNumber } from '@/components/ui'
+import { Card, StatCard, Button, Spinner, EmptyState, Pill, Sparkline, CrossFilterBar, AnimatedNumber, LoadingMoreBanner } from '@/components/ui'
 import { useCrossFilter, chartItemProps } from '@/lib/useCrossFilter'
 
 const RANGE_OPTIONS = [
@@ -173,38 +172,13 @@ export default function Dashboard() {
   const ready = useRequireRole(['employee', 'manager'])
   const role = useRole()
   const canEdit = role === 'employee'
-  // Reading sessionStorage in a lazy useState initializer would give the
-  // server (build-time prerender) and the client's first paint different
-  // values, since sessionStorage doesn't exist on the server — a hydration
-  // mismatch. Starting empty on both sides and hydrating from cache inside
-  // an effect (client-only) keeps the very first render identical.
-  const [businesses, setBusinesses] = useState<Business[]>([])
-  const [sessions, setSessions] = useState<UploadSession[]>([])
-  const [loading, setLoading] = useState(true)
+  const { businesses, sessions, loading, loadingMore } = useBusinesses({ sessions: true })
   const [rangeDays, setRangeDays] = useState<number>(Infinity)
   // Captured once per page load rather than read fresh on every render —
   // avoids calling the impure Date.now() during render, and a dashboard
   // doesn't need to reclassify "in range" mid-session anyway.
   const [now] = useState(() => Date.now())
 
-  useEffect(() => {
-    const cachedB = getCache<Business[]>('businesses')
-    const cachedS = getCache<UploadSession[]>('sessions')
-    if (cachedB && cachedS) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time cache hydration on mount, not a cascading update
-      setBusinesses(cachedB)
-      setSessions(cachedS)
-      setLoading(false)
-    }
-    Promise.all([
-      supabase.from('businesses').select('*'),
-      supabase.from('upload_sessions').select('*'),
-    ]).then(([{ data: bData }, { data: sData }]) => {
-      if (bData) { const b = bData.map(dbToBusiness); setBusinesses(b); setCache('businesses', b) }
-      if (sData) { const s = sData.map(dbToSession); setSessions(s); setCache('sessions', s) }
-      setLoading(false)
-    })
-  }, [])
 
   // The range control is meant to actually filter the whole page, not just
   // one footer line — so every metric below is computed from this
@@ -324,6 +298,7 @@ export default function Dashboard() {
     >
       <div className="flex flex-col gap-5">
 
+        <LoadingMoreBanner progress={loadingMore} />
         <CrossFilterBar cf={cf} dimLabels={DIM_LABELS} valueLabel={filterValueLabel} />
 
         {/* KPI ROW */}
