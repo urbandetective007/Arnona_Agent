@@ -30,8 +30,33 @@ const RATING_TONE: Record<string, BadgeTone> = { 'גבוה': 'high', 'בינונ
 // the KPIs and the pending table to properties with that result.
 const SURVEY_DIMS = {
   result: (b: Business) => b.surveyResultDetail,
+  // Only properties sent to the surveyor take part in the per-neighborhood
+  // catch table, so only they carry a neighborhood value here.
+  neighborhood: (b: Business) => (b.sentToInspector === 'נשלח לסוקר' && b.neighborhood) || null,
 }
-const DIM_LABELS = { result: 'ממצא' }
+const DIM_LABELS = { result: 'ממצא', neighborhood: 'שכונה' }
+const NO_NEIGHBORHOOD = 'ללא שכונה'
+
+// Catch rate per neighborhood: of what was sent to the surveyor, how much
+// came back and how much of it was an actual catch (a gap found). The rate
+// is catches out of what was *sent*, matching the dashboard's אחוז תפיסה.
+function catchByNeighborhood(businesses: Business[]) {
+  const rows = new Map<string, { sent: number; reported: number; caught: number }>()
+  businesses.forEach(b => {
+    if (b.sentToInspector !== 'נשלח לסוקר') return
+    const key = b.neighborhood || NO_NEIGHBORHOOD
+    const row = rows.get(key) ?? { sent: 0, reported: 0, caught: 0 }
+    row.sent += 1
+    if (b.surveyResultDetail) {
+      row.reported += 1
+      if (b.surveyResultDetail !== 'לא נמצא עסק/פער שטח') row.caught += 1
+    }
+    rows.set(key, row)
+  })
+  return [...rows.entries()]
+    .map(([neighborhood, r]) => ({ neighborhood, ...r, pct: r.sent > 0 ? Math.round((r.caught / r.sent) * 100) : 0 }))
+    .sort((a, b) => b.sent - a.sent || b.caught - a.caught)
+}
 
 function computeStats(businesses: Business[]) {
   const sent = businesses.filter(b => b.sentToInspector === 'נשלח לסוקר')
@@ -39,7 +64,7 @@ function computeStats(businesses: Business[]) {
   const pending = sent.filter(b => !b.surveyResultDetail)
   const gapFound = reported.filter(b => b.surveyResultDetail !== 'לא נמצא עסק/פער שטח')
   const completionPct = sent.length > 0 ? Math.round((reported.length / sent.length) * 100) : 0
-  const accuracyPct = reported.length > 0 ? Math.round((gapFound.length / reported.length) * 100) : 0
+  const catchPct = sent.length > 0 ? Math.round((gapFound.length / sent.length) * 100) : 0
 
   const breakdown = new Map<string, number>()
   reported.forEach(b => {
@@ -51,7 +76,7 @@ function computeStats(businesses: Business[]) {
   const resultSegments = Object.keys(RESULT_LABELS)
     .map(key => ({ key, count: breakdown.get(key) ?? 0, label: RESULT_LABELS[key], color: RESULT_COLORS[key] ?? '#7c8ba0' }))
 
-  return { sent, reported, pending, gapFound, completionPct, accuracyPct, resultSegments }
+  return { sent, reported, pending, gapFound, completionPct, catchPct, resultSegments }
 }
 
 export default function SurveyTrackingPage() {
@@ -83,6 +108,8 @@ export default function SurveyTrackingPage() {
   // the picked one highlighted.
   const resultFiltered = cf.filteredExcept('result')
   const donut = useMemo(() => computeStats(resultFiltered), [resultFiltered])
+  const neighborhoodFiltered = cf.filteredExcept('neighborhood')
+  const neighborhoodRows = useMemo(() => catchByNeighborhood(neighborhoodFiltered), [neighborhoodFiltered])
 
   const arcs = donut.resultSegments.reduce<{ list: (typeof donut.resultSegments[number] & { pct: number; dashoffset: number })[]; offset: number }>(
     (acc, seg) => {
@@ -107,7 +134,7 @@ export default function SurveyTrackingPage() {
   return (
     <AppShell title="מעקב תוצאות סקר" subtitle="מה קרה עם הנכסים שנשלחו לשטח">
       <div className="flex flex-col gap-5">
-        <CrossFilterBar cf={cf} dimLabels={DIM_LABELS} valueLabel={(_, v) => RESULT_LABELS[v] ?? v} />
+        <CrossFilterBar cf={cf} dimLabels={DIM_LABELS} valueLabel={(dim, v) => dim === 'result' ? RESULT_LABELS[v] ?? v : v} />
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
@@ -128,12 +155,12 @@ export default function SurveyTrackingPage() {
           />
           <StatCard
             tone="brand"
-            label="דיוק האינדיקציה"
-            value={<span className="num"><AnimatedNumber value={stats.accuracyPct} suffix="%" /></span>}
+            label="אחוז תפיסה"
+            value={<span className="num"><AnimatedNumber value={stats.catchPct} suffix="%" /></span>}
             icon={<CheckCircle2 size={16} className="text-[#b9cdf7]" strokeWidth={1.8} />}
-            footer={stats.reported.length > 0 && (
+            footer={stats.sent.length > 0 && (
               <span className="text-[12px] text-[#a9c1f4]">
-                <span className="num"><AnimatedNumber value={stats.gapFound.length} /></span> מתוך <span className="num"><AnimatedNumber value={stats.reported.length} /></span> חשדות אומתו בשטח
+                <span className="num"><AnimatedNumber value={stats.gapFound.length} /></span> תפיסות מתוך <span className="num"><AnimatedNumber value={stats.sent.length} /></span> שנשלחו
               </span>
             )}
           />
@@ -181,6 +208,96 @@ export default function SurveyTrackingPage() {
                 })}
               </div>
             </div>
+          )}
+        </Card>
+
+        {cf.hasSelection() && (
+          <Card padded={false} className="animate-fade-in">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-hairline">
+              <span className="text-[14.5px] font-bold text-ink">רשימה מפורטת — הנכסים בבחירה</span>
+              <span className="num text-[12.5px] text-subtle"><AnimatedNumber value={stats.sent.length} /> נכסים</span>
+            </div>
+            {stats.sent.length === 0 ? (
+              <EmptyState title="אין נכסים שנשלחו לסוקר בבחירה הזו" />
+            ) : (
+              <Table>
+                <Thead>
+                  <Tr>
+                    <Th>נכס</Th>
+                    <Th>סוג עסק</Th>
+                    <Th>כתובת</Th>
+                    <Th>שכונה</Th>
+                    <Th>ממצא</Th>
+                  </Tr>
+                </Thead>
+                <Tbody>
+                  {stats.sent.map(b => (
+                    <Tr key={b.id}>
+                      <Td className="font-semibold">{b.name}</Td>
+                      <Td className="text-charcoal">{b.type || '—'}</Td>
+                      <Td className="text-charcoal">{b.address}</Td>
+                      <Td className="text-charcoal">{b.neighborhood || '—'}</Td>
+                      <Td>
+                        {b.surveyResultDetail ? (
+                          <span className="inline-flex items-center gap-1.5 text-[12.5px] text-charcoal">
+                            <span className="w-2 h-2 rounded-sm shrink-0" style={{ background: RESULT_COLORS[b.surveyResultDetail] ?? '#7c8ba0' }} />
+                            {RESULT_LABELS[b.surveyResultDetail] ?? b.surveyResultDetail}
+                          </span>
+                        ) : (
+                          <Badge tone="neutral">ממתין לדיווח</Badge>
+                        )}
+                      </Td>
+                    </Tr>
+                  ))}
+                </Tbody>
+              </Table>
+            )}
+          </Card>
+        )}
+
+        <Card padded={false}>
+          <div className="flex items-center justify-between px-5 py-4 border-b border-hairline">
+            <span className="text-[14.5px] font-bold text-ink">אחוז תפיסה לפי שכונה</span>
+            <span className="text-[11.5px] text-subtle">כמה שלחנו, כמה דווחו וכמה נתפסו · לחיצה על שכונה מציגה את הנכסים</span>
+          </div>
+          {neighborhoodRows.length === 0 ? (
+            <EmptyState title="עדיין לא נשלחו נכסים לסוקר" />
+          ) : (
+            <Table>
+              <Thead>
+                <Tr>
+                  <Th>שכונה</Th>
+                  <Th>נשלחו</Th>
+                  <Th>דווחו</Th>
+                  <Th>נתפסו</Th>
+                  <Th>אחוז תפיסה</Th>
+                </Tr>
+              </Thead>
+              <Tbody>
+                {neighborhoodRows.map(r => {
+                  // Properties without a neighborhood can't be cross-filtered
+                  // (they have no value on that dimension), so that row is static.
+                  const clickable = r.neighborhood !== NO_NEIGHBORHOOD
+                  const item = clickable ? chartItemProps(cf, 'neighborhood', r.neighborhood, `${r.neighborhood}: ${r.caught} מתוך ${r.sent}`) : null
+                  return (
+                    <Tr key={r.neighborhood} {...(item ?? {})} className={`${item?.className ?? ''} ${item?.['aria-pressed'] ? 'bg-brand/[0.06]' : ''}`}>
+                      <Td className="font-semibold">{r.neighborhood}</Td>
+                      <Td className="num">{r.sent}</Td>
+                      <Td className="num">{r.reported}</Td>
+                      <Td className="num font-semibold text-ink">{r.caught}</Td>
+                      <Td>
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-20 h-1.5 bg-canvas rounded-full overflow-hidden">
+                            <span className="block h-full bg-brand-light rounded-full transition-[width] duration-500 ease-out" style={{ width: `${r.pct}%` }} />
+                          </div>
+                          <span className="num text-[12.5px] font-bold text-brand">{r.pct}%</span>
+                        </div>
+                      </Td>
+                    </Tr>
+                  )
+                })}
+              </Tbody>
+            </Table>
           )}
         </Card>
 

@@ -9,7 +9,7 @@ import type { Business } from '@/lib/types'
 import { mapSuspicionRatingToStatus } from '@/lib/types'
 import { supabase, dbToBusiness, businessToDb } from '@/lib/supabase'
 import { getCache, setCache } from '@/lib/cache'
-import { formatDate } from '@/lib/dateUtils'
+import { formatDate, parseUploadDate } from '@/lib/dateUtils'
 import { Card, Button, Badge, Input, Select, Spinner, EmptyState } from '@/components/ui'
 import type { BadgeTone } from '@/components/ui'
 
@@ -19,6 +19,21 @@ const INSPECTOR_OPTIONS = ['נשלח לסוקר', 'לא נשלח לסוקר', '�
 const SURVEY_RESULT_OPTIONS = ['נמצא פער בסיווג', 'נמצא פער שטח + סיווג', 'נמצא פער שטח', 'לא נמצא עסק/פער שטח']
 const SOURCE_LABEL: Record<Business['source'], string> = { manual: 'הוזן ידנית', excel: 'סוכן ארנונה' }
 const SOURCE_OPTIONS: Business['source'][] = ['excel', 'manual']
+
+const NO_SURVEY_RESULT = 'טרם התקבלה תוצאה'
+const isIndication = (b: Business) => b.suspicionRating === 'גבוה' || b.suspicionRating === 'בינוני'
+const INTAKE_DAYS = 14
+
+// Local calendar day (YYYY-MM-DD) a record was taken in — local rather than
+// UTC so a property added at 01:00 counts toward the day the team saw it.
+function dayKey(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+function uploadDayKey(b: Business): string | null {
+  const d = parseUploadDate(b.uploadDate)
+  return d ? dayKey(d) : null
+}
 
 function linkCount(b: Business): number {
   return [b.link1, b.link2, b.link3].filter(Boolean).length
@@ -84,6 +99,11 @@ export default function BusinessesPage() {
   const [neighborhoodFilter, setNeighborhoodFilter] = useState('הכל')
   const [inspectorFilter, setInspectorFilter] = useState('הכל')
   const [sourceFilter, setSourceFilter] = useState('הכל')
+  const [surveyFilter, setSurveyFilter] = useState('הכל')
+  const [dayFilter, setDayFilter] = useState<string | null>(null)
+  // Captured once per page load (not read during render) — the intake strip
+  // only needs to know which day "today" is.
+  const [now] = useState(() => Date.now())
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [expanded, setExpanded] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -120,9 +140,34 @@ export default function BusinessesPage() {
       && (neighborhoodFilter === 'הכל' || b.neighborhood === neighborhoodFilter)
       && (inspectorFilter === 'הכל' || (b.sentToInspector ?? 'לא נשלח לסוקר') === inspectorFilter)
       && (sourceFilter === 'הכל' || b.source === sourceFilter)
-  }), [businesses, search, ratingFilter, typeFilter, neighborhoodFilter, inspectorFilter, sourceFilter])
+      && (surveyFilter === 'הכל' || (b.surveyResultDetail ?? NO_SURVEY_RESULT) === surveyFilter)
+      && (dayFilter === null || uploadDayKey(b) === dayFilter)
+  }), [businesses, search, ratingFilter, typeFilter, neighborhoodFilter, inspectorFilter, sourceFilter, surveyFilter, dayFilter])
 
-  const activeFilterCount = [ratingFilter, typeFilter, neighborhoodFilter, inspectorFilter, sourceFilter].filter(f => f !== 'הכל').length
+  const activeFilterCount = [ratingFilter, typeFilter, neighborhoodFilter, inspectorFilter, sourceFilter, surveyFilter].filter(f => f !== 'הכל').length
+    + (dayFilter ? 1 : 0)
+
+  // New suspect properties (גבוה / בינוני) taken in per day, for the last
+  // INTAKE_DAYS days including today — days with no intake still get a bar
+  // so gaps in the agent's runs are visible too.
+  const dailyIntake = useMemo(() => {
+    const counts = new Map<string, number>()
+    businesses.forEach(b => {
+      if (!isIndication(b)) return
+      const key = uploadDayKey(b)
+      if (key) counts.set(key, (counts.get(key) ?? 0) + 1)
+    })
+    const today = new Date(now)
+    return Array.from({ length: INTAKE_DAYS }, (_, i) => {
+      const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() - (INTAKE_DAYS - 1 - i))
+      const key = dayKey(d)
+      return { key, label: `${d.getDate()}.${d.getMonth() + 1}`, count: counts.get(key) ?? 0 }
+    })
+  }, [businesses, now])
+  const intakeMax = Math.max(...dailyIntake.map(d => d.count), 1)
+  const intakeToday = dailyIntake[dailyIntake.length - 1]
+  const intakeYesterday = dailyIntake[dailyIntake.length - 2]
+  const intakeTotal = dailyIntake.reduce((sum, d) => sum + d.count, 0)
 
   const sorted = useMemo(() => {
     if (!sortKey) return filtered
@@ -312,7 +357,7 @@ export default function BusinessesPage() {
               <Button
                 variant="ghost"
                 icon={<X size={15} strokeWidth={1.9} />}
-                onClick={() => { setSearch(''); setRatingFilter('הכל'); setTypeFilter('הכל'); setNeighborhoodFilter('הכל'); setInspectorFilter('הכל'); setSourceFilter('הכל') }}
+                onClick={() => { setSearch(''); setRatingFilter('הכל'); setTypeFilter('הכל'); setNeighborhoodFilter('הכל'); setInspectorFilter('הכל'); setSourceFilter('הכל'); setSurveyFilter('הכל'); setDayFilter(null) }}
               >
                 נקה סינון
               </Button>
@@ -349,8 +394,49 @@ export default function BusinessesPage() {
                 <option value="הכל">כל המקורות</option>
                 {SOURCE_OPTIONS.map(s => <option key={s} value={s}>{SOURCE_LABEL[s]}</option>)}
               </Select>
+              <Select value={surveyFilter} onChange={e => setSurveyFilter(e.target.value)}>
+                <option value="הכל">כל תוצאות הסקר</option>
+                {SURVEY_RESULT_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+                <option value={NO_SURVEY_RESULT}>{NO_SURVEY_RESULT}</option>
+              </Select>
             </div>
           )}
+        </Card>
+
+        <Card>
+          <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
+            <div className="flex items-baseline gap-2.5">
+              <span className="text-[14.5px] font-bold text-ink">נכסים חשודים חדשים לפי יום</span>
+              <span className="text-[11.5px] text-subtle">{INTAKE_DAYS} הימים האחרונים · לחיצה על יום מסננת את הטבלה</span>
+            </div>
+            <div className="flex items-center gap-4 text-[12.5px] text-charcoal">
+              <span>היום: <span className="num font-bold text-ink">{intakeToday.count}</span></span>
+              <span>אתמול: <span className="num font-bold text-ink">{intakeYesterday.count}</span></span>
+              <span>סה״כ בתקופה: <span className="num font-bold text-ink">{intakeTotal}</span></span>
+            </div>
+          </div>
+          <div className="flex items-end gap-1.5 h-[92px]">
+            {dailyIntake.map(d => {
+              const selected = dayFilter === d.key
+              return (
+                <button
+                  key={d.key}
+                  type="button"
+                  onClick={() => setDayFilter(selected ? null : d.key)}
+                  aria-pressed={selected}
+                  title={`${d.label}: ${d.count} נכסים חשודים חדשים`}
+                  className={`flex-1 min-w-0 h-full flex flex-col items-center justify-end gap-1 rounded-md cursor-pointer transition-opacity ${dayFilter && !selected ? 'opacity-40' : ''} ${selected ? 'bg-brand/[0.06]' : 'hover:bg-canvas'}`}
+                >
+                  <span className="num text-[11px] font-semibold text-ink">{d.count > 0 ? d.count : ''}</span>
+                  <span
+                    className={`w-full max-w-[28px] rounded-t-[4px] transition-[height] duration-500 ease-out ${d.count > 0 ? 'bg-brand-light' : 'bg-[#eef1f5]'}`}
+                    style={{ height: `${d.count > 0 ? Math.max((d.count / intakeMax) * 52, 4) : 2}px` }}
+                  />
+                  <span className="num text-[10.5px] text-subtle">{d.label}</span>
+                </button>
+              )
+            })}
+          </div>
         </Card>
 
         {visibleSelectedIds.length > 0 && (

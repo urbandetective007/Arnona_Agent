@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { Building2, Flame, Send, ClipboardCheck, ArrowUpRight, TrendingUp, Upload, FileText, Download, HelpCircle } from 'lucide-react'
+import { Building2, Flame, Clock, ClipboardCheck, ArrowUpRight, TrendingUp, Upload, FileText, Download, HelpCircle } from 'lucide-react'
 import { AppShell } from '@/components/AppShell'
 import { useRequireRole } from '@/lib/useRequireRole'
 import { useRole } from '@/lib/useRole'
@@ -351,31 +351,35 @@ export default function Dashboard() {
               </span>
             }
           />
+          {/* The two numbers the team manages day to day, visible without
+              drilling down: what's still out with the surveyor, and how much
+              of what was sent turned into an actual catch (a gap found). */}
           <StatCard
-            label="נשלחו לסוקר"
-            value={<span className="num"><AnimatedNumber value={stats.sent.length} /></span>}
-            icon={<Send size={16} className="text-subtle" strokeWidth={1.8} />}
+            label="ממתינים לדיווח סוקר"
+            value={<span className="num text-mid"><AnimatedNumber value={stats.awaitingReport.length} /></span>}
+            icon={<Clock size={16} className="text-subtle" strokeWidth={1.8} />}
             footer={
               <span className="text-[12px] text-subtle">
-                <span className="num"><AnimatedNumber value={stats.pendingAssignment.length} /></span> באינדיקציה עדיין לא הוקצו
+                מתוך <span className="num font-semibold text-charcoal"><AnimatedNumber value={stats.sent.length} /></span> שנשלחו לסוקר
+                {' · '}<span className="num"><AnimatedNumber value={stats.reported.length} /></span> דווחו
               </span>
             }
           />
           <StatCard
             tone="brand"
-            label="אימות בשטח"
+            label="אחוז תפיסה"
             icon={<ClipboardCheck size={16} className="text-[#b9cdf7]" strokeWidth={1.8} />}
             value={
               <span className="flex items-baseline gap-1.5">
-                <span className="num"><AnimatedNumber value={stats.sent.length > 0 ? Math.round((stats.reported.length / stats.sent.length) * 100) : 0} suffix="%" /></span>
-                <span className="num text-[12.5px] text-[#a9c1f4] font-normal"><AnimatedNumber value={stats.reported.length} /> מתוך <AnimatedNumber value={stats.sent.length} /> דיווחים</span>
+                <span className="num"><AnimatedNumber value={stats.sent.length > 0 ? Math.round((stats.gapFound.length / stats.sent.length) * 100) : 0} suffix="%" /></span>
+                <span className="num text-[12.5px] text-[#a9c1f4] font-normal"><AnimatedNumber value={stats.gapFound.length} /> תפיסות מתוך <AnimatedNumber value={stats.sent.length} /> שנשלחו</span>
               </span>
             }
             footer={
               <div className="h-1.5 bg-white/15 rounded-full overflow-hidden flex w-36">
                 <span
                   className="transition-[width] duration-500 ease-out bg-white block h-full"
-                  style={{ width: `${stats.sent.length > 0 ? (stats.reported.length / stats.sent.length) * 100 : 0}%` }}
+                  style={{ width: `${stats.sent.length > 0 ? (stats.gapFound.length / stats.sent.length) * 100 : 0}%` }}
                 />
               </div>
             }
