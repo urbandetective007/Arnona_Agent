@@ -6,8 +6,7 @@ import { Check, ChevronDown, ClipboardEdit, LogOut, MapPin, Navigation } from 'l
 import { useRequireRole } from '@/lib/useRequireRole'
 import { logout } from '@/lib/auth'
 import type { Business } from '@/lib/types'
-import { supabase, dbToBusiness } from '@/lib/supabase'
-import { getCache, setCache } from '@/lib/cache'
+import { useBusinesses } from '@/lib/useBusinesses'
 import { Badge, Spinner } from '@/components/ui'
 import type { BadgeTone } from '@/components/ui'
 
@@ -40,13 +39,7 @@ function loadChecked(): Set<string> {
 export default function WorkPlanPage() {
   const ready = useRequireRole(['surveyor'])
   const router = useRouter()
-  // Reading sessionStorage in a lazy useState initializer would give the
-  // server (build-time prerender) and the client's first paint different
-  // values, since sessionStorage doesn't exist on the server — a hydration
-  // mismatch. Starting empty on both sides and hydrating from cache inside
-  // an effect (client-only) keeps the very first render identical.
-  const [businesses, setBusinesses] = useState<Business[]>([])
-  const [loading, setLoading] = useState(true)
+  const { businesses, loading } = useBusinesses()
   const [openNeighborhood, setOpenNeighborhood] = useState<string | null | undefined>(undefined)
   const [today] = useState(() => new Date())
   // `checked` is live — it drives the checkmark itself and updates the
@@ -59,18 +52,8 @@ export default function WorkPlanPage() {
   const [checkedAtLoad, setCheckedAtLoad] = useState<Set<string>>(new Set())
 
   useEffect(() => {
-    const cached = getCache<Business[]>('businesses')
-    if (cached) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time cache hydration on mount, not a cascading update
-      setBusinesses(cached)
-      setLoading(false)
-    }
-    supabase.from('businesses').select('*').then(({ data }) => {
-      if (data) { const b = data.map(dbToBusiness); setBusinesses(b); setCache('businesses', b) }
-      setLoading(false)
-    })
-
     const loaded = loadChecked()
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time hydration from localStorage on mount, not a cascading update
     setChecked(loaded)
     setCheckedAtLoad(loaded)
   }, [])

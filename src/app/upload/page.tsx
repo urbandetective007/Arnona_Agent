@@ -1,6 +1,7 @@
 'use client'
 
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import Link from 'next/link'
 import * as XLSX from 'xlsx'
 import { AlertCircle, AlertTriangle, ArrowLeft, Check, Copy, FileSpreadsheet, Info, Pencil, Plus, Upload } from 'lucide-react'
 import { AppShell } from '@/components/AppShell'
@@ -10,6 +11,12 @@ import { mapSuspicionRatingToStatus } from '@/lib/types'
 import { supabase, businessToDb, sessionToDb } from '@/lib/supabase'
 import { normalizeNeighborhood, JERUSALEM_NEIGHBORHOODS } from '@/lib/neighborhoods'
 import { clearCache } from '@/lib/cache'
+import { cleanAddress, type LocationMap } from '@/lib/geocode'
+import { placementFor, neighborhoodOf } from '@/lib/placement'
+import { fetchAllRows } from '@/lib/fetchAll'
+import { markSentToInspector } from '@/lib/inspectorAssign'
+import type { GeocodeQueue } from '@/lib/geocodeQueue'
+import { fetchLocations, createLocationQueue } from '@/lib/locations'
 import { Card, Badge, Button, Input, Select, Toggle } from '@/components/ui'
 import type { BadgeTone } from '@/components/ui'
 
@@ -59,6 +66,138 @@ interface RowIssue { row: number; kind: 'error' | 'warning'; title: string; deta
 interface PendingSession { sessionId: string; today: string; allParsed: Business[] }
 interface ValidationResult { toAdd: Business[]; duplicates: number; issues: RowIssue[] }
 interface DoneSummary { added: number; skipped: number; assigned: number; fileName: string }
+
+// Locating the new addresses on the map, shown on the "done" card. Each
+// address is looked up once and stored for everyone (table address_locations);
+// the upload itself never waits for this.
+interface AddressGroup { key: string; address: string; neighborhood: string; near: { lat: number; lon: number } | null; names: string[] }
+interface LocationIssue { key: string; address: string; names: string[]; km?: number }
+interface LocationReport {
+  phase: 'checking' | 'running' | 'done' | 'interrupted' | 'error'
+  /** Unique addresses in this upload. */
+  total: number
+  /** Addresses that needed a lookup (not already stored). */
+  lookups: number
+  /** Lookups finished so far. */
+  done: number
+  /** Addresses drawn on the map (at any precision). */
+  placed: number
+  /** Street not found: drawn at the center of the record's neighborhood. */
+  neighborhoodOnly: LocationIssue[]
+  /** Found, but far from the record's neighborhood — possibly a same-named street elsewhere. */
+  suspicious: LocationIssue[]
+  /** Street not found and no usable neighborhood: not on the map at all. */
+  notFound: LocationIssue[]
+  /** Lookups left undone (rate limiting), finished later by the map. */
+  remaining: number
+}
+
+const MAX_LISTED_ISSUES = 8
+
+function IssueList({ one, many, hint, issues }: { one: string; many: string; hint: string; issues: LocationIssue[] }) {
+  return (
+    <div className="mt-3 p-2.5 px-3.5 bg-mid/[0.06] border border-mid/25 rounded-[9px] text-start">
+      <div className="flex items-center gap-2 text-[13px] font-bold text-[#7c3a12]">
+        <AlertTriangle size={15} className="text-mid shrink-0" strokeWidth={2} />
+        <span>{issues.length === 1 ? one : <><span className="num">{issues.length}</span> {many}</>}</span>
+      </div>
+      <p className="text-[12px] text-[#7c3a12] mt-0.5">{hint}</p>
+      <ul className="mt-1.5 flex flex-col gap-1 text-[12.5px] text-charcoal">
+        {issues.slice(0, MAX_LISTED_ISSUES).map(i => (
+          <li key={i.key} className="flex items-baseline justify-between gap-3">
+            <span>
+              <span className="font-semibold text-ink">{i.address}</span>
+              <span className="text-graphite"> · {i.names.slice(0, 2).join(', ')}{i.names.length > 2 ? ` ועוד ${i.names.length - 2}` : ''}</span>
+              {i.km !== undefined && <span className="text-graphite"> · <span className="num">{i.km.toFixed(1)}</span> ק״מ מהשכונה</span>}
+            </span>
+            <Link href={`/map?fix=${encodeURIComponent(i.key)}`} className="shrink-0 text-[12px] font-semibold text-brand hover:text-brand-deep">קביעת מיקום ←</Link>
+          </li>
+        ))}
+        {issues.length > MAX_LISTED_ISSUES && <li className="text-graphite">ועוד {issues.length - MAX_LISTED_ISSUES}…</li>}
+      </ul>
+    </div>
+  )
+}
+
+function LocationBlock({ report }: { report: LocationReport }) {
+  const pct = report.lookups > 0 ? Math.round((report.done / report.lookups) * 100) : 0
+  const allGood = report.phase === 'done' && report.notFound.length === 0 && report.neighborhoodOnly.length === 0 && report.suspicious.length === 0
+  return (
+    <div className="w-full max-w-md mt-2 text-start">
+      {report.phase === 'checking' && (
+        <p className="text-[13px] text-graphite text-center">בודק מיקומי כתובות…</p>
+      )}
+      {report.phase === 'running' && (
+        <div>
+          <p className="text-[13px] text-charcoal text-center">
+            מאתר מיקומי כתובות במפה… <span className="num font-bold text-ink">{report.done}/{report.lookups}</span>
+          </p>
+          <div className="h-1.5 bg-[#eef1f5] rounded-full overflow-hidden mt-2">
+            <span className="block h-full bg-brand transition-[width] duration-500 ease-out" style={{ width: `${pct}%` }} />
+          </div>
+          <p className="text-[11.5px] text-subtle text-center mt-1.5">אפשר לעבור לדף אחר — מה שלא הסתיים יושלם אוטומטית בפתיחת המפה.</p>
+        </div>
+      )}
+      {(report.phase === 'done' || report.phase === 'interrupted') && (
+        <p className="text-[13px] text-charcoal text-center">
+          <span className="num font-bold text-ink">{report.placed}</span> מתוך <span className="num font-bold text-ink">{report.total}</span> כתובות מוקמו במפה
+          {allGood && ' ✓'}
+        </p>
+      )}
+      {report.phase === 'interrupted' && (
+        <p className="text-[12px] text-graphite text-center mt-1">
+          {report.remaining === 1 ? 'כתובת אחת עדיין ממתינה' : <><span className="num font-semibold">{report.remaining}</span> כתובות עדיין ממתינות</>} לאיתור (שירות המפות הגביל את קצב הבקשות). השאר יושלם אוטומטית בפתיחת המפה.
+        </p>
+      )}
+      {report.phase === 'error' && (
+        <p className="text-[12.5px] text-graphite text-center">לא ניתן היה לבדוק את מיקומי הכתובות כרגע. המפה תשלים אותם אוטומטית.</p>
+      )}
+      {report.suspicious.length > 0 && (
+        <IssueList
+          one="כתובת אחת רחוקה מהשכונה הרשומה"
+          many="כתובות רחוקות מהשכונה הרשומה"
+          hint="הכתובת זוהתה במקום שרחוק ממרכז השכונה שרשומה בנכס — ייתכן רחוב באותו שם בחלק אחר של העיר. כדאי לאמת."
+          issues={report.suspicious}
+        />
+      )}
+      {report.neighborhoodOnly.length > 0 && (
+        <IssueList
+          one="כתובת אחת הוצגה במרכז השכונה בלבד"
+          many="כתובות הוצגו במרכז השכונה בלבד"
+          hint="הרחוב לא זוהה במפה, ולכן הנקודה מסמנת את השכונה הרשומה ולא את הבניין."
+          issues={report.neighborhoodOnly}
+        />
+      )}
+      {report.notFound.length > 0 && (
+        <IssueList
+          one="כתובת אחת לא הוצגה במפה"
+          many="כתובות לא הוצגו במפה"
+          hint="הכתובת לא זוהתה ואין שכונה רשומה לנכס. אפשר לקבוע מיקום ידנית, או לתקן את הכתובת או את השכונה בדף כלל הנתונים."
+          issues={report.notFound}
+        />
+      )}
+    </div>
+  )
+}
+
+function summarizeLocations(
+  phase: LocationReport['phase'], groups: Map<string, AddressGroup>, entries: LocationMap,
+  lookups: number, done: number,
+): LocationReport {
+  const report: LocationReport = {
+    phase, total: groups.size, lookups, done, placed: 0, neighborhoodOnly: [], suspicious: [], notFound: [], remaining: 0,
+  }
+  for (const g of groups.values()) {
+    const placement = placementFor({ address: g.address, neighborhood: g.neighborhood }, entries)
+    const issue = { key: g.key, address: g.address, names: g.names }
+    if (placement.state === 'pending') { report.remaining++; continue }
+    if (placement.state === 'missing') { report.notFound.push(issue); continue }
+    report.placed++
+    if (placement.kind === 'neighborhood') report.neighborhoodOnly.push(issue)
+    else if (placement.suspiciousKm !== null) report.suspicious.push({ ...issue, km: placement.suspiciousKm })
+  }
+  return report
+}
 
 function parseSheet(buffer: ArrayBuffer): { headers: string[]; hIdx: number; raw: string[][] } {
   const wb = XLSX.read(buffer)
@@ -240,6 +379,14 @@ export default function UploadPage() {
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
   const [doneSummary, setDoneSummary] = useState<DoneSummary | null>(null)
+  const [locationReport, setLocationReport] = useState<LocationReport | null>(null)
+  const locationQueueRef = useRef<GeocodeQueue | null>(null)
+
+  // Stop looking up locations if the employee leaves the page — what's
+  // finished is saved, and the map completes the rest.
+  useEffect(() => {
+    return () => { void locationQueueRef.current?.stop() }
+  }, [])
 
   const previewRows = useMemo(() => {
     return raw.slice(hIdx + 1)
@@ -275,10 +422,16 @@ export default function UploadPage() {
   }
 
   async function checkAndValidate(businesses: Business[], issues: RowIssue[], sessionId: string, today: string) {
-    const { data: existing, error } = await supabase.from('businesses').select('name, address')
-    if (error) throw new Error(`שגיאה בבדיקת כפילויות: ${error.message}`)
+    // Every existing row is needed here (Supabase returns at most 1,000 per
+    // request), otherwise duplicates beyond the first 1,000 would go unnoticed.
+    let existing: { name: string; address: string }[]
+    try {
+      existing = await fetchAllRows<{ id: string; name: string; address: string }>('businesses', { select: 'id, name, address' })
+    } catch (e) {
+      throw new Error(`שגיאה בבדיקת כפילויות: ${e instanceof Error ? e.message : e}`)
+    }
 
-    const keys = new Set((existing ?? []).map((b: { name: string; address: string }) => `${b.name}|${b.address}`))
+    const keys = new Set(existing.map(b => `${b.name}|${b.address}`))
     const toAdd = businesses.filter(b => !keys.has(`${b.name}|${b.address}`))
 
     setPendingSession({ sessionId, today, allParsed: businesses })
@@ -337,6 +490,52 @@ export default function UploadPage() {
     }
   }
 
+  // Looks up the location of each new address (once — stored addresses are
+  // skipped) so the map shows the new properties immediately for everyone.
+  // Runs after the upload is saved and never blocks or fails it.
+  async function locateNewAddresses(added: Business[]) {
+    const groups = new Map<string, AddressGroup>()
+    for (const b of added) {
+      const key = cleanAddress(b.address)
+      if (!key) continue
+      const group = groups.get(key)
+      if (group) group.names.push(b.name)
+      else groups.set(key, { key, address: b.address, neighborhood: b.neighborhood, near: neighborhoodOf(b)?.center ?? null, names: [b.name] })
+    }
+    if (groups.size === 0) return
+
+    setLocationReport(summarizeLocations('checking', groups, {}, 0, 0))
+    let known: LocationMap
+    try {
+      known = await fetchLocations()
+    } catch {
+      setLocationReport({ ...summarizeLocations('error', groups, {}, 0, 0), notFound: [], neighborhoodOnly: [], suspicious: [] })
+      return
+    }
+
+    const todo = [...groups.values()].filter(g => !(g.key in known))
+    if (todo.length === 0) {
+      setLocationReport(summarizeLocations('done', groups, known, 0, 0))
+      return
+    }
+    setLocationReport(summarizeLocations('running', groups, known, todo.length, 0))
+
+    const queue = createLocationQueue({
+      maxConsecutiveFailures: 3,
+      onProgress: ({ done }) => setLocationReport(r => (r && r.phase === 'running' ? { ...r, done } : r)),
+    })
+    locationQueueRef.current = queue
+    queue.add(todo.map(g => ({ key: g.key, near: g.near })))
+    await queue.whenIdle()
+    if (locationQueueRef.current !== queue) return // the wizard was reset or the page left meanwhile
+
+    const remaining = queue.pending().length
+    setLocationReport(summarizeLocations(
+      remaining > 0 ? 'interrupted' : 'done', groups, { ...known, ...queue.results() },
+      todo.length, todo.length - remaining,
+    ))
+  }
+
   async function confirmUpload() {
     if (!validation || !pendingSession) return
     setSubmitting(true)
@@ -369,7 +568,7 @@ export default function UploadPage() {
       if (autoAssign) {
         const highIds = toAdd.filter(b => b.suspicionRating === 'גבוה').map(b => b.id)
         if (highIds.length > 0) {
-          const { error: assignErr } = await supabase.from('businesses').update({ sent_to_inspector: 'נשלח לסוקר' }).in('id', highIds)
+          const assignErr = await markSentToInspector(highIds)
           if (assignErr) throw new Error(`הנכסים נוספו אך ההקצאה לסוקר נכשלה: ${assignErr.message}`)
           assigned = highIds.length
         }
@@ -378,6 +577,7 @@ export default function UploadPage() {
       clearCache('businesses', 'sessions')
       setDoneSummary({ added: toAdd.length, skipped: session.skippedCount, assigned, fileName })
       setStep('done')
+      void locateNewAddresses(toAdd)
     } catch (e) {
       setSubmitError(e instanceof Error ? e.message : 'שגיאה בהעלאת הנתונים')
     } finally {
@@ -386,6 +586,9 @@ export default function UploadPage() {
   }
 
   function resetWizard() {
+    void locationQueueRef.current?.stop()
+    locationQueueRef.current = null
+    setLocationReport(null)
     setStep('upload')
     setFile(null)
     setParseError('')
@@ -734,6 +937,7 @@ export default function UploadPage() {
               {doneSummary.skipped > 0 && <> · <span className="num font-bold">{doneSummary.skipped}</span> כפולים דולגו</>}
               {doneSummary.assigned > 0 && <> · <span className="num font-bold text-brand">{doneSummary.assigned}</span> הוקצו אוטומטית לסוקר</>}
             </p>
+            {locationReport && <LocationBlock report={locationReport} />}
             <div className="flex items-center gap-3 mt-3 flex-wrap justify-center">
               <Button href="/">עבור לדשבורד</Button>
               <Button variant="secondary" href="/files">צפה בקבצים</Button>

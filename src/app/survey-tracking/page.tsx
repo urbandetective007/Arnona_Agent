@@ -1,14 +1,13 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import Link from 'next/link'
 import { Send, Clock, ClipboardCheck, CheckCircle2 } from 'lucide-react'
 import { AppShell } from '@/components/AppShell'
 import { useRequireRole } from '@/lib/useRequireRole'
 import type { Business } from '@/lib/types'
-import { supabase, dbToBusiness } from '@/lib/supabase'
-import { getCache, setCache } from '@/lib/cache'
-import { Card, StatCard, Badge, Table, Thead, Tbody, Tr, Th, Td, Spinner, EmptyState, CrossFilterBar, AnimatedNumber } from '@/components/ui'
+import { useBusinesses } from '@/lib/useBusinesses'
+import { Card, StatCard, Badge, Table, Thead, Tbody, Tr, Th, Td, Spinner, EmptyState, CrossFilterBar, AnimatedNumber, LoadingMoreBanner } from '@/components/ui'
 import { useCrossFilter, chartItemProps } from '@/lib/useCrossFilter'
 import type { BadgeTone } from '@/components/ui'
 
@@ -56,26 +55,8 @@ function computeStats(businesses: Business[]) {
 
 export default function SurveyTrackingPage() {
   const ready = useRequireRole(['employee', 'manager'])
-  // Reading sessionStorage in a lazy useState initializer would give the
-  // server (build-time prerender) and the client's first paint different
-  // values, since sessionStorage doesn't exist on the server — a hydration
-  // mismatch. Starting empty on both sides and hydrating from cache inside
-  // an effect (client-only) keeps the very first render identical.
-  const [businesses, setBusinesses] = useState<Business[]>([])
-  const [loading, setLoading] = useState(true)
+  const { businesses, loading, loadingMore } = useBusinesses()
 
-  useEffect(() => {
-    const cached = getCache<Business[]>('businesses')
-    if (cached) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time cache hydration on mount, not a cascading update
-      setBusinesses(cached)
-      setLoading(false)
-    }
-    supabase.from('businesses').select('*').then(({ data }) => {
-      if (data) { const b = data.map(dbToBusiness); setBusinesses(b); setCache('businesses', b) }
-      setLoading(false)
-    })
-  }, [])
 
   const cf = useCrossFilter(businesses, SURVEY_DIMS)
   const stats = useMemo(() => computeStats(cf.filtered), [cf.filtered])
@@ -107,6 +88,7 @@ export default function SurveyTrackingPage() {
   return (
     <AppShell title="מעקב תוצאות סקר" subtitle="מה קרה עם הנכסים שנשלחו לשטח">
       <div className="flex flex-col gap-5">
+        <LoadingMoreBanner progress={loadingMore} />
         <CrossFilterBar cf={cf} dimLabels={DIM_LABELS} valueLabel={(_, v) => RESULT_LABELS[v] ?? v} />
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

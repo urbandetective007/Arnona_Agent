@@ -1,14 +1,13 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import dynamic from 'next/dynamic'
 import { Search, SlidersHorizontal, X } from 'lucide-react'
 import { AppShell } from '@/components/AppShell'
 import { useRequireRole } from '@/lib/useRequireRole'
-import type { Business } from '@/lib/types'
-import { supabase, dbToBusiness } from '@/lib/supabase'
-import { getCache, setCache } from '@/lib/cache'
-import { Card, Button, Input, Select, Spinner, EmptyState } from '@/components/ui'
+import { useRole } from '@/lib/useRole'
+import { useBusinesses } from '@/lib/useBusinesses'
+import { Card, Button, Input, Select, Spinner, EmptyState, LoadingMoreBanner } from '@/components/ui'
 
 const JerusalemMap = dynamic(() => import('@/components/JerusalemMap'), {
   ssr: false,
@@ -25,31 +24,17 @@ const RATING_COLORS: Record<string, string> = {
 
 export default function MapPage() {
   const ready = useRequireRole(['employee', 'manager'])
-  // Reading sessionStorage in a lazy useState initializer would give the
-  // server (build-time prerender) and the client's first paint different
-  // values, since sessionStorage doesn't exist on the server — a hydration
-  // mismatch. Starting empty on both sides and hydrating from cache inside
-  // an effect (client-only) keeps the very first render identical.
-  const [businesses, setBusinesses] = useState<Business[]>([])
-  const [loading, setLoading] = useState(true)
+  // Only employees can correct a location by hand; managers view.
+  const canEdit = useRole() === 'employee'
+  // /map?fix=<address> opens the manual location fix for that address.
+  const [fixKey] = useState(() => (typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('fix')))
+  const { businesses, loading, loadingMore } = useBusinesses()
   const [search, setSearch] = useState('')
   const [ratingFilter, setRatingFilter] = useState('הכל')
   const [typeFilter, setTypeFilter] = useState('הכל')
   const [neighborhoodFilter, setNeighborhoodFilter] = useState('הכל')
   const [filtersOpen, setFiltersOpen] = useState(false)
 
-  useEffect(() => {
-    const cached = getCache<Business[]>('businesses')
-    if (cached) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time cache hydration on mount, not a cascading update
-      setBusinesses(cached)
-      setLoading(false)
-    }
-    supabase.from('businesses').select('*').then(({ data }) => {
-      if (data) { const b = data.map(dbToBusiness); setBusinesses(b); setCache('businesses', b) }
-      setLoading(false)
-    })
-  }, [])
 
   const types = useMemo(() => [...new Set(businesses.map(b => b.type).filter(Boolean))].sort(), [businesses])
   const neighborhoods = useMemo(() => [...new Set(businesses.map(b => b.neighborhood).filter(Boolean))].sort(), [businesses])
@@ -84,6 +69,7 @@ export default function MapPage() {
   return (
     <AppShell title="מפת נכסים" subtitle={`מציג ${filtered.length.toLocaleString('he')} מתוך ${businesses.length.toLocaleString('he')} עסקים`}>
       <div className="flex flex-col gap-4 h-full">
+        <LoadingMoreBanner progress={loadingMore} />
         <Card>
           <div className="flex items-center gap-3 flex-wrap">
             <div className="relative flex-1 min-w-[220px]">
@@ -149,7 +135,7 @@ export default function MapPage() {
           <div className="flex-1 min-h-[560px]">
             {/* JerusalemMap draws its own rounded border + shadow, so it isn't
                 nested inside a second Card border here. */}
-            <JerusalemMap businesses={filtered} />
+            <JerusalemMap businesses={filtered} canEdit={canEdit} fixKey={fixKey} />
           </div>
         )}
       </div>
