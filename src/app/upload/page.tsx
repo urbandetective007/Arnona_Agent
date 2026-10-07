@@ -10,6 +10,8 @@ import type { Business, UploadSession } from '@/lib/types'
 import { mapSuspicionRatingToStatus } from '@/lib/types'
 import { supabase, businessToDb, sessionToDb } from '@/lib/supabase'
 import { normalizeNeighborhood, JERUSALEM_NEIGHBORHOODS } from '@/lib/neighborhoods'
+import { useBusinessTypes } from '@/lib/businessTypes'
+import { BusinessTypeField } from '@/components/BusinessTypeField'
 import { clearCache } from '@/lib/cache'
 import { cleanAddress, type LocationMap } from '@/lib/geocode'
 import { placementFor, neighborhoodOf } from '@/lib/placement'
@@ -361,6 +363,7 @@ function NeighborhoodField({ value, onChange }: { value: string; onChange: (v: s
 
 export default function UploadPage() {
   const ready = useRequireRole(['employee'])
+  const { types: businessTypes } = useBusinessTypes()
   const fileRef = useRef<HTMLInputElement>(null)
 
   const [mode, setMode] = useState<Mode>('file')
@@ -697,6 +700,12 @@ export default function UploadPage() {
                       <NeighborhoodField
                         value={manual.neighborhood}
                         onChange={v => setManual(m => ({ ...m, neighborhood: v }))}
+                      />
+                    ) : fd.key === 'type' ? (
+                      <BusinessTypeField
+                        value={manual.type}
+                        onChange={v => setManual(m => ({ ...m, type: v }))}
+                        types={businessTypes}
                       />
                     ) : fd.key === 'suspicionRating' ? (
                       <Select value={manual.suspicionRating} onChange={e => setManual(m => ({ ...m, suspicionRating: e.target.value }))} className="w-full">

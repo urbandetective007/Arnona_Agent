@@ -1,4 +1,4 @@
-import type { ReactNode, TdHTMLAttributes, ThHTMLAttributes } from 'react'
+import type { HTMLAttributes, ReactNode, TdHTMLAttributes, ThHTMLAttributes } from 'react'
 
 // Thin, composable table primitives — not a data-grid abstraction. Each
 // page (כלל הנתונים, קבצים שהועלו, מעקב תוצאות סקר) still owns its own
@@ -22,8 +22,8 @@ export function Tbody({ children }: { children: ReactNode }) {
   return <tbody className="divide-y divide-hairline">{children}</tbody>
 }
 
-export function Tr({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <tr className={`hover:bg-canvas/60 transition-colors ${className}`}>{children}</tr>
+export function Tr({ children, className = '', ...rest }: HTMLAttributes<HTMLTableRowElement> & { className?: string }) {
+  return <tr className={`hover:bg-canvas/60 transition-colors ${className}`} {...rest}>{children}</tr>
 }
 
 export function Th({ children, className = '', ...rest }: ThHTMLAttributes<HTMLTableCellElement> & { className?: string }) {
