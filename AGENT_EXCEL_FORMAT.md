@@ -25,7 +25,8 @@ Your Excel file **MUST** have these columns in this order:
 
 4. **סוג עסק** (Business Type/Category) - *Optional*
    - The business category or sector
-   - Example: "מרכז לימודים", "קפה", "משרד עו״ד"
+   - **Should be chosen from the closed list in `data/business_types.json`** (the `types` array) — e.g. "משרד עורכי דין", "מרפאת שיניים", "מסעדות, בתי קפה וקייטרינג"
+   - Known free-text variants are mapped to the list on upload (the `aliases` in the same file); anything else is kept as written, so prefer the list
 
 5. **דירוג אינדיקציה** (Suspicion Rating) - *Required - ALWAYS "גבוה"*
    - **This field is mandatory and MUST always be "גבוה"** (High)

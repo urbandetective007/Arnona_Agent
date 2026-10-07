@@ -12,6 +12,7 @@ import { useBusinesses } from '@/lib/useBusinesses'
 import { markSentToInspector } from '@/lib/inspectorAssign'
 import { setCache } from '@/lib/cache'
 import { formatDate, parseUploadDate } from '@/lib/dateUtils'
+import { BUSINESS_TYPES } from '@/lib/businessTypes'
 import { Card, Button, Badge, Input, Select, Spinner, EmptyState, LoadingMoreBanner } from '@/components/ui'
 import type { BadgeTone } from '@/components/ui'
 
@@ -527,7 +528,15 @@ export default function BusinessesPage() {
                               <div>
                                 <div className="grid grid-cols-2 gap-x-10 gap-y-3">
                                   <EditField label="שם העסק" value={editForm.name ?? ''} onChange={v => setEditForm(f => ({ ...f, name: v }))} />
-                                  <EditField label="סוג עסק" value={editForm.type ?? ''} onChange={v => setEditForm(f => ({ ...f, type: v }))} />
+                                  <div>
+                                    <label className="block text-[12px] font-semibold text-charcoal mb-1">סוג עסק</label>
+                                    <Select value={editForm.type ?? ''} onChange={e => setEditForm(f => ({ ...f, type: e.target.value }))} className="w-full">
+                                      <option value="">—</option>
+                                      {/* Keep a legacy value selectable until it's changed, so opening the editor doesn't silently blank it. */}
+                                      {editForm.type && !BUSINESS_TYPES.includes(editForm.type) && <option value={editForm.type}>{editForm.type}</option>}
+                                      {BUSINESS_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                                    </Select>
+                                  </div>
                                   <EditField label="כתובת" value={editForm.address ?? ''} onChange={v => setEditForm(f => ({ ...f, address: v }))} />
                                   <EditField label="שכונה" value={editForm.neighborhood ?? ''} onChange={v => setEditForm(f => ({ ...f, neighborhood: v }))} />
                                   <EditField label="כתובת תואמת במערכת הגבייה" value={editForm.matchedAddress ?? ''} onChange={v => setEditForm(f => ({ ...f, matchedAddress: v }))} />
