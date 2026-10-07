@@ -37,20 +37,6 @@ def normalize_neighborhood(raw):
         return v
     return _NEIGHBORHOOD_ALIASES.get(v)
 
-_BUSINESS_TYPES_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "business_types.json")
-with open(_BUSINESS_TYPES_PATH, encoding="utf-8") as _f:
-    _BUSINESS_TYPE_REGISTRY = json.load(_f)
-_CANONICAL_BUSINESS_TYPES = set(_BUSINESS_TYPE_REGISTRY["types"])
-_BUSINESS_TYPE_ALIASES = _BUSINESS_TYPE_REGISTRY["aliases"]
-
-def normalize_business_type(raw):
-    """Map the agent's free-text type onto the closed list in
-    data/business_types.json; values it doesn't know are kept as written."""
-    v = (raw or "").strip()
-    if not v or v in _CANONICAL_BUSINESS_TYPES:
-        return v
-    return _BUSINESS_TYPE_ALIASES.get(v) or _BUSINESS_TYPE_ALIASES.get(v.replace("✅", "").strip()) or v
-
 parser = argparse.ArgumentParser()
 parser.add_argument("--report", required=True)
 parser.add_argument("--relay-url", required=True)
@@ -112,7 +98,7 @@ for row in ws.iter_rows(min_row=header_row_idx + 1, values_only=True):
         continue
     records.append({
         "name":                name,
-        "type":                normalize_business_type(col(row, "סוג העסק")),
+        "type":                col(row, "סוג העסק"),
         "address":             col(row, "כתובת"),
         "neighborhood":        normalize_neighborhood(col(row, "שכונה")),
         "suspicion_rating":    col(row, "דירוג אינדיקציה"),

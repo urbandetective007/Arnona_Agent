@@ -25,8 +25,8 @@ Your Excel file **MUST** have these columns in this order:
 
 4. **סוג עסק** (Business Type/Category) - *Optional*
    - The business category or sector
-   - **Should be chosen from the closed list in `data/business_types.json`** (the `types` array) — e.g. "משרד עורכי דין", "מרפאת שיניים", "מסעדות, בתי קפה וקייטרינג"
-   - Known free-text variants are mapped to the list on upload (the `aliases` in the same file); anything else is kept as written, so prefer the list
+   - **Prefer a type from the closed list** in the Supabase table `business_types` — e.g. "משרד עורכי דין", "מרפאת שיניים", "מסעדות, בתי קפה וקייטרינג"
+   - Known variants (e.g. "עורכי דין") are rewritten to their list entry on insert (table `business_type_aliases`). A genuinely new type is kept as written and added to the list automatically, marked as brought by the agent, and the employees see it under "סוגי עסק חדשים" — so only use a new type when no list entry fits
 
 5. **דירוג אינדיקציה** (Suspicion Rating) - *Required - ALWAYS "גבוה"*
    - **This field is mandatory and MUST always be "גבוה"** (High)

@@ -12,7 +12,8 @@ import { useBusinesses } from '@/lib/useBusinesses'
 import { markSentToInspector } from '@/lib/inspectorAssign'
 import { setCache } from '@/lib/cache'
 import { formatDate, parseUploadDate } from '@/lib/dateUtils'
-import { BUSINESS_TYPES } from '@/lib/businessTypes'
+import { useBusinessTypes, isNewType, BUSINESS_TYPE_SOURCE_LABEL, NEW_TYPE_DAYS } from '@/lib/businessTypes'
+import { BusinessTypeField } from '@/components/BusinessTypeField'
 import { Card, Button, Badge, Input, Select, Spinner, EmptyState, LoadingMoreBanner } from '@/components/ui'
 import type { BadgeTone } from '@/components/ui'
 
@@ -113,6 +114,19 @@ export default function BusinessesPage() {
 
 
   const types = useMemo(() => [...new Set(businesses.map(b => b.type).filter(Boolean))].sort(), [businesses])
+  const { types: businessTypes } = useBusinessTypes()
+  // Types added to the closed list recently — by an employee or by the
+  // agent's reports — shown above the table so a new type doesn't slip in
+  // unnoticed.
+  const newTypes = useMemo(() => {
+    const counts = new Map<string, number>()
+    businesses.forEach(b => { if (b.type) counts.set(b.type, (counts.get(b.type) ?? 0) + 1) })
+    return businessTypes
+      .filter(t => isNewType(t, now))
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+      .map(t => ({ ...t, count: counts.get(t.name) ?? 0 }))
+  }, [businessTypes, businesses, now])
+  const newTypeNames = useMemo(() => new Set(newTypes.map(t => t.name)), [newTypes])
   const neighborhoods = useMemo(() => [...new Set(businesses.map(b => b.neighborhood).filter(Boolean))].sort(), [businesses])
   const ratingsInUse = useMemo(() => ALL_RATINGS.filter(r => businesses.some(b => b.suspicionRating === r)), [businesses])
 
@@ -366,7 +380,7 @@ export default function BusinessesPage() {
               </Select>
               <Select value={typeFilter} onChange={e => setTypeFilter(e.target.value)}>
                 <option value="הכל">כל סוגי העסק</option>
-                {types.map(t => <option key={t} value={t}>{t}</option>)}
+                {types.map(t => <option key={t} value={t}>{newTypeNames.has(t) ? `${t} (חדש)` : t}</option>)}
               </Select>
               <Select value={neighborhoodFilter} onChange={e => setNeighborhoodFilter(e.target.value)}>
                 <option value="הכל">כל השכונות</option>
@@ -388,6 +402,27 @@ export default function BusinessesPage() {
             </div>
           )}
         </Card>
+
+        {newTypes.length > 0 && (
+          <div className="px-4 py-3 bg-brand/[0.05] border border-brand/20 rounded-xl flex items-center gap-2.5 flex-wrap">
+            <span className="text-[13px] font-bold text-ink">סוגי עסק חדשים ברשימה</span>
+            <span className="text-[11.5px] text-subtle">נוספו ב-{NEW_TYPE_DAYS} הימים האחרונים · לחיצה מסננת את הטבלה</span>
+            <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto sm:ms-auto">
+              {newTypes.map(t => (
+                <button
+                  key={t.name}
+                  type="button"
+                  onClick={() => { setTypeFilter(t.name); setFiltersOpen(true) }}
+                  title={`${BUSINESS_TYPE_SOURCE_LABEL[t.source]} · ${formatDate(t.createdAt)}`}
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[12.5px] cursor-pointer transition-colors ${typeFilter === t.name ? 'bg-brand text-white border-brand' : 'bg-surface border-hairline text-ink hover:border-brand'}`}
+                >
+                  <span className="font-semibold">{t.name}</span>
+                  <span className={typeFilter === t.name ? 'text-white/80' : 'text-subtle'}>· {t.source === 'agent' ? 'סוכן' : 'עובד'} · {formatDate(t.createdAt)} · <span className="num">{t.count}</span></span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         <Card>
           <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
@@ -530,12 +565,7 @@ export default function BusinessesPage() {
                                   <EditField label="שם העסק" value={editForm.name ?? ''} onChange={v => setEditForm(f => ({ ...f, name: v }))} />
                                   <div>
                                     <label className="block text-[12px] font-semibold text-charcoal mb-1">סוג עסק</label>
-                                    <Select value={editForm.type ?? ''} onChange={e => setEditForm(f => ({ ...f, type: e.target.value }))} className="w-full">
-                                      <option value="">—</option>
-                                      {/* Keep a legacy value selectable until it's changed, so opening the editor doesn't silently blank it. */}
-                                      {editForm.type && !BUSINESS_TYPES.includes(editForm.type) && <option value={editForm.type}>{editForm.type}</option>}
-                                      {BUSINESS_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-                                    </Select>
+                                    <BusinessTypeField value={editForm.type ?? ''} onChange={v => setEditForm(f => ({ ...f, type: v }))} types={businessTypes} />
                                   </div>
                                   <EditField label="כתובת" value={editForm.address ?? ''} onChange={v => setEditForm(f => ({ ...f, address: v }))} />
                                   <EditField label="שכונה" value={editForm.neighborhood ?? ''} onChange={v => setEditForm(f => ({ ...f, neighborhood: v }))} />

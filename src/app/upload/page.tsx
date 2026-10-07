@@ -10,7 +10,8 @@ import type { Business, UploadSession } from '@/lib/types'
 import { mapSuspicionRatingToStatus } from '@/lib/types'
 import { supabase, businessToDb, sessionToDb } from '@/lib/supabase'
 import { normalizeNeighborhood, JERUSALEM_NEIGHBORHOODS } from '@/lib/neighborhoods'
-import { BUSINESS_TYPES, normalizeBusinessType } from '@/lib/businessTypes'
+import { useBusinessTypes } from '@/lib/businessTypes'
+import { BusinessTypeField } from '@/components/BusinessTypeField'
 import { clearCache } from '@/lib/cache'
 import { cleanAddress, type LocationMap } from '@/lib/geocode'
 import { placementFor, neighborhoodOf } from '@/lib/placement'
@@ -263,7 +264,7 @@ function buildBusinesses(
     businesses.push({
       id: `${sessionId}-${seq++}`,
       name,
-      type: normalizeBusinessType(getCol(row, headers, mapping.type)),
+      type: getCol(row, headers, mapping.type),
       address,
       neighborhood,
       matchedAddress: getCol(row, headers, mapping.matchedAddress),
@@ -362,6 +363,7 @@ function NeighborhoodField({ value, onChange }: { value: string; onChange: (v: s
 
 export default function UploadPage() {
   const ready = useRequireRole(['employee'])
+  const { types: businessTypes } = useBusinessTypes()
   const fileRef = useRef<HTMLInputElement>(null)
 
   const [mode, setMode] = useState<Mode>('file')
@@ -700,12 +702,11 @@ export default function UploadPage() {
                         onChange={v => setManual(m => ({ ...m, neighborhood: v }))}
                       />
                     ) : fd.key === 'type' ? (
-                      // Closed list — free text let near-duplicates in
-                      // ("מרפאת עיניים" / "מרפאת עינים").
-                      <Select value={manual.type} onChange={e => setManual(m => ({ ...m, type: e.target.value }))} className="w-full">
-                        <option value="">בחרו סוג עסק</option>
-                        {BUSINESS_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-                      </Select>
+                      <BusinessTypeField
+                        value={manual.type}
+                        onChange={v => setManual(m => ({ ...m, type: v }))}
+                        types={businessTypes}
+                      />
                     ) : fd.key === 'suspicionRating' ? (
                       <Select value={manual.suspicionRating} onChange={e => setManual(m => ({ ...m, suspicionRating: e.target.value }))} className="w-full">
                         {RATING_OPTIONS.map(r => <option key={r} value={r}>{r}</option>)}
