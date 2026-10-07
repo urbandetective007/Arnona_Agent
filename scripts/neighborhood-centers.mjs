@@ -5,7 +5,8 @@
 // their record. Neighborhoods don't move, so this is run once (and again only
 // if the registry changes); entries already in the file are kept, so
 // hand-corrected centers survive a re-run. (Four were filled in by hand from OSM
-// under another spelling: שיח' ג'ראח, סילואן, רמת רחל; קרית הלאום is approximate.)
+// under another spelling: שיח' ג'ראח, סילואן, רמת רחל; קרית הלאום is approximate.
+// בוכרים is OSM's "הבוכרים"; ענתא is the town center — OSM matches a church in א-טור.)
 //
 // Usage:  node scripts/neighborhood-centers.mjs
 // Behind a proxy, run with NODE_USE_ENV_PROXY=1 so fetch uses HTTPS_PROXY.
