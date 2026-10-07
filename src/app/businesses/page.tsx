@@ -1,16 +1,18 @@
 'use client'
 
-import { useEffect, useState, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import * as XLSX from 'xlsx'
 import { Search, SlidersHorizontal, X, Download, Send, ChevronDown, ChevronLeft, Trash2 } from 'lucide-react'
 import { AppShell } from '@/components/AppShell'
 import { useRequireRole } from '@/lib/useRequireRole'
 import type { Business } from '@/lib/types'
 import { mapSuspicionRatingToStatus } from '@/lib/types'
-import { supabase, dbToBusiness, businessToDb } from '@/lib/supabase'
-import { getCache, setCache } from '@/lib/cache'
+import { supabase, businessToDb } from '@/lib/supabase'
+import { useBusinesses } from '@/lib/useBusinesses'
+import { markSentToInspector } from '@/lib/inspectorAssign'
+import { setCache } from '@/lib/cache'
 import { formatDate, parseUploadDate } from '@/lib/dateUtils'
-import { Card, Button, Badge, Input, Select, Spinner, EmptyState } from '@/components/ui'
+import { Card, Button, Badge, Input, Select, Spinner, EmptyState, LoadingMoreBanner } from '@/components/ui'
 import type { BadgeTone } from '@/components/ui'
 
 const ALL_RATINGS = ['גבוה', 'בינוני', 'דרוש בדיקה', 'לא חשוד']
@@ -86,13 +88,7 @@ function EditTextArea({ label, value, onChange }: { label: string; value: string
 
 export default function BusinessesPage() {
   const ready = useRequireRole(['employee'])
-  // Reading sessionStorage in a lazy useState initializer would give the
-  // server (build-time prerender) and the client's first paint different
-  // values, since sessionStorage doesn't exist on the server — a hydration
-  // mismatch. Starting empty on both sides and hydrating from cache inside
-  // an effect (client-only) keeps the very first render identical.
-  const [businesses, setBusinesses] = useState<Business[]>([])
-  const [loading, setLoading] = useState(true)
+  const { businesses, setBusinesses, loading, loadingMore } = useBusinesses()
   const [search, setSearch] = useState('')
   const [ratingFilter, setRatingFilter] = useState('הכל')
   const [typeFilter, setTypeFilter] = useState('הכל')
@@ -114,18 +110,6 @@ export default function BusinessesPage() {
   const [sortDir, setSortDir] = useState<SortDir>('asc')
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
 
-  useEffect(() => {
-    const cached = getCache<Business[]>('businesses')
-    if (cached) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time cache hydration on mount, not a cascading update
-      setBusinesses(cached)
-      setLoading(false)
-    }
-    supabase.from('businesses').select('*').then(({ data }) => {
-      if (data) { const b = data.map(dbToBusiness); setBusinesses(b); setCache('businesses', b) }
-      setLoading(false)
-    })
-  }, [])
 
   const types = useMemo(() => [...new Set(businesses.map(b => b.type).filter(Boolean))].sort(), [businesses])
   const neighborhoods = useMemo(() => [...new Set(businesses.map(b => b.neighborhood).filter(Boolean))].sort(), [businesses])
@@ -215,7 +199,7 @@ export default function BusinessesPage() {
     const ids = visibleSelectedIds
     if (ids.length === 0) return
     setBulkUpdating(true)
-    const { error } = await supabase.from('businesses').update({ sent_to_inspector: 'נשלח לסוקר' }).in('id', ids)
+    const error = await markSentToInspector(ids)
     if (!error) {
       setBusinesses(prev => {
         const next = prev.map(b => ids.includes(b.id) ? { ...b, sentToInspector: 'נשלח לסוקר' as const } : b)
@@ -338,6 +322,7 @@ export default function BusinessesPage() {
   return (
     <AppShell title="כלל הנתונים" subtitle={`${filtered.length.toLocaleString('he')} מתוך ${businesses.length.toLocaleString('he')} עסקים`}>
       <div className="flex flex-col gap-4">
+        <LoadingMoreBanner progress={loadingMore} />
         <Card>
           <div className="flex items-center gap-3 flex-wrap">
             <div className="relative flex-1 min-w-[220px]">
