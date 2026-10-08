@@ -12,7 +12,7 @@ import { useBusinesses } from '@/lib/useBusinesses'
 import { markSentToInspector } from '@/lib/inspectorAssign'
 import { setCache } from '@/lib/cache'
 import { formatDate, parseUploadDate } from '@/lib/dateUtils'
-import { useBusinessTypes, isNewType, BUSINESS_TYPE_SOURCE_LABEL, NEW_TYPE_DAYS } from '@/lib/businessTypes'
+import { useBusinessTypes, isNewType } from '@/lib/businessTypes'
 import { BusinessTypeField } from '@/components/BusinessTypeField'
 import { INSPECTOR_OPTIONS, SURVEY_RESULT_OPTIONS, NO_SURVEY_RESULT, inspectorStatus, surveyResult } from '@/lib/surveyStatus'
 import { Card, Button, Badge, Input, Select, Spinner, EmptyState, LoadingMoreBanner } from '@/components/ui'
@@ -114,17 +114,8 @@ export default function BusinessesPage() {
   const types = useMemo(() => [...new Set(businesses.map(b => b.type).filter(Boolean))].sort(), [businesses])
   const { types: businessTypes } = useBusinessTypes()
   // Types added to the closed list recently — by an employee or by the
-  // agent's reports — shown above the table so a new type doesn't slip in
-  // unnoticed.
-  const newTypes = useMemo(() => {
-    const counts = new Map<string, number>()
-    businesses.forEach(b => { if (b.type) counts.set(b.type, (counts.get(b.type) ?? 0) + 1) })
-    return businessTypes
-      .filter(t => isNewType(t, now))
-      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-      .map(t => ({ ...t, count: counts.get(t.name) ?? 0 }))
-  }, [businessTypes, businesses, now])
-  const newTypeNames = useMemo(() => new Set(newTypes.map(t => t.name)), [newTypes])
+  // agent's reports — are marked "(חדש)" in the type filter.
+  const newTypeNames = useMemo(() => new Set(businessTypes.filter(t => isNewType(t, now)).map(t => t.name)), [businessTypes, now])
   const neighborhoods = useMemo(() => [...new Set(businesses.map(b => b.neighborhood).filter(Boolean))].sort(), [businesses])
   const ratingsInUse = useMemo(() => ALL_RATINGS.filter(r => businesses.some(b => b.suspicionRating === r)), [businesses])
 
@@ -400,27 +391,6 @@ export default function BusinessesPage() {
             </div>
           )}
         </Card>
-
-        {newTypes.length > 0 && (
-          <div className="px-4 py-3 bg-brand/[0.05] border border-brand/20 rounded-xl flex items-center gap-2.5 flex-wrap">
-            <span className="text-[13px] font-bold text-ink">סוגי עסק חדשים ברשימה</span>
-            <span className="text-[11.5px] text-subtle">נוספו ב-{NEW_TYPE_DAYS} הימים האחרונים · לחיצה מסננת את הטבלה</span>
-            <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto sm:ms-auto">
-              {newTypes.map(t => (
-                <button
-                  key={t.name}
-                  type="button"
-                  onClick={() => { setTypeFilter(t.name); setFiltersOpen(true) }}
-                  title={`${BUSINESS_TYPE_SOURCE_LABEL[t.source]} · ${formatDate(t.createdAt)}`}
-                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[12.5px] cursor-pointer transition-colors ${typeFilter === t.name ? 'bg-brand text-white border-brand' : 'bg-surface border-hairline text-ink hover:border-brand'}`}
-                >
-                  <span className="font-semibold">{t.name}</span>
-                  <span className={typeFilter === t.name ? 'text-white/80' : 'text-subtle'}>· {t.source === 'agent' ? 'סוכן' : 'עובד'} · {formatDate(t.createdAt)} · <span className="num">{t.count}</span></span>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
 
         <Card>
           <div className="flex items-center justify-between gap-3 flex-wrap mb-3">

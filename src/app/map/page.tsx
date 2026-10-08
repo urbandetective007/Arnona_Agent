@@ -7,8 +7,9 @@ import { AppShell } from '@/components/AppShell'
 import { useRequireRole } from '@/lib/useRequireRole'
 import { useRole } from '@/lib/useRole'
 import { useBusinesses } from '@/lib/useBusinesses'
-import { Card, Button, Input, Select, Spinner, EmptyState, LoadingMoreBanner } from '@/components/ui'
-import { INSPECTOR_OPTIONS, SURVEY_RESULT_OPTIONS, NO_SURVEY_RESULT, NOT_SENT, inspectorStatus, surveyResult } from '@/lib/surveyStatus'
+import { Card, Button, Input, Select, Spinner, EmptyState, LoadingMoreBanner, Pill } from '@/components/ui'
+import { SURVEY_RESULT_OPTIONS, NO_SURVEY_RESULT, NOT_SENT, inspectorStatus, surveyResult } from '@/lib/surveyStatus'
+import type { Business } from '@/lib/types'
 
 const JerusalemMap = dynamic(() => import('@/components/JerusalemMap'), {
   ssr: false,
@@ -23,6 +24,16 @@ const RATING_COLORS: Record<string, string> = {
   'לא חשוד': '#0f7a4a',
 }
 
+// Which properties the map shows by surveyor status — a segmented control in
+// the toolbar, so the current view is always visible and one click away from
+// the others. "הוחלט לא לשלוח לסקר" shows only under "הכל".
+const SURVEYOR_VIEWS = [
+  { key: 'notSent', label: 'טרם נשלחו לסוקר', test: (b: Business) => inspectorStatus(b) === NOT_SENT },
+  { key: 'sent', label: 'נשלחו לסוקר', test: (b: Business) => b.sentToInspector === 'נשלח לסוקר' },
+  { key: 'all', label: 'הכל', test: () => true },
+] as const
+type SurveyorView = typeof SURVEYOR_VIEWS[number]['key']
+
 export default function MapPage() {
   const ready = useRequireRole(['employee', 'manager'])
   // Only employees can correct a location by hand; managers view.
@@ -36,8 +47,8 @@ export default function MapPage() {
   const [neighborhoodFilter, setNeighborhoodFilter] = useState('הכל')
   // The map is for deciding what to send to the field, so by default it shows
   // only properties not sent to the surveyor yet — a surveyed property no
-  // longer reads as an open suspicion. Both filters can widen it.
-  const [inspectorFilter, setInspectorFilter] = useState<string>(NOT_SENT)
+  // longer reads as an open suspicion.
+  const [surveyorView, setSurveyorView] = useState<SurveyorView>('notSent')
   const [surveyFilter, setSurveyFilter] = useState('הכל')
   const [filtersOpen, setFiltersOpen] = useState(false)
 
@@ -46,24 +57,30 @@ export default function MapPage() {
   const neighborhoods = useMemo(() => [...new Set(businesses.map(b => b.neighborhood).filter(Boolean))].sort(), [businesses])
   const ratingsInUse = useMemo(() => ALL_RATINGS.filter(r => businesses.some(b => b.suspicionRating === r)), [businesses])
 
-  const filtered = useMemo(() => businesses.filter(b => {
+  // Everything but the surveyor view — the view's counts are taken from this,
+  // so each option says how many it would show with the other filters applied.
+  const filteredExceptView = useMemo(() => businesses.filter(b => {
     const q = search.toLowerCase()
     const matchesSearch = !q || [b.name, b.address, b.type, b.neighborhood ?? ''].some(s => s.toLowerCase().includes(q))
     return matchesSearch
       && (ratingFilter === 'הכל' || b.suspicionRating === ratingFilter)
       && (typeFilter === 'הכל' || b.type === typeFilter)
       && (neighborhoodFilter === 'הכל' || b.neighborhood === neighborhoodFilter)
-      && (inspectorFilter === 'הכל' || inspectorStatus(b) === inspectorFilter)
       && (surveyFilter === 'הכל' || surveyResult(b) === surveyFilter)
-  }), [businesses, search, ratingFilter, typeFilter, neighborhoodFilter, inspectorFilter, surveyFilter])
+  }), [businesses, search, ratingFilter, typeFilter, neighborhoodFilter, surveyFilter])
+  const viewCounts = useMemo(
+    () => Object.fromEntries(SURVEYOR_VIEWS.map(v => [v.key, filteredExceptView.filter(v.test).length])) as Record<SurveyorView, number>,
+    [filteredExceptView]
+  )
+  const filtered = useMemo(() => {
+    const view = SURVEYOR_VIEWS.find(v => v.key === surveyorView)!
+    return filteredExceptView.filter(view.test)
+  }, [filteredExceptView, surveyorView])
 
-  // The default "not sent" filter isn't counted as a choice the user made.
   const activeFilterCount = [ratingFilter, typeFilter, neighborhoodFilter, surveyFilter].filter(f => f !== 'הכל').length
-    + (inspectorFilter !== NOT_SENT ? 1 : 0)
-  const hiddenBySurveyor = inspectorFilter === NOT_SENT ? businesses.filter(b => inspectorStatus(b) !== NOT_SENT).length : 0
   function clearFilters() {
     setSearch(''); setRatingFilter('הכל'); setTypeFilter('הכל'); setNeighborhoodFilter('הכל')
-    setInspectorFilter(NOT_SENT); setSurveyFilter('הכל')
+    setSurveyFilter('הכל'); setSurveyorView('notSent')
   }
   const ratingCounts = useMemo(() => {
     const counts = new Map<string, number>()
@@ -104,7 +121,14 @@ export default function MapPage() {
             >
               סננים{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
             </Button>
-            {(search || activeFilterCount > 0) && (
+            <div className="flex bg-canvas rounded-lg p-0.5 gap-0.5" role="group" aria-label="סטטוס סוקר">
+              {SURVEYOR_VIEWS.map(v => (
+                <Pill key={v.key} active={surveyorView === v.key} onClick={() => setSurveyorView(v.key)}>
+                  {v.label} <span className="num ms-1 text-subtle font-normal">({viewCounts[v.key].toLocaleString('he')})</span>
+                </Pill>
+              ))}
+            </div>
+            {(search || activeFilterCount > 0 || surveyorView !== 'notSent') && (
               <Button
                 variant="ghost"
                 icon={<X size={15} strokeWidth={1.9} />}
@@ -138,10 +162,6 @@ export default function MapPage() {
                 <option value="הכל">כל השכונות</option>
                 {neighborhoods.map(n => <option key={n} value={n}>{n}</option>)}
               </Select>
-              <Select value={inspectorFilter} onChange={e => setInspectorFilter(e.target.value)}>
-                <option value="הכל">כל סטטוסי הסוקר</option>
-                {INSPECTOR_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
-              </Select>
               <Select value={surveyFilter} onChange={e => setSurveyFilter(e.target.value)}>
                 <option value="הכל">כל תוצאות הסקר</option>
                 {SURVEY_RESULT_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
@@ -150,16 +170,6 @@ export default function MapPage() {
             </div>
           )}
 
-          {hiddenBySurveyor > 0 && (
-            <div className="flex items-center gap-2 flex-wrap mt-3 text-[12.5px] text-charcoal">
-              <span>
-                מוצגים רק נכסים שטרם נשלחו לסוקר · <span className="num font-semibold text-ink">{hiddenBySurveyor.toLocaleString('he')}</span> נכסים שכבר נשלחו או שהוחלט לא לשלוח מוסתרים
-              </span>
-              <button type="button" onClick={() => setInspectorFilter('הכל')} className="font-semibold text-brand hover:text-brand-deep">
-                הצג את כולם
-              </button>
-            </div>
-          )}
         </Card>
 
         {businesses.length === 0 ? (

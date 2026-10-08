@@ -12,7 +12,8 @@ import { supabase, businessToDb, sessionToDb } from '@/lib/supabase'
 import { normalizeNeighborhood, JERUSALEM_NEIGHBORHOODS } from '@/lib/neighborhoods'
 import { useBusinessTypes } from '@/lib/businessTypes'
 import { BusinessTypeField } from '@/components/BusinessTypeField'
-import { useStreetTable, neighborhoodsForAddress } from '@/lib/streetNeighborhoods'
+import { useStreetTable, neighborhoodsForAddress, NO_MATCH } from '@/lib/streetNeighborhoods'
+import type { NeighborhoodMatch } from '@/lib/streetNeighborhoods'
 import { clearCache } from '@/lib/cache'
 import { cleanAddress, type LocationMap } from '@/lib/geocode'
 import { placementFor, neighborhoodOf } from '@/lib/placement'
@@ -322,16 +323,48 @@ function WizardStepper({ step, steps }: { step: Step; steps: { key: Step; label:
   )
 }
 
+// Which street the address was matched to, so the employee can check the
+// neighborhood was filled in from the street they meant. A close-spelling
+// match is a guess and is flagged as one; if the employee already picked a
+// neighborhood that differs from the street's, offer to switch to it.
+function StreetMatchLine({ address, match, ready, neighborhood, onApply }: {
+  address: string
+  match: NeighborhoodMatch
+  ready: boolean
+  neighborhood: string
+  onApply: (neighborhood: string) => void
+}) {
+  if (!ready || !/\S{2,}/.test(address)) return null
+  if (!match.street) {
+    return <p className="mt-1.5 text-[12px] text-subtle">הרחוב לא זוהה ברשימת הרחובות — בחרו שכונה ידנית.</p>
+  }
+  const guess = match.match === 'close'
+  const single = match.options.length === 1 ? match.options[0] : null
+  return (
+    <p className={`mt-1.5 text-[12px] flex items-center gap-1.5 flex-wrap ${guess ? 'text-mid' : 'text-charcoal'}`}>
+      <span>
+        זוהה רחוב{guess ? ' (התאמה משוערת)' : ''}: <strong className="font-semibold text-ink">{match.street}</strong>
+        {single ? <> ← {single}</> : <> ← עובר בכמה שכונות: {match.options.join(' / ')}</>}
+      </span>
+      {guess && <span>· לא נכון? בחרו שכונה ידנית</span>}
+      {single && neighborhood && neighborhood !== single && (
+        <button type="button" onClick={() => onApply(single)} className="font-semibold text-brand hover:text-brand-deep">
+          עדכן לפי הרחוב
+        </button>
+      )}
+    </p>
+  )
+}
+
 // Neighborhood picker over the closed list. Typing filters the list; a value
 // that isn't on it is dropped on blur (it used to be saved as an empty
 // neighborhood without telling anyone). `streetOptions` are the neighborhoods
 // the typed address's street belongs to: one → it was filled in for you; several
 // → they're offered first.
-function NeighborhoodField({ value, onChange, streetOptions, autoFilled }: {
+function NeighborhoodField({ value, onChange, streetOptions }: {
   value: string
   onChange: (v: string) => void
   streetOptions: string[]
-  autoFilled: boolean
 }) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState<string | null>(null)
@@ -376,9 +409,6 @@ function NeighborhoodField({ value, onChange, streetOptions, autoFilled }: {
           ))}
         </div>
       )}
-      {autoFilled && value && streetOptions.length === 1 && (
-        <p className="mt-1.5 text-[12px] text-clear">מולא אוטומטית לפי הרחוב · אפשר לשנות</p>
-      )}
       {streetOptions.length > 1 && (
         <div className="mt-1.5 flex items-center gap-1.5 flex-wrap text-[12px] text-charcoal">
           <span>הרחוב עובר בכמה שכונות:</span>
@@ -416,7 +446,7 @@ export default function UploadPage() {
   const [neighborhoodTouched, setNeighborhoodTouched] = useState(false)
   const streetTable = useStreetTable()
   const streetMatch = useMemo(
-    () => (streetTable && manual.address.trim() ? neighborhoodsForAddress(streetTable, manual.address) : { options: [] as string[], byHouse: false }),
+    () => (streetTable && manual.address.trim() ? neighborhoodsForAddress(streetTable, manual.address) : NO_MATCH),
     [streetTable, manual.address]
   )
 
@@ -759,7 +789,6 @@ export default function UploadPage() {
                         value={manual.neighborhood}
                         onChange={v => { setNeighborhoodTouched(true); setManual(m => ({ ...m, neighborhood: v })) }}
                         streetOptions={streetMatch.options}
-                        autoFilled={!neighborhoodTouched}
                       />
                     ) : fd.key === 'type' ? (
                       <BusinessTypeField
@@ -772,12 +801,21 @@ export default function UploadPage() {
                         {RATING_OPTIONS.map(r => <option key={r} value={r}>{r}</option>)}
                       </Select>
                     ) : fd.key === 'address' ? (
-                      <Input
-                        value={manual.address}
-                        onChange={e => onManualAddressChange(e.target.value)}
-                        placeholder={fd.label}
-                        className="w-full"
-                      />
+                      <>
+                        <Input
+                          value={manual.address}
+                          onChange={e => onManualAddressChange(e.target.value)}
+                          placeholder={fd.label}
+                          className="w-full"
+                        />
+                        <StreetMatchLine
+                          address={manual.address}
+                          match={streetMatch}
+                          ready={!!streetTable}
+                          neighborhood={manual.neighborhood}
+                          onApply={hood => { setNeighborhoodTouched(false); setManual(m => ({ ...m, neighborhood: hood })) }}
+                        />
+                      </>
                     ) : (
                       <Input
                         value={manual[fd.key]}

@@ -17,12 +17,6 @@ export interface BusinessType {
   createdAt: string
 }
 
-export const BUSINESS_TYPE_SOURCE_LABEL: Record<BusinessTypeSource, string> = {
-  initial: 'רשימה מקורית',
-  employee: 'נוסף ע״י עובד',
-  agent: 'נוסף ע״י הסוכן',
-}
-
 // How long a type added after the initial list counts as "new" in the UI.
 export const NEW_TYPE_DAYS = 30
 
