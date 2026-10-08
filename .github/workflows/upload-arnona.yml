@@ -55,7 +55,7 @@ jobs:
           SUPABASE_URL = os.environ['SUPABASE_URL']
           SUPABASE_KEY = os.environ['SUPABASE_KEY']
 
-          with open("data/jerusalem_neighborhoods.json", encoding="utf-8") as _f:
+          with open("data/neighborhoods.json", encoding="utf-8") as _f:
               _NEIGHBORHOOD_REGISTRY = json.load(_f)
           _CANONICAL_NEIGHBORHOODS = set(_NEIGHBORHOOD_REGISTRY["neighborhoods"])
           _NEIGHBORHOOD_ALIASES = _NEIGHBORHOOD_REGISTRY["aliases"]

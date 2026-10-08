@@ -1,0 +1,31 @@
+{
+  "_comment": "Everything that ties this installation to one city. A new city = a new copy of this file (see installer/README.md). Read by the website, the scripts and the workflows.",
+  "city": {
+    "nameHe": "ירושלים",
+    "nameEn": "Jerusalem",
+    "osmCityPattern": "ירושלים|jerusalem"
+  },
+  "org": {
+    "municipalityHe": "עיריית ירושלים",
+    "departmentHe": "אגף הארנונה"
+  },
+  "map": {
+    "center": {
+      "lat": 31.7683,
+      "lon": 35.2137
+    },
+    "bounds": {
+      "south": 31.7,
+      "north": 31.9,
+      "west": 35.07,
+      "east": 35.32
+    }
+  },
+  "supabase": {
+    "url": "https://mcsygsqfyuaexxxwsgem.supabase.co",
+    "anonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1jc3lnc3FmeXVhZXh4eHdzZ2VtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1Njk1MTIsImV4cCI6MjA5NDE0NTUxMn0.Hu6t2PLjE_D113NMQEGvEv8QGhqN6udKNO9McqK3ST8"
+  },
+  "deploy": {
+    "basePath": "/Arnona_Agent"
+  }
+}

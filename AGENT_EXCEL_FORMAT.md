@@ -19,7 +19,7 @@ Your Excel file **MUST** have these columns in this order:
 
 3. **שכונה** (Neighborhood) - *Optional*
    - The Jerusalem neighborhood the business is located in, if known
-   - **MUST be chosen from the closed list in `data/jerusalem_neighborhoods.json`** (the `neighborhoods` array in that file) — do NOT invent a new name or write a variant/combined spelling
+   - **MUST be chosen from the closed list in `data/neighborhoods.json`** (the `neighborhoods` array in that file) — do NOT invent a new name or write a variant/combined spelling
    - Example: "בית וגן", "נווה יעקב", "רחביה"
    - Leave empty if unknown or if no entry in the list confidently matches — do not guess
 

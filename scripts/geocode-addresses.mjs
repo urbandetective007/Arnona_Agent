@@ -13,7 +13,7 @@
 //         where address is not null and address <> '') t
 //
 // Every address is placed with the same logic the map and the upload page use
-// (src/lib/geocode.ts): inside Jerusalem only, house → street, choosing among
+// (src/lib/geocode.ts): inside the city only, house → street, choosing among
 // same-named streets the one closest to the property's neighborhood. An
 // address that can't be placed is stored as "not found" (the map then shows
 // it at the center of its neighborhood). The SQL upserts, so running it again
@@ -26,11 +26,12 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { cleanAddress, neighborhoodHint, geocodeAddress, nominatimSearchUrl, RateLimitError } from '../src/lib/geocode.ts'
+import city from '../city.config.json' with { type: 'json' }
 
 const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
 const readJson = file => JSON.parse(fs.readFileSync(path.join(ROOT, 'data', file), 'utf8'))
-const registry = readJson('jerusalem_neighborhoods.json')
-const centers = readJson('jerusalem_neighborhood_centers.json')
+const registry = readJson('neighborhoods.json')
+const centers = readJson('neighborhood_centers.json')
 
 // Same rules as normalizeNeighborhood in src/lib/neighborhoods.ts.
 function neighborhoodCenter(raw) {
@@ -40,7 +41,7 @@ function neighborhoodCenter(raw) {
   return (canonical && centers[canonical]) || null
 }
 
-const USER_AGENT = 'ArnonaAgentProject/1.0 (Jerusalem municipality property map)'
+const USER_AGENT = `ArnonaAgentProject/1.0 (${city.city.nameEn} municipality property map)`
 const DELAY_MS = 1300
 const sleep = ms => new Promise(r => setTimeout(r, ms))
 

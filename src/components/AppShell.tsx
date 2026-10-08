@@ -9,6 +9,7 @@ import { RoleProvider, useRoleContext } from './RoleContext'
 import { NAV_BY_ROLE, ROLE_DESCRIPTION_BY_ROLE, type NavItem } from '@/lib/access'
 import { ROLES } from '@/lib/roles'
 import { PageHeader } from './ui'
+import { ORG } from '@/lib/city'
 
 interface AppShellProps {
   children: ReactNode
@@ -60,7 +61,7 @@ function AppShellInner({ children, title, subtitle, actions }: AppShellProps) {
           <Landmark size={24} strokeWidth={1.7} className="text-brand-light shrink-0" />
           <div className="min-w-0">
             <div className="text-white font-bold text-[15px] truncate">ארנו-נט</div>
-            <div className="text-chrome-graphite text-[11.5px] mt-0.5">עיריית ירושלים</div>
+            <div className="text-chrome-graphite text-[11.5px] mt-0.5">{ORG.municipalityHe}</div>
           </div>
         </div>
 

@@ -4,10 +4,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import type { Business } from '@/lib/types'
-import { cleanAddress, isInJerusalem, type LocationMap } from '@/lib/geocode'
+import { cleanAddress, isInCity, type LocationMap } from '@/lib/geocode'
 import type { GeocodeQueue, GeocodeItem } from '@/lib/geocodeQueue'
 import { fetchLocations, saveLocations, createLocationQueue } from '@/lib/locations'
 import { placementFor, neighborhoodOf, type Placement, type PlacementKind } from '@/lib/placement'
+import { CITY, MAP_CENTER } from '@/lib/city'
 
 interface JerusalemMapProps {
   businesses: Business[]
@@ -20,8 +21,6 @@ interface JerusalemMapProps {
 // Locations used to be kept in a static file and in each browser's
 // localStorage; they now live in the Supabase table address_locations.
 const OLD_BROWSER_CACHE_KEYS = ['arnona_live_geocode_cache_v1', 'arnona_live_geocode_cache_v2']
-
-const JERUSALEM_CENTER = { lat: 31.7683, lon: 35.2137 }
 
 const esc = (s: string) => s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!)
 const safeUrl = (u: string) => (/^https?:\/\//i.test(u) ? esc(u) : '')
@@ -237,7 +236,7 @@ export default function JerusalemMap({ businesses, canEdit = false, fixKey = nul
     if (!mapRef.current || mapInstanceRef.current) return
 
     const map = L.map(mapRef.current, {
-      center: [JERUSALEM_CENTER.lat, JERUSALEM_CENTER.lon],
+      center: [MAP_CENTER.lat, MAP_CENTER.lon],
       zoom: 13,
       zoomControl: true,
     })
@@ -358,7 +357,7 @@ export default function JerusalemMap({ businesses, canEdit = false, fixKey = nul
     const key = cleanAddress(b.address)
     if (!key) return
     const placement = placementFor(b, locations)
-    const start = placement.state === 'placed' ? placement.coords : (neighborhoodOf(b)?.center ?? JERUSALEM_CENTER)
+    const start = placement.state === 'placed' ? placement.coords : (neighborhoodOf(b)?.center ?? MAP_CENTER)
     setFix({
       key, address: b.address,
       names: businesses.filter(x => cleanAddress(x.address) === key).map(x => x.name),
@@ -405,8 +404,8 @@ export default function JerusalemMap({ businesses, canEdit = false, fixKey = nul
 
   async function saveFix() {
     if (!fix) return
-    if (!isInJerusalem(fix)) {
-      setFix({ ...fix, error: 'הנקודה מחוץ לירושלים — גרור אותה למיקום בתוך העיר' })
+    if (!isInCity(fix)) {
+      setFix({ ...fix, error: `הנקודה מחוץ ל${CITY.nameHe} — גרור אותה למיקום בתוך העיר` })
       return
     }
     setFix({ ...fix, saving: true, error: '' })

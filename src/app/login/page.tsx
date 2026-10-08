@@ -10,6 +10,7 @@ import { ROLES, type RoleId } from '@/lib/roles'
 import { HOME_ROUTE_BY_ROLE } from '@/lib/access'
 import { roleFromEmail } from '@/lib/useRole'
 import { Input } from '@/components/ui'
+import { ORG_LINE } from '@/lib/city'
 
 const LOGIN_ROLE_ORDER: RoleId[] = ['employee', 'manager', 'surveyor']
 
@@ -52,7 +53,7 @@ export default function LoginPage() {
             <Landmark size={28} className="text-brand shrink-0" strokeWidth={1.7} />
             <div>
               <div className="text-[16px] font-bold text-ink">ארנו-נט</div>
-              <div className="text-[12px] text-subtle">עיריית ירושלים · אגף הארנונה</div>
+              <div className="text-[12px] text-subtle">{ORG_LINE}</div>
             </div>
           </div>
 
@@ -177,7 +178,7 @@ export default function LoginPage() {
             style={{ background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.18)' }}
           >
             <Landmark size={13} style={{ color: '#cfe0ff' }} strokeWidth={2} />
-            <span className="text-[12.5px] font-semibold" style={{ color: '#cfe0ff' }}>עיריית ירושלים · אגף הארנונה</span>
+            <span className="text-[12.5px] font-semibold" style={{ color: '#cfe0ff' }}>{ORG_LINE}</span>
           </span>
           <div className="mt-8 text-white font-extrabold leading-none tracking-tight" style={{ fontSize: 80 }}>
             ארנו<span style={{ color: '#7fa8f0' }}>-נט</span>

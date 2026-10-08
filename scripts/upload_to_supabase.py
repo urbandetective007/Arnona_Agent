@@ -21,8 +21,9 @@ import requests
 import uuid
 import os
 from datetime import datetime, timezone
+from city_config import SUPABASE_URL, SUPABASE_ANON_KEY
 
-_NEIGHBORHOODS_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "jerusalem_neighborhoods.json")
+_NEIGHBORHOODS_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "neighborhoods.json")
 with open(_NEIGHBORHOODS_PATH, encoding="utf-8") as _f:
     _NEIGHBORHOOD_REGISTRY = json.load(_f)
 _CANONICAL_NEIGHBORHOODS = set(_NEIGHBORHOOD_REGISTRY["neighborhoods"])
@@ -41,8 +42,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--report", required=True)
 args = parser.parse_args()
 
-SUPABASE_URL = "https://mcsygsqfyuaexxxwsgem.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1jc3lnc3FmeXVhZXh4eHdzZ2VtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1Njk1MTIsImV4cCI6MjA5NDE0NTUxMn0.Hu6t2PLjE_D113NMQEGvEv8QGhqN6udKNO9McqK3ST8"
+SUPABASE_KEY = SUPABASE_ANON_KEY
 
 HEADERS = {
     "apikey": SUPABASE_KEY,

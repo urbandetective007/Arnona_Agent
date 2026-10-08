@@ -1,7 +1,7 @@
-import centers from '../../data/jerusalem_neighborhood_centers.json'
+import centers from '../../data/neighborhood_centers.json'
 import { normalizeNeighborhood } from './neighborhoods'
 import {
-  cleanAddress, distanceKm, isInJerusalem, isMissingEntry, neighborhoodHint,
+  cleanAddress, distanceKm, isInCity, isMissingEntry, neighborhoodHint,
   type LocationMap, type Precision,
 } from './geocode'
 
@@ -41,7 +41,7 @@ export function placementFor(b: { address: string; neighborhood: string }, locat
   const hood = neighborhoodOf(b)
 
   if (!entry) return key ? { state: 'pending' } : fallbackToNeighborhood(hood)
-  if (isMissingEntry(entry) || !isInJerusalem(entry)) return fallbackToNeighborhood(hood)
+  if (isMissingEntry(entry) || !isInCity(entry)) return fallbackToNeighborhood(hood)
 
   // A pin placed by hand has been checked by a person, so it is never flagged.
   const far = entry.precision !== 'manual' && hood ? distanceKm(entry, hood.center) : 0
