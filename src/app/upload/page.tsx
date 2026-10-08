@@ -327,6 +327,8 @@ function WizardStepper({ step, steps }: { step: Step; steps: { key: Step; label:
 // neighborhood was filled in from the street they meant. A close-spelling
 // match is a guess and is flagged as one; if the employee already picked a
 // neighborhood that differs from the street's, offer to switch to it.
+const NO_STREET = '\u0000no-street'
+
 function StreetMatchLine({ address, match, ready, neighborhood, onApply }: {
   address: string
   match: NeighborhoodMatch
@@ -361,10 +363,12 @@ function StreetMatchLine({ address, match, ready, neighborhood, onApply }: {
 // neighborhood without telling anyone). `streetOptions` are the neighborhoods
 // the typed address's street belongs to: one → it was filled in for you; several
 // → they're offered first.
-function NeighborhoodField({ value, onChange, streetOptions }: {
+function NeighborhoodField({ value, onChange, streetOptions, autoFilled }: {
   value: string
   onChange: (v: string) => void
   streetOptions: string[]
+  /** The value was filled in from the street (not picked by hand). */
+  autoFilled: boolean
 }) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState<string | null>(null)
@@ -409,6 +413,9 @@ function NeighborhoodField({ value, onChange, streetOptions }: {
           ))}
         </div>
       )}
+      {autoFilled && value && streetOptions.length === 1 && value === streetOptions[0] && (
+        <p className="mt-1.5 text-[12px] text-clear">מולא אוטומטית לפי הרחוב · אפשר לשנות</p>
+      )}
       {streetOptions.length > 1 && (
         <div className="mt-1.5 flex items-center gap-1.5 flex-wrap text-[12px] text-charcoal">
           <span>הרחוב עובר בכמה שכונות:</span>
@@ -442,8 +449,11 @@ export default function UploadPage() {
   const [hIdx, setHIdx] = useState(0)
   const [mapping, setMapping] = useState<Record<TargetField, string>>(EMPTY_MAPPING)
   const [manual, setManual] = useState<Record<TargetField, string>>(EMPTY_MANUAL)
-  // Neighborhood follows the typed street until the employee picks one themselves.
-  const [neighborhoodTouched, setNeighborhoodTouched] = useState(false)
+  // The neighborhood follows the typed street. A neighborhood the employee
+  // picks by hand holds only for the street it was picked for — this is that
+  // street (or NO_STREET if none was recognized); typing a different street
+  // fills the neighborhood in again.
+  const [pickedForStreet, setPickedForStreet] = useState<string | null>(null)
   const streetTable = useStreetTable()
   const streetMatch = useMemo(
     () => (streetTable && manual.address.trim() ? neighborhoodsForAddress(streetTable, manual.address) : NO_MATCH),
@@ -451,12 +461,18 @@ export default function UploadPage() {
   )
 
   function onManualAddressChange(address: string) {
+    if (!streetTable) { setManual(m => ({ ...m, address })); return }
+    const { options, street } = neighborhoodsForAddress(streetTable, address)
+    // A hand-picked neighborhood stands while the street is the same one.
+    if (pickedForStreet !== null && (street ?? NO_STREET) === pickedForStreet) {
+      setManual(m => ({ ...m, address }))
+      return
+    }
+    if (pickedForStreet !== null) setPickedForStreet(null)
     setManual(m => {
       const next = { ...m, address }
-      if (neighborhoodTouched || !streetTable) return next
-      const { options } = neighborhoodsForAddress(streetTable, address)
-      // One neighborhood → fill it in; several → clear a stale pick that isn't
-      // one of them, and let the field offer them.
+      // One neighborhood → fill it in; several → clear a pick that isn't one
+      // of them, and let the field offer them.
       if (options.length === 1) next.neighborhood = options[0]
       else if (!options.includes(m.neighborhood)) next.neighborhood = ''
       return next
@@ -687,7 +703,7 @@ export default function UploadPage() {
     setHIdx(0)
     setMapping(EMPTY_MAPPING)
     setManual(EMPTY_MANUAL)
-    setNeighborhoodTouched(false)
+    setPickedForStreet(null)
     setValidation(null)
     setPendingSession(null)
     setAutoAssign(false)
@@ -787,8 +803,9 @@ export default function UploadPage() {
                     {fd.key === 'neighborhood' ? (
                       <NeighborhoodField
                         value={manual.neighborhood}
-                        onChange={v => { setNeighborhoodTouched(true); setManual(m => ({ ...m, neighborhood: v })) }}
+                        onChange={v => { setPickedForStreet(streetMatch.street ?? NO_STREET); setManual(m => ({ ...m, neighborhood: v })) }}
                         streetOptions={streetMatch.options}
+                        autoFilled={pickedForStreet === null}
                       />
                     ) : fd.key === 'type' ? (
                       <BusinessTypeField
@@ -813,7 +830,7 @@ export default function UploadPage() {
                           match={streetMatch}
                           ready={!!streetTable}
                           neighborhood={manual.neighborhood}
-                          onApply={hood => { setNeighborhoodTouched(false); setManual(m => ({ ...m, neighborhood: hood })) }}
+                          onApply={hood => { setPickedForStreet(null); setManual(m => ({ ...m, neighborhood: hood })) }}
                         />
                       </>
                     ) : (
