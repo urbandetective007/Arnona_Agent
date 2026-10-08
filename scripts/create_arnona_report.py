@@ -25,6 +25,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 from datetime import date
+from city_config import CITY_NAME, MUNICIPALITY
 
 # ── CLI ──────────────────────────────────────────────────────────────────────
 parser = argparse.ArgumentParser()
@@ -84,7 +85,7 @@ def find_matches(biz_address, arnona_df, corrections):
 
 COMMON_BIZ_WORDS = {
     'בית', 'של', 'ושות', 'משרד', 'מרפאת', 'מרפאה', 'רפואי', 'רופא',
-    'ירושלים', 'עורכי', 'עורך', 'דין', 'חשבון', 'רואה', 'רואי',
+    CITY_NAME, 'עורכי', 'עורך', 'דין', 'חשבון', 'רואה', 'רואי',
     'שיניים', 'וטרינרי', 'וטרינרית', 'כללית', 'קרית', 'יובל',
     'סמייל', 'רמות', 'אלון', 'מרכז', 'רפואה', 'בריאות', 'קליניקה',
 }
@@ -185,7 +186,7 @@ border_header = Border(left=thick, right=thick, top=thick, bottom=thick)
 ws.row_dimensions[1].height = 36
 ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=NUM_COLS)
 tc = ws.cell(row=1, column=1)
-tc.value = 'דוח עסקים לבדיקה בנכסי מגורים – עיריית ירושלים'
+tc.value = f'דוח עסקים לבדיקה בנכסי מגורים – {MUNICIPALITY}'
 tc.font  = Font(name='Arial', bold=True, size=16, color=COLOR_HEADER_FG)
 tc.fill  = PatternFill('solid', fgColor=COLOR_HEADER_BG)
 tc.alignment = Alignment(horizontal='center', vertical='center', readingOrder=2)

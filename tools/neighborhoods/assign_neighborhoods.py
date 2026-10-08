@@ -43,9 +43,25 @@ import openpyxl
 HERE = Path(__file__).resolve().parent
 DATA = HERE / 'data'
 REPO_DATA = HERE.parents[1] / 'data'   # Arnona_Agent keeps the registry in <repo>/data
-RAW = 'https://raw.githubusercontent.com/urbandetective007/Arnona_Agent/main/data/'
-USER_AGENT = 'ArnonaAgentProject/1.0 (Jerusalem municipality property map)'
-BOUNDS = dict(south=31.70, north=31.90, west=35.07, east=35.32)
+RAW_ROOT = 'https://raw.githubusercontent.com/urbandetective007/Arnona_Agent/main/'
+RAW = RAW_ROOT + 'data/'
+
+
+def load_city_config():
+    """<repo>/city.config.json when run inside Arnona_Agent, else from Arnona_Agent on GitHub."""
+    local = HERE.parents[1] / 'city.config.json'
+    if local.exists():
+        return json.loads(local.read_text(encoding='utf-8'))
+    req = urllib.request.Request(RAW_ROOT + 'city.config.json', headers={'User-Agent': 'ArnonaAgentProject/1.0'})
+    with urllib.request.urlopen(req, timeout=30) as r:
+        return json.load(r)
+
+
+CITY = load_city_config()
+CITY_NAME = CITY['city']['nameHe']
+CITY_PATTERN = re.compile(CITY['city']['osmCityPattern'], re.I)
+USER_AGENT = f"ArnonaAgentProject/1.0 ({CITY['city']['nameEn']} municipality property map)"
+BOUNDS = CITY['map']['bounds']
 
 
 # ── Registry (closed neighborhood list + map centers) ─────────────────────────
@@ -53,7 +69,7 @@ BOUNDS = dict(south=31.70, north=31.90, west=35.07, east=35.32)
 def load_registry_file(name):
     """From <repo>/data when run inside Arnona_Agent, else from Arnona_Agent on GitHub."""
     local = REPO_DATA / name
-    if local.exists() and (REPO_DATA / 'jerusalem_neighborhood_centers.json').exists():
+    if local.exists() and (REPO_DATA / 'neighborhood_centers.json').exists():
         return json.loads(local.read_text(encoding='utf-8'))
     req = urllib.request.Request(RAW + name, headers={'User-Agent': USER_AGENT})
     with urllib.request.urlopen(req, timeout=30) as r:
@@ -194,7 +210,7 @@ def nominatim(query):
     params = urllib.parse.urlencode(dict(
         format='json', limit=5, addressdetails=1, countrycodes='il', bounded=1,
         viewbox=f"{BOUNDS['west']},{BOUNDS['north']},{BOUNDS['east']},{BOUNDS['south']}",
-        q=f'{query}, ירושלים'))
+        q=f'{query}, {CITY_NAME}'))
     req = urllib.request.Request('https://nominatim.openstreetmap.org/search?' + params,
                                  headers={'User-Agent': USER_AGENT, 'Accept-Language': 'he'})
     wait = 30
@@ -210,11 +226,11 @@ def nominatim(query):
     raise RuntimeError(f'Nominatim unreachable for {query!r}')
 
 
-def in_jerusalem(r):
+def in_city(r):
     a = r.get('address', {})
     city = next((a[k] for k in ('city', 'town', 'municipality', 'village') if a.get(k)), '')
     lat, lon = float(r['lat']), float(r['lon'])
-    return (re.search(r'ירושלים|jerusalem', city, re.I) and
+    return (CITY_PATTERN.search(city) and
             BOUNDS['south'] <= lat <= BOUNDS['north'] and BOUNDS['west'] <= lon <= BOUNDS['east'])
 
 
@@ -226,7 +242,7 @@ def locate(address, near):
         return min(ms, key=lambda m: km({'lat': float(m['lat']), 'lon': float(m['lon'])}, near))
     street_hit = None
     for q in address_queries(address):
-        ms = [m for m in nominatim(q) if in_jerusalem(m)]
+        ms = [m for m in nominatim(q) if in_city(m)]
         if not ms:
             continue
         exact = [m for m in ms if m.get('address', {}).get('house_number')]
@@ -302,8 +318,8 @@ def main():
                     help="don't call OpenStreetMap; streets in several neighborhoods get the most common one")
     args = ap.parse_args()
 
-    registry = load_registry_file('jerusalem_neighborhoods.json')
-    centers = load_registry_file('jerusalem_neighborhood_centers.json')
+    registry = load_registry_file('neighborhoods.json')
+    centers = load_registry_file('neighborhood_centers.json')
     overrides = json.loads((DATA / 'overrides.json').read_text(encoding='utf-8'))
     names = Names(registry, overrides.get('name_map', {}))
     streets = StreetIndex(DATA / 'municipal_streets_2020.xlsx')

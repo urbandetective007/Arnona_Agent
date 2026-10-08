@@ -1,13 +1,16 @@
 // Address → coordinates for the property map. Shared by the map component,
 // the upload page (which locates new addresses right after an upload) and
 // scripts/geocode-addresses.mjs, so all of them place addresses the same
-// way. Deliberately import-free so plain Node can load it.
+// way. Its only import is city.config.json (with an import attribute), so
+// plain Node can still load it.
 //
-// Every property is in Jerusalem, so a result anywhere else is a lookup
-// error, never a real location: searches are bounded to Jerusalem and a
-// result is only accepted if OpenStreetMap itself says its city is
-// Jerusalem (the bounding box alone also covers Mevaseret Zion, Beit Jala,
-// Givat Zeev…).
+// Every property is in the installation's city (city.config.json), so a
+// result anywhere else is a lookup error, never a real location: searches
+// are bounded to the city and a result is only accepted if OpenStreetMap
+// itself says its city is that city (a bounding box alone also covers
+// neighboring towns — for Jerusalem: Mevaseret Zion, Beit Jala, Givat Zeev…).
+
+import cityConfig from '../../city.config.json' with { type: 'json' }
 
 /**
  * How precisely a stored location was found: `exact` = the building,
@@ -37,7 +40,12 @@ export function isMissingEntry(e: LocationEntry): e is { missingAt: number } {
 /** An address not found is looked up again after this long. */
 export const MISSING_RETRY_MS = 7 * 24 * 60 * 60 * 1000
 
-export const JERUSALEM_BOUNDS = { south: 31.70, north: 31.90, west: 35.07, east: 35.32 }
+export const CITY_BOUNDS: { south: number; north: number; west: number; east: number } = cityConfig.map.bounds
+const CITY_NAME = cityConfig.city.nameHe
+const CITY_PATTERN = new RegExp(cityConfig.city.osmCityPattern, 'i')
+const escapeRegExp = (t: string) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+/** An address part that is just the city name ("ירושלים", "ירושלים 9100"). */
+const CITY_PART_RE = new RegExp(`^${escapeRegExp(CITY_NAME)}(\\s+\\d+)?$`)
 
 /** Straight-line distance in km (accurate enough at city scale). */
 export function distanceKm(a: { lat: number; lon: number }, b: { lat: number; lon: number }): number {
@@ -46,9 +54,9 @@ export function distanceKm(a: { lat: number; lon: number }, b: { lat: number; lo
   return Math.hypot(dLat, dLon)
 }
 
-export function isInJerusalem(c: { lat: number; lon: number }): boolean {
-  return c.lat >= JERUSALEM_BOUNDS.south && c.lat <= JERUSALEM_BOUNDS.north &&
-    c.lon >= JERUSALEM_BOUNDS.west && c.lon <= JERUSALEM_BOUNDS.east
+export function isInCity(c: { lat: number; lon: number }): boolean {
+  return c.lat >= CITY_BOUNDS.south && c.lat <= CITY_BOUNDS.north &&
+    c.lon >= CITY_BOUNDS.west && c.lon <= CITY_BOUNDS.east
 }
 
 const PREFIXES = ['רחוב ', "רח' ", 'שדרות ', "שד' ", 'שד ', 'סמטת ', 'כיכר ', 'גן ', 'מעלה ', 'מורד ']
@@ -106,9 +114,9 @@ export interface NominatimResult {
 
 export class RateLimitError extends Error {}
 
-/** Nominatim search URL for one query, bounded to Jerusalem. */
+/** Nominatim search URL for one query, bounded to the city. */
 export function nominatimSearchUrl(query: string): string {
-  const { west, north, east, south } = JERUSALEM_BOUNDS
+  const { west, north, east, south } = CITY_BOUNDS
   const params = new URLSearchParams({
     format: 'json',
     limit: '5',
@@ -116,16 +124,16 @@ export function nominatimSearchUrl(query: string): string {
     countrycodes: 'il',
     viewbox: `${west},${north},${east},${south}`,
     bounded: '1',
-    q: `${query}, ירושלים`,
+    q: `${query}, ${CITY_NAME}`,
   })
   return `https://nominatim.openstreetmap.org/search?${params}`
 }
 
-function isJerusalemResult(r: NominatimResult): boolean {
+function isCityResult(r: NominatimResult): boolean {
   const a = r.address ?? {}
   const city = [a.city, a.town, a.municipality, a.village].find(Boolean) ?? ''
-  if (!/ירושלים|jerusalem/i.test(city)) return false
-  return isInJerusalem({ lat: parseFloat(r.lat), lon: parseFloat(r.lon) })
+  if (!CITY_PATTERN.test(city)) return false
+  return isInCity({ lat: parseFloat(r.lat), lon: parseFloat(r.lon) })
 }
 
 export interface GeocodeOptions {
@@ -151,7 +159,7 @@ export function areaVariants(area: string): string[] {
 export function neighborhoodHint(address: string, neighborhood: string | null | undefined): string | null {
   if (neighborhood?.trim()) return neighborhood.trim()
   const parts = address.split(',').slice(1).map(p => p.trim())
-    .filter(p => p && !/^ירושלים(\s+\d+)?$/.test(p) && !/^\d+$/.test(p))
+    .filter(p => p && !CITY_PART_RE.test(p) && !/^\d+$/.test(p))
   return parts[0] ?? null
 }
 
@@ -159,26 +167,26 @@ function toCoords(r: NominatimResult) {
   return { lat: parseFloat(r.lat), lon: parseFloat(r.lon) }
 }
 
-/** Center of a named area (a neighborhood) inside Jerusalem, or null. */
+/** Center of a named area (a neighborhood) inside the city, or null. */
 export async function geocodeArea(area: string, opts: GeocodeOptions): Promise<{ lat: number; lon: number } | null> {
   let first = true
   for (const q of areaVariants(area)) {
     if (!first) await new Promise(r => setTimeout(r, opts.delayMs))
     first = false
-    const r = (await opts.search(q)).find(isJerusalemResult)
+    const r = (await opts.search(q)).find(isCityResult)
     if (r) return toCoords(r)
   }
   return null
 }
 
 /**
- * Places an address inside Jerusalem (house → street), or returns null if
- * nothing in Jerusalem matches. Throws (RateLimitError / Error) on temporary
+ * Places an address inside the city (house → street), or returns null if
+ * nothing in the city matches. Throws (RateLimitError / Error) on temporary
  * failures — callers must retry later rather than record those as "not found".
  *
  * Many street names exist in several parts of the city. When `near` (the
  * center of the property's neighborhood) is given and a search returns
- * several Jerusalem matches, the one closest to it is used, instead of
+ * several in-city matches, the one closest to it is used, instead of
  * whichever OpenStreetMap lists first.
  */
 export async function geocodeAddress(clean: string, opts: GeocodeOptions, near?: { lat: number; lon: number } | null): Promise<Coords | null> {
@@ -186,7 +194,7 @@ export async function geocodeAddress(clean: string, opts: GeocodeOptions, near?:
   const run = async (query: string) => {
     if (!first) await new Promise(r => setTimeout(r, opts.delayMs))
     first = false
-    const matches = (await opts.search(query)).filter(isJerusalemResult)
+    const matches = (await opts.search(query)).filter(isCityResult)
     if (matches.length <= 1 || !near) return matches[0] ?? null
     return matches.reduce((best, m) => (distanceKm(toCoords(m), near) < distanceKm(toCoords(best), near) ? m : best))
   }

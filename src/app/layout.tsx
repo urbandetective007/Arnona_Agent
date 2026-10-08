@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Assistant, Heebo } from 'next/font/google'
 import { IosActiveFix } from '@/components/IosActiveFix'
 import './globals.css'
+import { ORG } from '@/lib/city'
 
 // Assistant (UI text) + Heebo (tabular digits, via the `.num` helper class) —
 // both have real Hebrew glyphs, unlike Manrope which silently fell back to
@@ -19,7 +20,7 @@ const heebo = Heebo({
 })
 
 export const metadata: Metadata = {
-  title: 'ארנו-נט | עיריית ירושלים',
+  title: `ארנו-נט | ${ORG.municipalityHe}`,
   description: 'מערכת לזיהוי עסקים עם אינדיקציה לתשלום ארנונת מגורים',
 }
 

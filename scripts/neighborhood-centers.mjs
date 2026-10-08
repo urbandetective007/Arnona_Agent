@@ -1,5 +1,5 @@
-// Builds data/jerusalem_neighborhood_centers.json — a center point for every
-// neighborhood in data/jerusalem_neighborhoods.json. The map uses these to
+// Builds data/neighborhood_centers.json — a center point for every
+// neighborhood in data/neighborhoods.json. The map uses these to
 // (1) show a property at the center of its neighborhood when its street can't
 // be found, and (2) flag pins that sit far from the neighborhood written in
 // their record. Neighborhoods don't move, so this is run once (and again only
@@ -15,11 +15,12 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { geocodeArea, nominatimSearchUrl, RateLimitError } from '../src/lib/geocode.ts'
+import city from '../city.config.json' with { type: 'json' }
 
 const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
-const REGISTRY = path.join(ROOT, 'data', 'jerusalem_neighborhoods.json')
-const OUT = path.join(ROOT, 'data', 'jerusalem_neighborhood_centers.json')
-const USER_AGENT = 'ArnonaAgentProject/1.0 (Jerusalem municipality property map)'
+const REGISTRY = path.join(ROOT, 'data', 'neighborhoods.json')
+const OUT = path.join(ROOT, 'data', 'neighborhood_centers.json')
+const USER_AGENT = `ArnonaAgentProject/1.0 (${city.city.nameEn} municipality property map)`
 const DELAY_MS = 1300
 const sleep = ms => new Promise(r => setTimeout(r, ms))
 

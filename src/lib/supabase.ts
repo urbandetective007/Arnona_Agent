@@ -1,10 +1,8 @@
 import { createClient } from '@supabase/supabase-js'
 import type { Business, UploadSession } from './types'
+import { SUPABASE_CONFIG } from './city'
 
-export const supabase = createClient(
-  'https://mcsygsqfyuaexxxwsgem.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1jc3lnc3FmeXVhZXh4eHdzZ2VtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1Njk1MTIsImV4cCI6MjA5NDE0NTUxMn0.Hu6t2PLjE_D113NMQEGvEv8QGhqN6udKNO9McqK3ST8'
-)
+export const supabase = createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey)
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function dbToBusiness(row: any): Business {

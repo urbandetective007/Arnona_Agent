@@ -1,6 +1,6 @@
 import { supabase } from './supabase'
 import {
-  MISSING_RETRY_MS, isInJerusalem, nominatimSearchUrl, RateLimitError,
+  MISSING_RETRY_MS, isInCity, nominatimSearchUrl, RateLimitError,
   type LocationEntry, type LocationMap, type NominatimResult, type Precision,
 } from './geocode'
 import { createGeocodeQueue, type GeocodeQueueOptions } from './geocodeQueue'
@@ -38,7 +38,7 @@ export async function fetchLocations(): Promise<LocationMap> {
   const now = Date.now()
   for (const row of rows) {
     if (row.status === 'placed' && row.lat !== null && row.lon !== null && row.precision && row.precision !== 'neighborhood') {
-      if (isInJerusalem({ lat: row.lat, lon: row.lon })) {
+      if (isInCity({ lat: row.lat, lon: row.lon })) {
         map[row.address_key] = { lat: row.lat, lon: row.lon, precision: row.manual ? 'manual' : row.precision }
       }
     } else if (row.status === 'not_found') {

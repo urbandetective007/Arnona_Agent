@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { logout } from '@/lib/auth'
 import { useRoleContext } from './RoleContext'
 import { NAV_BY_ROLE } from '@/lib/access'
+import { ORG } from '@/lib/city'
 
 export default function Sidebar() {
   const pathname = usePathname()
@@ -18,7 +19,7 @@ export default function Sidebar() {
       {/* Logo */}
       <div style={{ padding: '24px 20px 20px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
         <p style={{ color: 'var(--on-ink)', fontWeight: 700, fontSize: 15, letterSpacing: 0.3 }}>סוכן ארנונה</p>
-        <p style={{ color: 'var(--graphite)', fontSize: 12, marginTop: 3 }}>עיריית ירושלים</p>
+        <p style={{ color: 'var(--graphite)', fontSize: 12, marginTop: 3 }}>{ORG.municipalityHe}</p>
       </div>
 
       {/* Nav */}

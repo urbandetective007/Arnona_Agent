@@ -1,10 +1,10 @@
-import registry from '../../data/jerusalem_neighborhoods.json'
+import registry from '../../data/neighborhoods.json'
 
 const CANONICAL = new Set<string>(registry.neighborhoods)
 const ALIASES: Record<string, string> = registry.aliases
 const CLEAR_VALUES = new Set<string>(registry.clearValues)
 
-export const JERUSALEM_NEIGHBORHOODS: string[] = registry.neighborhoods
+export const CITY_NEIGHBORHOODS: string[] = registry.neighborhoods
 
 export function normalizeNeighborhood(raw: string): string | null {
   const trimmed = raw.trim()

@@ -22,7 +22,7 @@ import uuid
 import os
 from datetime import datetime, timezone
 
-_NEIGHBORHOODS_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "jerusalem_neighborhoods.json")
+_NEIGHBORHOODS_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "neighborhoods.json")
 with open(_NEIGHBORHOODS_PATH, encoding="utf-8") as _f:
     _NEIGHBORHOOD_REGISTRY = json.load(_f)
 _CANONICAL_NEIGHBORHOODS = set(_NEIGHBORHOOD_REGISTRY["neighborhoods"])

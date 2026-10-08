@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { logout } from '@/lib/auth'
+import { ORG } from '@/lib/city'
 
 const NAV_LINKS = [
   { href: '/',       label: 'דשבורד' },
@@ -44,7 +45,7 @@ export default function Navbar() {
       </div>
       <div className="text-right">
         <span className="font-bold text-gray-800 text-sm">סוכן ארנונה</span>
-        <p className="text-xs text-gray-400">עיריית ירושלים</p>
+        <p className="text-xs text-gray-400">{ORG.municipalityHe}</p>
       </div>
     </nav>
   )

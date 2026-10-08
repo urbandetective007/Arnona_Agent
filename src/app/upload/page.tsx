@@ -9,7 +9,7 @@ import { useRequireRole } from '@/lib/useRequireRole'
 import type { Business, UploadSession } from '@/lib/types'
 import { mapSuspicionRatingToStatus } from '@/lib/types'
 import { supabase, businessToDb, sessionToDb } from '@/lib/supabase'
-import { normalizeNeighborhood, JERUSALEM_NEIGHBORHOODS } from '@/lib/neighborhoods'
+import { normalizeNeighborhood, CITY_NEIGHBORHOODS } from '@/lib/neighborhoods'
 import { useBusinessTypes } from '@/lib/businessTypes'
 import { BusinessTypeField } from '@/components/BusinessTypeField'
 import { clearCache } from '@/lib/cache'
@@ -24,7 +24,7 @@ import type { BadgeTone } from '@/components/ui'
 
 // Alphabetical for the manual-entry picker — the registry itself is ordered
 // geographically (by city area), which is not useful for typing/searching.
-const SORTED_NEIGHBORHOODS = [...JERUSALEM_NEIGHBORHOODS].sort((a, b) => a.localeCompare(b, 'he'))
+const SORTED_NEIGHBORHOODS = [...CITY_NEIGHBORHOODS].sort((a, b) => a.localeCompare(b, 'he'))
 
 type Step = 'upload' | 'mapping' | 'validate' | 'done'
 type Mode = 'file' | 'manual'
