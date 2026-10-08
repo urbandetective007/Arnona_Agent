@@ -114,8 +114,11 @@ function popupHtml(b: Business, info: PopupInfo, canEdit: boolean): string {
           <strong>שכונה:</strong> ${esc(b.neighborhood)}
         </p>
         ` : ''}
-        <p style="margin: 0 0 6px 0; font-size: 12px; color: var(--charcoal);">
+        <p style="margin: 0 0 4px 0; font-size: 12px; color: var(--charcoal);">
           <strong>כתובת עירייה:</strong> ${esc(b.matchedAddress || 'לא נמצאה')}
+        </p>
+        <p style="margin: 0 0 6px 0; font-size: 12px; color: var(--charcoal);">
+          <strong>סוקר:</strong> ${esc(b.sentToInspector ?? 'לא נשלח לסוקר')}${b.surveyResultDetail ? ` · <strong>תוצאה:</strong> ${esc(b.surveyResultDetail)}` : ''}
         </p>
         <div style="margin-bottom: 8px;">
           <span style="

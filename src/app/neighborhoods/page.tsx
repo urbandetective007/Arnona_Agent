@@ -8,6 +8,7 @@ import type { Business } from '@/lib/types'
 import { useBusinesses } from '@/lib/useBusinesses'
 import { Card, StatCard, Spinner, EmptyState, CrossFilterBar, AnimatedNumber, LoadingMoreBanner, Badge, Table, Thead, Tbody, Tr, Th, Td } from '@/components/ui'
 import { useCrossFilter, chartItemProps } from '@/lib/useCrossFilter'
+import { AgentScanCard } from '@/components/AgentScanCard'
 
 const NEIGHBORHOOD_DIMS = {
   neighborhood: (b: Business) => b.neighborhood || null,
@@ -72,6 +73,11 @@ export default function NeighborhoodsPage() {
       <div className="flex flex-col gap-5">
         <LoadingMoreBanner progress={loadingMore} />
         <CrossFilterBar cf={cf} dimLabels={DIM_LABELS} />
+        <AgentScanCard
+          businesses={businesses}
+          cf={cf}
+          onPick={() => setTimeout(() => document.getElementById('neighborhood-details')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50)}
+        />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <StatCard
             label={cf.hasSelection() ? 'נכסים באינדיקציה בבחירה' : 'שכונות עם אינדיקציה'}
@@ -126,11 +132,15 @@ export default function NeighborhoodsPage() {
         </Card>
 
         {cf.hasSelection() && (
+          <div id="neighborhood-details" className="scroll-mt-4">
           <Card padded={false} className="animate-fade-in">
             <div className="flex items-center justify-between px-5 py-4 border-b border-hairline">
               <span className="text-[14.5px] font-bold text-ink">הנכסים בשכונות שנבחרו</span>
               <span className="num text-[12.5px] text-subtle">{selectedList.length} נכסים</span>
             </div>
+            {selectedList.length === 0 ? (
+              <EmptyState title="אין עדיין נכסים באינדיקציה בשכונות שנבחרו" />
+            ) : (
             <Table>
               <Thead>
                 <Tr>
@@ -157,7 +167,9 @@ export default function NeighborhoodsPage() {
                 ))}
               </Tbody>
             </Table>
+            )}
           </Card>
+          </div>
         )}
       </div>
     </AppShell>

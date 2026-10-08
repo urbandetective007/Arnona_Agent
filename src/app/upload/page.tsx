@@ -12,6 +12,7 @@ import { supabase, businessToDb, sessionToDb } from '@/lib/supabase'
 import { normalizeNeighborhood, JERUSALEM_NEIGHBORHOODS } from '@/lib/neighborhoods'
 import { useBusinessTypes } from '@/lib/businessTypes'
 import { BusinessTypeField } from '@/components/BusinessTypeField'
+import { useStreetTable, neighborhoodsForAddress } from '@/lib/streetNeighborhoods'
 import { clearCache } from '@/lib/cache'
 import { cleanAddress, type LocationMap } from '@/lib/geocode'
 import { placementFor, neighborhoodOf } from '@/lib/placement'
@@ -321,36 +322,72 @@ function WizardStepper({ step, steps }: { step: Step; steps: { key: Step; label:
   )
 }
 
-// A typeable combobox for the neighborhood field — a native <input list>
-// (datalist) leaves the suggestions' position to the browser, which can pop
-// up beside the field instead of under it. This renders its own dropdown
-// directly below the input so it always opens in the same place.
-function NeighborhoodField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+// Neighborhood picker over the closed list. Typing filters the list; a value
+// that isn't on it is dropped on blur (it used to be saved as an empty
+// neighborhood without telling anyone). `streetOptions` are the neighborhoods
+// the typed address's street belongs to: one → it was filled in for you; several
+// → they're offered first.
+function NeighborhoodField({ value, onChange, streetOptions, autoFilled }: {
+  value: string
+  onChange: (v: string) => void
+  streetOptions: string[]
+  autoFilled: boolean
+}) {
   const [open, setOpen] = useState(false)
+  const [query, setQuery] = useState<string | null>(null)
+  const text = query ?? value
   const options = useMemo(() => {
-    const q = value.trim()
-    return q ? SORTED_NEIGHBORHOODS.filter(n => n.includes(q)) : SORTED_NEIGHBORHOODS
-  }, [value])
+    const q = (query ?? '').trim()
+    const rest = SORTED_NEIGHBORHOODS.filter(n => !streetOptions.includes(n))
+    const all = [...streetOptions, ...rest]
+    return q ? all.filter(n => n.includes(q)) : all
+  }, [query, streetOptions])
 
   return (
     <div className="relative">
       <Input
-        value={value}
-        onChange={e => { onChange(e.target.value); setOpen(true) }}
+        value={text}
+        onChange={e => { setQuery(e.target.value); setOpen(true) }}
         onFocus={() => setOpen(true)}
-        onBlur={() => setTimeout(() => setOpen(false), 120)}
+        onBlur={() => setTimeout(() => {
+          setOpen(false)
+          if (query !== null) {
+            const exact = SORTED_NEIGHBORHOODS.find(n => n === query.trim())
+            onChange(exact ?? (query.trim() ? value : ''))
+            setQuery(null)
+          }
+        }, 120)}
         placeholder="הקלידו או בחרו שכונה"
         className="w-full"
         autoComplete="off"
       />
       {open && options.length > 0 && (
         <div className="absolute z-20 top-full inset-x-0 mt-1 max-h-56 overflow-auto rounded-lg border border-hairline bg-surface shadow-[0_8px_24px_rgba(15,26,40,0.14)]">
-          {options.map(n => (
+          {options.map((n, i) => (
             <button
               key={n}
               type="button"
-              onMouseDown={e => { e.preventDefault(); onChange(n); setOpen(false) }}
-              className="block w-full text-start px-3.5 py-2 text-[13.5px] text-ink hover:bg-canvas"
+              onMouseDown={e => { e.preventDefault(); onChange(n); setQuery(null); setOpen(false) }}
+              className={`block w-full text-start px-3.5 py-2 text-[13.5px] text-ink hover:bg-canvas ${streetOptions.length > 1 && i === streetOptions.length - 1 ? 'border-b border-hairline' : ''}`}
+            >
+              {n}
+              {streetOptions.includes(n) && <span className="ms-2 text-[11.5px] text-brand">לפי הרחוב</span>}
+            </button>
+          ))}
+        </div>
+      )}
+      {autoFilled && value && streetOptions.length === 1 && (
+        <p className="mt-1.5 text-[12px] text-clear">מולא אוטומטית לפי הרחוב · אפשר לשנות</p>
+      )}
+      {streetOptions.length > 1 && (
+        <div className="mt-1.5 flex items-center gap-1.5 flex-wrap text-[12px] text-charcoal">
+          <span>הרחוב עובר בכמה שכונות:</span>
+          {streetOptions.map(n => (
+            <button
+              key={n}
+              type="button"
+              onClick={() => onChange(n)}
+              className={`px-2 py-0.5 rounded-md font-semibold ${value === n ? 'bg-brand text-white' : 'bg-brand/[0.08] text-brand hover:bg-brand/[0.14]'}`}
             >
               {n}
             </button>
@@ -375,6 +412,26 @@ export default function UploadPage() {
   const [hIdx, setHIdx] = useState(0)
   const [mapping, setMapping] = useState<Record<TargetField, string>>(EMPTY_MAPPING)
   const [manual, setManual] = useState<Record<TargetField, string>>(EMPTY_MANUAL)
+  // Neighborhood follows the typed street until the employee picks one themselves.
+  const [neighborhoodTouched, setNeighborhoodTouched] = useState(false)
+  const streetTable = useStreetTable()
+  const streetMatch = useMemo(
+    () => (streetTable && manual.address.trim() ? neighborhoodsForAddress(streetTable, manual.address) : { options: [] as string[], byHouse: false }),
+    [streetTable, manual.address]
+  )
+
+  function onManualAddressChange(address: string) {
+    setManual(m => {
+      const next = { ...m, address }
+      if (neighborhoodTouched || !streetTable) return next
+      const { options } = neighborhoodsForAddress(streetTable, address)
+      // One neighborhood → fill it in; several → clear a stale pick that isn't
+      // one of them, and let the field offer them.
+      if (options.length === 1) next.neighborhood = options[0]
+      else if (!options.includes(m.neighborhood)) next.neighborhood = ''
+      return next
+    })
+  }
   const [checking, setChecking] = useState(false)
   const [validation, setValidation] = useState<ValidationResult | null>(null)
   const [pendingSession, setPendingSession] = useState<PendingSession | null>(null)
@@ -600,6 +657,7 @@ export default function UploadPage() {
     setHIdx(0)
     setMapping(EMPTY_MAPPING)
     setManual(EMPTY_MANUAL)
+    setNeighborhoodTouched(false)
     setValidation(null)
     setPendingSession(null)
     setAutoAssign(false)
@@ -699,7 +757,9 @@ export default function UploadPage() {
                     {fd.key === 'neighborhood' ? (
                       <NeighborhoodField
                         value={manual.neighborhood}
-                        onChange={v => setManual(m => ({ ...m, neighborhood: v }))}
+                        onChange={v => { setNeighborhoodTouched(true); setManual(m => ({ ...m, neighborhood: v })) }}
+                        streetOptions={streetMatch.options}
+                        autoFilled={!neighborhoodTouched}
                       />
                     ) : fd.key === 'type' ? (
                       <BusinessTypeField
@@ -711,6 +771,13 @@ export default function UploadPage() {
                       <Select value={manual.suspicionRating} onChange={e => setManual(m => ({ ...m, suspicionRating: e.target.value }))} className="w-full">
                         {RATING_OPTIONS.map(r => <option key={r} value={r}>{r}</option>)}
                       </Select>
+                    ) : fd.key === 'address' ? (
+                      <Input
+                        value={manual.address}
+                        onChange={e => onManualAddressChange(e.target.value)}
+                        placeholder={fd.label}
+                        className="w-full"
+                      />
                     ) : (
                       <Input
                         value={manual[fd.key]}
