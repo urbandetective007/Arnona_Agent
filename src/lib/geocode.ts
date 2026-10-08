@@ -68,7 +68,7 @@ interface ParsedAddress { street: string; number: string | null }
 
 // "דיסקין 9א" → דיסקין / 9 · "נובומיסקי משה 1/2" → נובומיסקי משה / 1 ·
 // "בית הדפוס 12 גבעת שאול" → בית הדפוס / 12 · "דיר אבו טור 0" → no number.
-function parseAddress(clean: string): ParsedAddress {
+export function parseAddress(clean: string): ParsedAddress {
   const m = clean.match(/^(.*?\D)\s*(\d+)(?:\s*[א-ת]|\s*\/\s*[\dא-ת]+)?(?:\s+.*)?$/)
   if (!m) return { street: clean.trim(), number: null }
   const street = m[1].trim()

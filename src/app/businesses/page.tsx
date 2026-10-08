@@ -14,17 +14,15 @@ import { setCache } from '@/lib/cache'
 import { formatDate, parseUploadDate } from '@/lib/dateUtils'
 import { useBusinessTypes, isNewType, BUSINESS_TYPE_SOURCE_LABEL, NEW_TYPE_DAYS } from '@/lib/businessTypes'
 import { BusinessTypeField } from '@/components/BusinessTypeField'
+import { INSPECTOR_OPTIONS, SURVEY_RESULT_OPTIONS, NO_SURVEY_RESULT, inspectorStatus, surveyResult } from '@/lib/surveyStatus'
 import { Card, Button, Badge, Input, Select, Spinner, EmptyState, LoadingMoreBanner } from '@/components/ui'
 import type { BadgeTone } from '@/components/ui'
 
 const ALL_RATINGS = ['גבוה', 'בינוני', 'דרוש בדיקה', 'לא חשוד']
 const RATING_TONE: Record<string, BadgeTone> = { 'גבוה': 'high', 'בינוני': 'mid', 'לא חשוד': 'clear' }
-const INSPECTOR_OPTIONS = ['נשלח לסוקר', 'לא נשלח לסוקר', 'הוחלט לא לשלוח לסקר'] as const
-const SURVEY_RESULT_OPTIONS = ['נמצא פער בסיווג', 'נמצא פער שטח + סיווג', 'נמצא פער שטח', 'לא נמצא עסק/פער שטח']
 const SOURCE_LABEL: Record<Business['source'], string> = { manual: 'הוזן ידנית', excel: 'סוכן ארנונה' }
 const SOURCE_OPTIONS: Business['source'][] = ['excel', 'manual']
 
-const NO_SURVEY_RESULT = 'טרם התקבלה תוצאה'
 const isIndication = (b: Business) => b.suspicionRating === 'גבוה' || b.suspicionRating === 'בינוני'
 const INTAKE_DAYS = 14
 
@@ -137,9 +135,9 @@ export default function BusinessesPage() {
       && (ratingFilter === 'הכל' || b.suspicionRating === ratingFilter)
       && (typeFilter === 'הכל' || b.type === typeFilter)
       && (neighborhoodFilter === 'הכל' || b.neighborhood === neighborhoodFilter)
-      && (inspectorFilter === 'הכל' || (b.sentToInspector ?? 'לא נשלח לסוקר') === inspectorFilter)
+      && (inspectorFilter === 'הכל' || inspectorStatus(b) === inspectorFilter)
       && (sourceFilter === 'הכל' || b.source === sourceFilter)
-      && (surveyFilter === 'הכל' || (b.surveyResultDetail ?? NO_SURVEY_RESULT) === surveyFilter)
+      && (surveyFilter === 'הכל' || surveyResult(b) === surveyFilter)
       && (dayFilter === null || uploadDayKey(b) === dayFilter)
   }), [businesses, search, ratingFilter, typeFilter, neighborhoodFilter, inspectorFilter, sourceFilter, surveyFilter, dayFilter])
 
