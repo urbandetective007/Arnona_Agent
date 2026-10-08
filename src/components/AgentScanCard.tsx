@@ -111,10 +111,6 @@ export function AgentScanCard({ businesses, cf, onPick }: {
               </Tbody>
             </Table>
           </div>
-          <p className="px-5 py-3 text-[11.5px] text-subtle border-t border-hairline">
-            הסטטוס נגזר ממיקום הסוכן ברשימה (האינדקס שהוא מעדכן אחרי כל ריצה). אין רישום של מתי נסרקה כל כתובת בנפרד.
-            &quot;חשודים שנמצאו&quot; כולל את כל הנכסים באינדיקציה בשכונה, גם מסבבים קודמים וגם כאלה שהוזנו ידנית.
-          </p>
         </>
       )}
     </Card>
