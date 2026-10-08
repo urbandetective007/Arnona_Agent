@@ -15,7 +15,11 @@ Output, keyed by the street key (see street_key below, mirrored in
 src/lib/streetNeighborhoods.ts):
 
   {"streets": {"<key>": ["most common neighborhood", "other", ...]},
+   "names":   {"<key>": "street name as usually written"},
    "houses":  {"<key>": {"<house number>": "neighborhood"}}}
+
+"names" lets the site show which street it recognized, so an employee can
+tell whether it understood the address they meant.
 
 "houses" is kept only for streets that cross neighborhoods, so a known house
 number still gets its exact neighborhood.
@@ -28,6 +32,8 @@ import json
 import re
 import sys
 from pathlib import Path
+
+import openpyxl
 
 from assign_neighborhoods import (DATA, Names, StreetIndex, clean, drop_alley, drop_prefix, load_registry_file,
                                   norm, sorted_words, street_of)
@@ -54,16 +60,19 @@ def main():
     names = Names(registry, overrides.get('name_map', {}))
 
     counts = collections.defaultdict(collections.Counter)
+    spellings = collections.defaultdict(collections.Counter)
     houses = collections.defaultdict(dict)
     with (DATA / 'address_cache.csv').open(encoding='utf-8', newline='') as f:
         for row in csv.DictReader(f):
             hood = row['neighborhood'].strip()
             if hood not in canon:
                 continue
-            key = street_key(street_of(row['address']))
+            street = street_of(row['address'])
+            key = street_key(street)
             if not key:
                 continue
             counts[key][hood] += 1
+            spellings[key][clean(street)] += 1
             n = house_number(row['address'])
             if n:
                 houses[key][n] = hood
@@ -76,6 +85,10 @@ def main():
             fixed[street_key(street)] = opts
 
     # Municipal list: only for streets the address list doesn't cover.
+    ws = openpyxl.load_workbook(DATA / 'municipal_streets_2020.xlsx', read_only=True).active
+    for street, _ in ws.iter_rows(min_row=2, max_col=2, values_only=True):
+        if street and street_key(str(street)) not in spellings:
+            spellings.setdefault(f'municipal:{street_key(str(street))}', collections.Counter())[clean(str(street))] += 1
     municipal = collections.defaultdict(collections.Counter)
     for level_key, counter in StreetIndex(DATA / 'municipal_streets_2020.xlsx').idx['words'].items():
         for raw, n in counter.items():
@@ -91,8 +104,13 @@ def main():
     streets.update(fixed)
 
     multi = {k for k, v in streets.items() if len(v) > 1}
+    def display_name(key):
+        c = spellings.get(key) or spellings.get(f'municipal:{key}')
+        return c.most_common(1)[0][0] if c else key
+
     table = {
         'streets': dict(sorted(streets.items())),
+        'names': {k: display_name(k) for k in sorted(streets)},
         'houses': {k: dict(sorted(houses[k].items(), key=lambda kv: int(kv[0]))) for k in sorted(multi) if houses.get(k)},
     }
     out_path.write_text(json.dumps(table, ensure_ascii=False, separators=(',', ':')), encoding='utf-8')

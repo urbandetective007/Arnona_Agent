@@ -1,17 +1,12 @@
 'use client'
 
-import { useMemo, useState } from 'react'
-import { Radar, AlertTriangle } from 'lucide-react'
+import { useMemo } from 'react'
+import { Radar } from 'lucide-react'
 import { Card, Badge, Spinner, Table, Thead, Tbody, Tr, Th, Td } from '@/components/ui'
 import type { Business } from '@/lib/types'
 import type { CrossFilter } from '@/lib/useCrossFilter'
 import { chartItemProps } from '@/lib/useCrossFilter'
 import { useAgentProgress, scanByNeighborhood, NO_NEIGHBORHOOD } from '@/lib/agentProgress'
-import { timeAgo } from '@/lib/dateUtils'
-
-// Agent hasn't pushed a new index for this long → say so; it usually runs
-// every few hours.
-const STALE_DAYS = 3
 
 const isIndication = (b: Business) => b.suspicionRating === 'גבוה' || b.suspicionRating === 'בינוני'
 
@@ -25,8 +20,6 @@ export function AgentScanCard({ businesses, cf, onPick }: {
   onPick?: () => void
 }) {
   const { progress, error } = useAgentProgress()
-  // Captured once per mount — staleness doesn't need to tick live.
-  const [now] = useState(() => Date.now())
 
   const suspectsBy = useMemo(() => {
     const m = new Map<string, number>()
@@ -38,22 +31,13 @@ export function AgentScanCard({ businesses, cf, onPick }: {
   const current = rows.find(r => r.status === 'current')
   const named = rows.filter(r => r.name !== NO_NEIGHBORHOOD)
   const doneCount = named.filter(r => r.status === 'done').length
-  const stale = progress?.updatedAt ? now - new Date(progress.updatedAt).getTime() > STALE_DAYS * 86400000 : false
   const pct = progress && progress.total > 0 ? Math.round((progress.index / progress.total) * 100) : 0
 
   return (
     <Card padded={false}>
-      <div className="flex items-center justify-between gap-3 flex-wrap px-5 py-4 border-b border-hairline">
-        <div className="flex items-center gap-2">
-          <Radar size={17} className="text-brand" strokeWidth={1.9} />
-          <span className="text-[14.5px] font-bold text-ink">סריקת הסוכן</span>
-          <span className="text-[11.5px] text-subtle">הסוכן עובר על רשימת הכתובות שכונה אחר שכונה · מתעדכן מהמאגר ב-GitHub</span>
-        </div>
-        {progress?.updatedAt && (
-          <span className={`text-[12px] ${stale ? 'text-mid font-semibold' : 'text-subtle'}`}>
-            עדכון אחרון של הסוכן: {timeAgo(progress.updatedAt)}
-          </span>
-        )}
+      <div className="flex items-center gap-2 px-5 py-4 border-b border-hairline">
+        <Radar size={17} className="text-brand" strokeWidth={1.9} />
+        <span className="text-[14.5px] font-bold text-ink">סריקת הסוכן</span>
       </div>
 
       {error ? (
@@ -62,12 +46,6 @@ export function AgentScanCard({ businesses, cf, onPick }: {
         <div className="py-8"><Spinner /></div>
       ) : (
         <>
-          {stale && (
-            <div className="mx-5 mt-4 p-2.5 px-3.5 bg-mid/[0.06] border border-mid/25 rounded-[9px] flex items-center gap-2.5 text-[13px] text-[#7c3a12]">
-              <AlertTriangle size={16} className="text-mid shrink-0" strokeWidth={1.9} />
-              הסוכן לא התקדם מאז {timeAgo(progress.updatedAt!)} — ייתכן שהריצה המתוזמנת שלו מושבתת.
-            </div>
-          )}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 px-5 py-4">
             <div>
               <div className="text-[12px] font-semibold text-graphite">איפה הסוכן עכשיו</div>

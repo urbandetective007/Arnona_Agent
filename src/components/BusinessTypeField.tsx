@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { Input, Select } from '@/components/ui'
+import { isNewType } from '@/lib/businessTypes'
 import type { BusinessType } from '@/lib/businessTypes'
 
 const NEW_OPTION = '__new__'
@@ -16,6 +17,9 @@ export function BusinessTypeField({ value, onChange, types }: {
   types: BusinessType[]
 }) {
   const names = useMemo(() => types.map(t => t.name), [types])
+  // Captured once per mount — only decides which types read "(חדש)".
+  const [now] = useState(() => Date.now())
+  const newNames = useMemo(() => new Set(types.filter(t => isNewType(t, now)).map(t => t.name)), [types, now])
   const onList = !value || names.includes(value)
   const [adding, setAdding] = useState(false)
   const showInput = adding || !onList
@@ -77,7 +81,7 @@ export function BusinessTypeField({ value, onChange, types }: {
       className="w-full"
     >
       <option value="">בחרו סוג עסק</option>
-      {names.map(n => <option key={n} value={n}>{n}</option>)}
+      {names.map(n => <option key={n} value={n}>{newNames.has(n) ? `${n} (חדש)` : n}</option>)}
       <option value={NEW_OPTION}>+ סוג עסק חדש…</option>
     </Select>
   )

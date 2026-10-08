@@ -15,7 +15,7 @@ import { useEffect, useState } from 'react'
 const REPO = 'urbandetective007/Final_Project'
 const RAW = `https://raw.githubusercontent.com/${REPO}/main`
 export const NO_NEIGHBORHOOD = 'ללא שכונה'
-const CACHE_KEY = 'agent_progress_v1'
+const CACHE_KEY = 'agent_progress_v2'
 const CACHE_MS = 10 * 60 * 1000
 
 export interface AgentBlock { name: string; start: number; count: number }
@@ -27,8 +27,6 @@ export interface AgentProgress {
   nextAddress: string | null
   /** Runs of consecutive rows with the same neighborhood, in file order. */
   blocks: AgentBlock[]
-  /** When the index was last pushed, if GitHub's API answered. */
-  updatedAt: string | null
 }
 
 export type NeighborhoodScan = {
@@ -77,16 +75,7 @@ async function load(): Promise<AgentProgress> {
   let index = m ? Number(m[1]) : 0
   if (index >= data.length) index = 0   // the agent wraps the same way
 
-  let updatedAt: string | null = null
-  try {
-    const res = await fetch(`https://api.github.com/repos/${REPO}/commits?path=index&per_page=1`)
-    if (res.ok) {
-      const commits = await res.json()
-      updatedAt = commits?.[0]?.commit?.committer?.date ?? null
-    }
-  } catch { /* rate-limited or offline — the date is optional */ }
-
-  return { index, total: data.length, nextAddress: data[index] ? String(data[index][0]) : null, blocks, updatedAt }
+  return { index, total: data.length, nextAddress: data[index] ? String(data[index][0]) : null, blocks }
 }
 
 export function useAgentProgress(): { progress: AgentProgress | null; error: boolean } {
