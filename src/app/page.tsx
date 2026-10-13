@@ -39,6 +39,21 @@ function downloadBusinessesCsv(businesses: Business[], rangeLabel: string) {
 
 const isIndication = (b: Business) => b.suspicionRating === 'גבוה' || b.suspicionRating === 'בינוני'
 const NO_GAP = 'לא נמצא עסק/פער שטח'
+const isGap = (b: Business) => b.sentToInspector === 'נשלח לסוקר' && !!b.surveyResultDetail && b.surveyResultDetail !== NO_GAP
+
+// "Who caught it": every reported gap split by where the property came from —
+// the agent's scan (excel uploads) or a city employee's manual entry — and by
+// the kind of gap the surveyor found.
+const CATCH_SOURCES: { key: Business['source']; label: string }[] = [
+  { key: 'excel', label: 'סוכן ארנונה' },
+  { key: 'manual', label: 'עובד עירייה' },
+]
+const GAP_TYPES = [
+  { key: 'נמצא פער בסיווג', color: '#c8102e' },
+  { key: 'נמצא פער שטח + סיווג', color: '#e8590c' },
+  { key: 'נמצא פער שטח', color: '#f2a33a' },
+]
+const OTHER_GAP = { key: 'אחר', color: '#7c8ba0' }
 
 // Cross-filter dimensions — one per clickable chart on this page. Each maps a
 // property to the category (or, for the nested funnel, categories) it counts
@@ -59,6 +74,7 @@ const DASHBOARD_DIMS = {
   // Any property in the neighborhood, not only indication ones — so picking a
   // neighborhood narrows the funnel's "נסרקו" stage to it as well.
   neighborhood: (b: Business) => b.neighborhood || null,
+  catchSource: (b: Business) => (isGap(b) ? b.source : null),
   pipeline: (b: Business) => {
     if (b.sentToInspector === 'נשלח לסוקר') {
       if (!b.surveyResultDetail) return 'awaiting'
@@ -70,7 +86,7 @@ const DASHBOARD_DIMS = {
 }
 type DashboardDim = keyof typeof DASHBOARD_DIMS
 
-const DIM_LABELS: Record<DashboardDim, string> = { funnel: 'שלב', neighborhood: 'שכונה', pipeline: 'סטטוס סקר' }
+const DIM_LABELS: Record<DashboardDim, string> = { funnel: 'שלב', neighborhood: 'שכונה', pipeline: 'סטטוס סקר', catchSource: 'מקור התפיסה' }
 const FUNNEL_LABELS: Record<string, string> = {
   total: 'נסרקו', indication: 'אינדיקציה', sent: 'נשלחו לסוקר', reported: 'דווח מהשטח', gap: 'נמצא פער',
 }
@@ -80,6 +96,7 @@ const PIPELINE_LABELS: Record<string, string> = {
 function filterValueLabel(dim: DashboardDim, value: string) {
   if (dim === 'funnel') return FUNNEL_LABELS[value] ?? value
   if (dim === 'pipeline') return PIPELINE_LABELS[value] ?? value
+  if (dim === 'catchSource') return CATCH_SOURCES.find(s => s.key === value)?.label ?? value
   return value
 }
 
@@ -121,6 +138,14 @@ function computeStatsUncached(list: Business[]) {
   const declinedIndication = highIndication.filter(b => b.sentToInspector === 'הוחלט לא לשלוח לסקר')
   const awaitingReport = sent.filter(b => !b.surveyResultDetail)
   const noGap = reported.filter(b => b.surveyResultDetail === 'לא נמצא עסק/פער שטח')
+
+  const gapTypeKey = (b: Business) => GAP_TYPES.some(t => t.key === b.surveyResultDetail) ? b.surveyResultDetail! : OTHER_GAP.key
+  const gapsBySource = CATCH_SOURCES.map(src => {
+    const gaps = gapFound.filter(b => b.source === src.key)
+    const byType = new Map<string, number>()
+    gaps.forEach(b => byType.set(gapTypeKey(b), (byType.get(gapTypeKey(b)) ?? 0) + 1))
+    return { ...src, total: gaps.length, byType }
+  })
 
   // Raw count per neighborhood — not a rate. With only one indication
   // tier in real use, "% of neighborhood that's high" degenerates to a
@@ -167,7 +192,7 @@ function computeStatsUncached(list: Business[]) {
   return {
     total, high, mid, indication,
     sent, declined, reported, gapFound, pendingAssignment,
-    notSentYet, declinedIndication, awaitingReport, noGap,
+    notSentYet, declinedIndication, awaitingReport, noGap, gapsBySource,
     hotNeighborhoods, topThreeShare, totalHistory, indicationHistory,
   }
 }
@@ -206,6 +231,7 @@ export default function Dashboard() {
   const funnelStats = computeStats(cf.filteredExcept('funnel'))
   const neighborhoodStats = computeStats(cf.filteredExcept('neighborhood'))
   const pipelineStats = computeStats(cf.filteredExcept('pipeline'))
+  const catchStats = computeStats(cf.filteredExcept('catchSource'))
 
   const lastUpdated = useMemo(() => {
     const timestamps = sessions.map(s => parseUploadDate(s.uploadDate)?.getTime()).filter((t): t is number => t !== undefined)
@@ -263,6 +289,13 @@ export default function Dashboard() {
     { key: 'noGap', label: PIPELINE_LABELS.noGap, count: pipelineStats.noGap.length, color: '#0f7a4a' },
     { key: 'gap', label: PIPELINE_LABELS.gap, count: pipelineStats.gapFound.length, color: '#c8102e' },
   ]
+  const catchRows = catchStats.gapsBySource
+  const catchTotal = catchRows.reduce((sum, r) => sum + r.total, 0)
+  const catchMax = Math.max(...catchRows.map(r => r.total), 1)
+  const gapTypesShown = [...GAP_TYPES, OTHER_GAP]
+    .map(t => ({ ...t, count: catchRows.reduce((sum, r) => sum + (r.byType.get(t.key) ?? 0), 0) }))
+    .filter(t => t.count > 0 || t.key !== OTHER_GAP.key)
+
   const pipelineTotal = pipelineSegments.reduce((sum, s) => sum + s.count, 0)
   const pipelineArcs = pipelineSegments.reduce<{ list: (typeof pipelineSegments[number] & { pct: number; dashoffset: number })[]; offset: number }>(
     (acc, seg) => {
@@ -454,8 +487,55 @@ export default function Dashboard() {
             )}
           </Card>
 
-          {/* Donut + activity */}
+          {/* Gap catches by source + donut + activity */}
           <div className="flex flex-col gap-5 min-h-0">
+            <Card>
+              <div className="flex items-baseline justify-between gap-3 mb-3">
+                <span className="text-[14.5px] font-bold text-ink">תפיסת פערים לפי מקור</span>
+                <span className="text-[11.5px] text-subtle"><span className="num font-semibold text-ink"><AnimatedNumber value={catchTotal} /></span> פערים שדווחו</span>
+              </div>
+              {catchTotal === 0 ? (
+                <p className="text-[13px] text-graphite">עדיין לא דווחו פערים מהשטח.</p>
+              ) : (
+                <>
+                  <div className="flex flex-col gap-3">
+                    {catchRows.map(row => {
+                      const item = chartItemProps(cf, 'catchSource', row.key, `${row.label}: ${row.total}`)
+                      const pct = Math.round((row.total / catchTotal) * 100)
+                      return (
+                        <div key={row.key} {...item} className={`${item.className} flex items-center gap-3 rounded-md ${item['aria-pressed'] ? 'bg-brand/[0.06]' : ''}`}>
+                          <span className="w-[84px] shrink-0 text-[13px] font-semibold text-ink">{row.label}</span>
+                          <div className="flex-1 h-[22px] bg-canvas rounded-md overflow-hidden">
+                            <div className="flex h-full transition-[width] duration-500 ease-out" style={{ width: `${(row.total / catchMax) * 100}%` }}>
+                              {gapTypesShown.map(t => {
+                                const n = row.byType.get(t.key) ?? 0
+                                return n > 0 && (
+                                  <span key={t.key} title={`${t.key}: ${n}`} className="block h-full" style={{ width: `${(n / row.total) * 100}%`, background: t.color }} />
+                                )
+                              })}
+                            </div>
+                          </div>
+                          <span className="w-[72px] shrink-0 text-start text-[13px]">
+                            <span className="num font-bold text-ink"><AnimatedNumber value={row.total} /></span>
+                            <span className="num text-[11.5px] text-subtle ms-1">({pct}%)</span>
+                          </span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                  <div className="flex items-center gap-x-4 gap-y-1.5 flex-wrap mt-3.5 pt-3 border-t border-[#eef1f5]">
+                    {gapTypesShown.map(t => (
+                      <span key={t.key} className="flex items-center gap-1.5 text-[12px] text-charcoal">
+                        <span className="w-2 h-2 rounded-sm shrink-0" style={{ background: t.color }} />
+                        {t.key}
+                        <span className="num font-bold text-ink">{t.count}</span>
+                      </span>
+                    ))}
+                  </div>
+                </>
+              )}
+            </Card>
+
             <Card>
               <div className="text-[14.5px] font-bold text-ink mb-3">פילוח סקר — נכסים באינדיקציה</div>
               <div className="flex items-center gap-4">
