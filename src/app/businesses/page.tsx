@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import * as XLSX from 'xlsx'
-import { Search, SlidersHorizontal, X, Download, Send, BarChart3, ChevronDown, ChevronLeft, Trash2 } from 'lucide-react'
+import { Search, SlidersHorizontal, X, Download, Send, BarChart3, HelpCircle, ChevronDown, ChevronLeft, Trash2 } from 'lucide-react'
 import { AppShell } from '@/components/AppShell'
 import { useRequireRole } from '@/lib/useRequireRole'
 import type { Business } from '@/lib/types'
@@ -102,6 +102,7 @@ export default function BusinessesPage() {
   const [now] = useState(() => Date.now())
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [intakeOpen, setIntakeOpen] = useState(false)
+  const [sendHelpOpen, setSendHelpOpen] = useState(false)
   const [expanded, setExpanded] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState<Partial<Business>>({})
@@ -356,15 +357,45 @@ export default function BusinessesPage() {
                 נקה סינון
               </Button>
             )}
+            <button
+              type="button"
+              onClick={() => setSendHelpOpen(o => !o)}
+              aria-expanded={sendHelpOpen}
+              aria-label="איך שולחים נכס לסוקר?"
+              title="איך שולחים נכס לסוקר?"
+              className={`ms-auto w-9 h-9 inline-flex items-center justify-center rounded-lg cursor-pointer ${sendHelpOpen ? 'bg-brand/10 text-brand' : 'text-subtle hover:bg-canvas hover:text-brand'}`}
+            >
+              <HelpCircle size={18} strokeWidth={1.8} />
+            </button>
             <Button
               variant="secondary"
               icon={<Download size={15} strokeWidth={1.9} />}
               onClick={exportToExcel}
-              className="ms-auto"
             >
               ייצוא לאקסל
             </Button>
           </div>
+
+          {sendHelpOpen && (
+            <div className="mt-3.5 p-4 rounded-xl bg-brand/[0.05] border border-brand/20 text-[13px] text-ink leading-relaxed">
+              <div className="flex items-center justify-between gap-3 mb-2">
+                <span className="text-[14px] font-bold">איך שולחים נכס לסוקר?</span>
+                <button type="button" onClick={() => setSendHelpOpen(false)} aria-label="סגירה" className="text-subtle hover:text-ink cursor-pointer">
+                  <X size={16} strokeWidth={1.9} />
+                </button>
+              </div>
+              <ul className="list-disc ps-5 flex flex-col gap-1.5">
+                <li><strong className="font-semibold">נכס בודד:</strong> בעמודת &quot;סוקר&quot; בוחרים &quot;נשלח לסוקר&quot;. השינוי נשמר מיד.</li>
+                <li><strong className="font-semibold">כמה נכסים יחד:</strong> מסמנים את הנכסים בתיבות הסימון בצד ימין של הטבלה (התיבה שבכותרת מסמנת את כל המוצגים כרגע, גם אחרי סינון), ולוחצים &quot;שלח לסוקר&quot; בפס הכחול שמופיע מעל הטבלה.</li>
+                <li><strong className="font-semibold">בזמן העלאת דוח:</strong> בעמוד &quot;העלאת דוח חדש&quot;, המתג &quot;הקצאה אוטומטית&quot; שולח לסוקר את כל הנכסים החדשים בדירוג &quot;גבוה&quot;.</li>
+              </ul>
+              <div className="mt-3 pt-3 border-t border-brand/15 flex flex-col gap-1 text-[12.5px] text-charcoal">
+                <span>הנכס יופיע לסוקר בעמוד &quot;תוכנית עבודה&quot; שלו, מקובץ לפי שכונה, עד שתוזן לו תוצאת סקר.</span>
+                <span>לא נשלחת התראה או מייל: הסוקר יראה את הנכס כשייכנס לעמוד או ירענן אותו.</span>
+                <span>לביטול, מחזירים בעמודת &quot;סוקר&quot; ל&quot;לא נשלח לסוקר&quot;. את התוצאה מהשטח מזינים בעמודת &quot;תוצאת סקר&quot;.</span>
+              </div>
+            </div>
+          )}
 
           {filtersOpen && (
             <div className="flex items-center gap-3 flex-wrap mt-3.5 pt-3.5 border-t border-hairline">
