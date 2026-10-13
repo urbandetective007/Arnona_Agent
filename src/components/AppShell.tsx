@@ -15,6 +15,8 @@ interface AppShellProps {
   title: string
   subtitle?: ReactNode
   actions?: ReactNode
+  /** Trims the page's side margins, for pages built around a wide table. */
+  wide?: boolean
 }
 
 // Replaces AppLayout + Sidebar: a dark 240px sidebar grouped by section
@@ -31,7 +33,7 @@ export function AppShell(props: AppShellProps) {
   )
 }
 
-function AppShellInner({ children, title, subtitle, actions }: AppShellProps) {
+function AppShellInner({ children, title, subtitle, actions, wide }: AppShellProps) {
   const pathname = usePathname()
   const router = useRouter()
   const role = useRoleContext()
@@ -121,7 +123,7 @@ function AppShellInner({ children, title, subtitle, actions }: AppShellProps) {
         <header className="h-[62px] shrink-0 bg-surface border-b border-hairline flex items-center px-6">
           <PageHeader title={title} subtitle={subtitle} actions={actions} className="w-full" />
         </header>
-        <main className="flex-1 min-w-0 overflow-auto p-6 lg:p-8">{children}</main>
+        <main className={`flex-1 min-w-0 overflow-auto ${wide ? 'p-4 lg:p-5' : 'p-6 lg:p-8'}`}>{children}</main>
       </div>
     </div>
   )

@@ -326,7 +326,7 @@ export default function BusinessesPage() {
   }
 
   return (
-    <AppShell title="כלל הנתונים" subtitle={`${filtered.length.toLocaleString('he')} מתוך ${businesses.length.toLocaleString('he')} עסקים`}>
+    <AppShell wide title="כלל הנתונים" subtitle={`${filtered.length.toLocaleString('he')} מתוך ${businesses.length.toLocaleString('he')} עסקים`}>
       <div className="flex flex-col gap-4">
         <LoadingMoreBanner progress={loadingMore} />
         <Card>
@@ -493,7 +493,7 @@ export default function BusinessesPage() {
               <table className="w-full border-collapse text-[13px] min-w-[1000px]">
                 <thead>
                   <tr className="bg-canvas border-b border-hairline">
-                    <th className="px-3.5 py-2.5 w-9">
+                    <th className="px-2.5 py-2.5 w-9">
                       <input type="checkbox" checked={allVisibleSelected} onChange={toggleSelectAllVisible} className="w-4 h-4 accent-[#024ad8] cursor-pointer" />
                     </th>
                     <th className="w-6" />
@@ -501,7 +501,7 @@ export default function BusinessesPage() {
                       <th
                         key={c.key}
                         onClick={() => toggleSort(c.key as SortKey)}
-                        className="px-3.5 py-2.5 text-start text-[12px] font-semibold text-graphite whitespace-nowrap cursor-pointer select-none"
+                        className="px-2.5 py-2.5 text-start text-[12px] font-semibold text-graphite whitespace-nowrap cursor-pointer select-none"
                       >
                         {c.label}{sortKey === c.key && (sortDir === 'asc' ? ' ▲' : ' ▼')}
                       </th>
@@ -518,24 +518,24 @@ export default function BusinessesPage() {
                         className={`cursor-pointer transition-colors ${expanded === b.id ? 'bg-canvas' : 'hover:bg-canvas/60'}`}
                         onClick={() => setExpanded(expanded === b.id ? null : b.id)}
                       >
-                        <td className="px-3.5 py-3" onClick={e => e.stopPropagation()}>
+                        <td className="px-2.5 py-3" onClick={e => e.stopPropagation()}>
                           <input type="checkbox" checked={selectedIds.has(b.id)} onChange={() => toggleSelected(b.id)} className="w-4 h-4 accent-[#024ad8] cursor-pointer" />
                         </td>
                         <td className="text-subtle">{expanded === b.id ? <ChevronDown size={14} /> : <ChevronLeft size={14} />}</td>
-                        <td className="px-3.5 py-3 font-semibold text-ink">{b.name}</td>
-                        <td className="px-3.5 py-3 text-charcoal">{b.type}</td>
-                        <td className="px-3.5 py-3 text-charcoal">{b.address}</td>
-                        <td className="px-3.5 py-3 text-charcoal">{b.neighborhood || '—'}</td>
-                        <td className="px-3.5 py-3 text-graphite">{linkCount(b)}</td>
-                        <td className="px-3.5 py-3">
+                        <td className="px-2.5 py-3 font-semibold text-ink">{b.name}</td>
+                        <td className="px-2.5 py-3 text-charcoal">{b.type}</td>
+                        <td className="px-2.5 py-3 text-charcoal">{b.address}</td>
+                        <td className="px-2.5 py-3 text-charcoal">{b.neighborhood || '—'}</td>
+                        <td className="px-2.5 py-3 text-graphite">{linkCount(b)}</td>
+                        <td className="px-2.5 py-3">
                           {b.suspicionRating ? <Badge tone={RATING_TONE[b.suspicionRating] ?? 'neutral'}>{b.suspicionRating}</Badge> : '—'}
                         </td>
-                        <td className="px-3.5 py-3 text-graphite">{b.unitCount || '—'}</td>
-                        <td className="px-3.5 py-3 text-graphite text-[12px]">{formatDate(b.uploadDate)}</td>
-                        <td className="px-3.5 py-3">
+                        <td className="px-2.5 py-3 text-graphite">{b.unitCount || '—'}</td>
+                        <td className="px-2.5 py-3 text-graphite text-[12px]">{formatDate(b.uploadDate)}</td>
+                        <td className="px-2.5 py-3">
                           <Badge tone={b.source === 'manual' ? 'mid' : 'neutral'}>{SOURCE_LABEL[b.source]}</Badge>
                         </td>
-                        <td className="px-3.5 py-3" onClick={e => e.stopPropagation()}>
+                        <td className="px-2.5 py-3" onClick={e => e.stopPropagation()}>
                           <Select
                             value={b.sentToInspector ?? 'לא נשלח לסוקר'}
                             onChange={e => updateInspectorStatus(b.id, e.target.value as typeof INSPECTOR_OPTIONS[number])}
@@ -545,7 +545,7 @@ export default function BusinessesPage() {
                             {INSPECTOR_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
                           </Select>
                         </td>
-                        <td className="px-3.5 py-3" onClick={e => e.stopPropagation()}>
+                        <td className="px-2.5 py-3" onClick={e => e.stopPropagation()}>
                           <Select
                             value={b.surveyResultDetail ?? ''}
                             onChange={e => updateSurveyResult(b.id, e.target.value)}
@@ -556,7 +556,7 @@ export default function BusinessesPage() {
                             {SURVEY_RESULT_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
                           </Select>
                         </td>
-                        <td className="px-3.5 py-3 text-center">
+                        <td className="px-2.5 py-3 text-center">
                           <button onClick={e => { e.stopPropagation(); deleteBusiness(b.id) }} className="text-subtle hover:text-high" title="מחק">
                             <Trash2 size={15} strokeWidth={1.8} />
                           </button>
