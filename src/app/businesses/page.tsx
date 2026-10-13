@@ -357,23 +357,24 @@ export default function BusinessesPage() {
                 נקה סינון
               </Button>
             )}
-            <button
-              type="button"
-              onClick={() => setSendHelpOpen(o => !o)}
-              aria-expanded={sendHelpOpen}
-              aria-label="איך שולחים נכס לסוקר?"
-              title="איך שולחים נכס לסוקר?"
-              className={`ms-auto w-9 h-9 inline-flex items-center justify-center rounded-lg cursor-pointer ${sendHelpOpen ? 'bg-brand/10 text-brand' : 'text-subtle hover:bg-canvas hover:text-brand'}`}
-            >
-              <HelpCircle size={18} strokeWidth={1.8} />
-            </button>
             <Button
               variant="secondary"
               icon={<Download size={15} strokeWidth={1.9} />}
               onClick={exportToExcel}
+              className="ms-auto"
             >
               ייצוא לאקסל
             </Button>
+            <button
+              type="button"
+              onClick={() => setSendHelpOpen(o => !o)}
+              aria-expanded={sendHelpOpen}
+              title="איך שולחים נכס לסוקר?"
+              className={`h-9 px-2.5 inline-flex items-center gap-1.5 rounded-lg text-[12.5px] font-semibold cursor-pointer ${sendHelpOpen ? 'bg-brand/10 text-brand' : 'text-graphite hover:bg-canvas hover:text-brand'}`}
+            >
+              <HelpCircle size={17} strokeWidth={1.8} />
+              שליחה לסוקר
+            </button>
           </div>
 
           {sendHelpOpen && (
