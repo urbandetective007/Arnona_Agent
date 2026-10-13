@@ -344,7 +344,7 @@ export default function BusinessesPage() {
               סננים{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
             </Button>
             <Button variant="secondary" icon={<BarChart3 size={15} strokeWidth={1.9} />} onClick={() => setIntakeOpen(o => !o)} aria-expanded={intakeOpen}>
-              לפי יום
+              חשודים חדשים לפי יום
               {intakeToday.count > 0 && <span className="num ms-1 px-1.5 rounded-full bg-brand/10 text-brand text-[11px] font-bold">{intakeToday.count}</span>}
             </Button>
             {(search || activeFilterCount > 0) && (
