@@ -1,13 +1,17 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
-import { Check, ChevronDown, ClipboardEdit, LogOut, MapPin, Navigation } from 'lucide-react'
+import { Check, ChevronDown, ClipboardEdit, ExternalLink, Loader2, LocateFixed, LogOut, MapPin, Navigation, Route } from 'lucide-react'
 import { useRequireRole } from '@/lib/useRequireRole'
 import { logout } from '@/lib/auth'
 import type { Business } from '@/lib/types'
 import { useBusinesses } from '@/lib/useBusinesses'
 import { Badge, Spinner } from '@/components/ui'
+import { formatDate } from '@/lib/dateUtils'
+import { distanceKm, type LocationMap } from '@/lib/geocode'
+import { fetchLocations } from '@/lib/locations'
+import { placementFor, neighborhoodOf } from '@/lib/placement'
 import type { BadgeTone } from '@/components/ui'
 
 const RATING_TONE: Record<string, BadgeTone> = { 'גבוה': 'high', 'בינוני': 'mid', 'לא חשוד': 'clear' }
@@ -25,7 +29,26 @@ function mapsUrl(address: string): string {
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`
 }
 
+// Google Maps directions with the stops in order. No origin, so Google starts
+// from the phone's own location. Google takes at most 9 waypoints + 1 destination.
+const MAX_ROUTE_STOPS = 10
+function routeUrl(addresses: string[]): string {
+  const withCity = addresses.map(a => (a.includes('ירושלים') ? a : `${a}, ירושלים`))
+  const destination = withCity[withCity.length - 1]
+  const waypoints = withCity.slice(0, -1)
+  let url = `https://www.google.com/maps/dir/?api=1&travelmode=walking&destination=${encodeURIComponent(destination)}`
+  if (waypoints.length) url += `&waypoints=${encodeURIComponent(waypoints.join('|'))}`
+  return url
+}
+
+function formatDistance(km: number): string {
+  return km < 1 ? `${Math.max(Math.round(km * 1000 / 10) * 10, 10)} מ׳` : `${km.toFixed(1)} ק״מ`
+}
+
+type Pt = { lat: number; lon: number }
+
 const CHECKED_STORAGE_KEY = 'work-plan-checked'
+const NEARBY_STORAGE_KEY = 'work-plan-nearby'
 
 function loadChecked(): Set<string> {
   try {
@@ -40,7 +63,17 @@ export default function WorkPlanPage() {
   const ready = useRequireRole(['surveyor'])
   const router = useRouter()
   const { businesses, loading } = useBusinesses()
-  const [openNeighborhood, setOpenNeighborhood] = useState<string | null | undefined>(undefined)
+  // Every neighborhood starts closed; the surveyor opens the one they're in.
+  const [openNeighborhood, setOpenNeighborhood] = useState<string | null>(null)
+  const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [loggingOut, setLoggingOut] = useState(false)
+  // "Nearest to me": the phone's position (null while off) and stored address
+  // coordinates. A property without stored coordinates falls back to its
+  // neighborhood's center.
+  const [myPos, setMyPos] = useState<Pt | null>(null)
+  const [locating, setLocating] = useState(false)
+  const [locateError, setLocateError] = useState(false)
+  const [locations, setLocations] = useState<LocationMap>({})
   const [today] = useState(() => new Date())
   // `checked` is live — it drives the checkmark itself and updates the
   // instant you tap one. `checkedAtLoad` is a snapshot taken once when the
@@ -56,6 +89,46 @@ export default function WorkPlanPage() {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time hydration from localStorage on mount, not a cascading update
     setChecked(loaded)
     setCheckedAtLoad(loaded)
+  }, [])
+
+  useEffect(() => {
+    fetchLocations().then(setLocations).catch(() => { /* sorting falls back to neighborhood centers */ })
+  }, [])
+
+  function locate() {
+    if (!('geolocation' in navigator)) { setLocateError(true); return }
+    setLocating(true)
+    setLocateError(false)
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        setMyPos({ lat: pos.coords.latitude, lon: pos.coords.longitude })
+        setLocating(false)
+        try { localStorage.setItem(NEARBY_STORAGE_KEY, '1') } catch { /* ignore */ }
+      },
+      () => {
+        setLocating(false)
+        setLocateError(true)
+        try { localStorage.removeItem(NEARBY_STORAGE_KEY) } catch { /* ignore */ }
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 },
+    )
+  }
+
+  function toggleNearby() {
+    if (myPos) {
+      setMyPos(null)
+      try { localStorage.removeItem(NEARBY_STORAGE_KEY) } catch { /* ignore */ }
+    } else {
+      locate()
+    }
+  }
+
+  // Turned on last visit → permission was already given, so ask again silently.
+  useEffect(() => {
+    let on = false
+    try { on = localStorage.getItem(NEARBY_STORAGE_KEY) === '1' } catch { /* ignore */ }
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time restore of a saved preference on mount
+    if (on) locate()
   }, [])
 
   function persistChecked(next: Set<string>) {
@@ -82,6 +155,20 @@ export default function WorkPlanPage() {
     [businesses]
   )
 
+  // Distance (km) from the surveyor to each pending property, while "nearest
+  // to me" is on.
+  const distanceById = useMemo(() => {
+    const m = new Map<string, number>()
+    if (!myPos) return m
+    pending.forEach(b => {
+      const placed = placementFor(b, locations)
+      const pt = placed.state === 'placed' ? placed.coords : neighborhoodOf(b)?.center
+      if (pt) m.set(b.id, distanceKm(myPos, pt))
+    })
+    return m
+  }, [pending, locations, myPos])
+  const dist = (id: string) => distanceById.get(id) ?? Infinity
+
   const groups = useMemo(() => {
     const byNeighborhood = new Map<string, Business[]>()
     pending.forEach(b => {
@@ -96,17 +183,23 @@ export default function WorkPlanPage() {
         [...list].sort((a, b) => {
           const aDone = checkedAtLoad.has(a.id) ? 1 : 0
           const bDone = checkedAtLoad.has(b.id) ? 1 : 0
-          return aDone - bDone || a.name.localeCompare(b.name, 'he')
+          return aDone - bDone || (myPos ? dist(a.id) - dist(b.id) : 0) || a.name.localeCompare(b.name, 'he')
         }),
       ])
       .sort((a, b) => {
         const aDone = a[1].every(x => checkedAtLoad.has(x.id)) ? 1 : 0
         const bDone = b[1].every(x => checkedAtLoad.has(x.id)) ? 1 : 0
-        return aDone - bDone || b[1].length - a[1].length || a[0].localeCompare(b[0], 'he')
+        const near = myPos ? nearestKm(a[1]) - nearestKm(b[1]) : 0
+        return aDone - bDone || near || b[1].length - a[1].length || a[0].localeCompare(b[0], 'he')
       })
-  }, [pending, checkedAtLoad])
+    function nearestKm(list: Business[]) {
+      return Math.min(...list.map(x => dist(x.id)))
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- dist only reads distanceById
+  }, [pending, checkedAtLoad, distanceById, myPos])
 
-  const effectiveOpen = openNeighborhood !== undefined ? openNeighborhood : (groups[0]?.[0] ?? null)
+  const doneCount = pending.filter(b => checked.has(b.id)).length
+  const donePct = pending.length > 0 ? Math.round((doneCount / pending.length) * 100) : 0
 
   if (!ready) return null
 
@@ -134,12 +227,13 @@ export default function WorkPlanPage() {
             </div>
             <button
               type="button"
-              onClick={async () => { await logout(); router.push('/login') }}
+              onClick={async () => { setLoggingOut(true); await logout(); router.push('/login') }}
+              disabled={loggingOut}
               aria-label="יציאה"
-              className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
-              style={{ background: 'rgba(255,255,255,0.10)', color: '#cfe0ff' }}
+              title="יציאה"
+              className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 bg-white/10 text-[#cfe0ff] hover:bg-white/20 hover:text-white active:scale-90 active:bg-white/25 transition-[background-color,color,transform] duration-150 cursor-pointer disabled:cursor-default disabled:opacity-70 focus-visible:outline-2 focus-visible:outline-white/60"
             >
-              <LogOut size={17} strokeWidth={1.9} />
+              {loggingOut ? <Loader2 size={17} strokeWidth={1.9} className="animate-spin" /> : <LogOut size={17} strokeWidth={1.9} />}
             </button>
           </div>
 
@@ -154,18 +248,55 @@ export default function WorkPlanPage() {
                 <p className="num text-white text-[19px] font-bold leading-none">{groups.length}</p>
                 <p className="text-[11.5px] mt-1" style={{ color: '#8fa8c8' }}>שכונות</p>
               </div>
+              <div className="w-px h-6 shrink-0" style={{ background: 'rgba(255,255,255,0.14)' }} />
+              <div>
+                <p className="num text-white text-[19px] font-bold leading-none">{doneCount}</p>
+                <p className="text-[11.5px] mt-1" style={{ color: '#8fa8c8' }}>בוצעו</p>
+              </div>
             </div>
+            {pending.length > 0 && (
+              <div className="mt-3">
+                <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.12)' }}>
+                  <span className="block h-full rounded-full bg-clear transition-[width] duration-500 ease-out" style={{ width: `${donePct}%` }} />
+                </div>
+                <p className="text-[11.5px] mt-1.5" style={{ color: '#8fa8c8' }}>
+                  <span className="num font-semibold text-white">{doneCount}</span> מתוך <span className="num">{pending.length}</span> בוצעו ({donePct}%)
+                </p>
+              </div>
+            )}
           </div>
         </header>
 
         <main className="flex-1 px-3.5 pt-3.5 pb-8 flex flex-col gap-3">
+          {groups.length > 0 && (
+            <div className="flex flex-col gap-1.5">
+              <button
+                type="button"
+                onClick={toggleNearby}
+                disabled={locating}
+                aria-pressed={!!myPos}
+                className={`self-start h-9 px-3.5 rounded-full border text-[12.5px] font-semibold flex items-center gap-1.5 active:scale-95 transition-[background-color,color,transform] duration-150 cursor-pointer ${
+                  myPos ? 'bg-brand text-white border-brand' : 'bg-surface text-charcoal border-hairline hover:border-brand/40 hover:text-brand'
+                }`}
+              >
+                {locating ? <Loader2 size={15} strokeWidth={2} className="animate-spin" /> : <LocateFixed size={15} strokeWidth={2} />}
+                {locating ? 'מאתר מיקום…' : myPos ? 'ממוין לפי קרוב אליי' : 'מיין לפי קרוב אליי'}
+              </button>
+              {locateError && (
+                <p className="text-[12px] text-high">לא הצלחנו לקבל מיקום — בדקו שהרשאת המיקום פעילה בטלפון.</p>
+              )}
+            </div>
+          )}
           {groups.length === 0 ? (
             <div className="flex-1 flex items-center justify-center text-subtle text-[14px] text-center px-6">
               אין נכסים הממתינים לסקר כרגע
             </div>
           ) : groups.map(([neighborhood, list]) => {
-            const open = effectiveOpen === neighborhood
+            const open = openNeighborhood === neighborhood
             const neighborhoodChecked = list.every(b => checked.has(b.id))
+            const hoodDone = list.filter(b => checked.has(b.id)).length
+            const hoodNearest = myPos ? Math.min(...list.map(b => dist(b.id))) : Infinity
+            const routeStops = list.filter(b => !checked.has(b.id) && b.address)
             return (
               <div
                 key={neighborhood}
@@ -178,7 +309,7 @@ export default function WorkPlanPage() {
                     type="button"
                     onClick={() => toggleNeighborhoodChecked(list)}
                     aria-label={neighborhoodChecked ? 'בטל סימון כל נכסי השכונה' : 'סמן את כל נכסי השכונה כבוצעו'}
-                    className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
+                    className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-[background-color,border-color,transform] active:scale-90 cursor-pointer ${
                       neighborhoodChecked ? 'bg-clear border-clear' : 'border-hairline'
                     }`}
                   >
@@ -187,14 +318,19 @@ export default function WorkPlanPage() {
                   <button
                     type="button"
                     onClick={() => setOpenNeighborhood(open ? null : neighborhood)}
-                    className="flex-1 min-w-0 text-start flex items-center gap-2.5"
+                    aria-expanded={open}
+                    className="flex-1 min-w-0 text-start flex items-center gap-2.5 cursor-pointer"
                   >
                     <span className="w-[34px] h-[34px] rounded-[10px] bg-high/10 flex items-center justify-center shrink-0">
                       <MapPin size={16} className="text-high" strokeWidth={2} />
                     </span>
                     <div className="flex-1 min-w-0">
                       <p className="text-[15px] font-bold text-ink">{neighborhood}</p>
-                      <p className="num text-[12px] text-subtle mt-0.5">{list.length.toLocaleString('he')} נכסים</p>
+                      <p className="num text-[12px] text-subtle mt-0.5">
+                        {list.length.toLocaleString('he')} נכסים
+                        {hoodDone > 0 && <span className="text-clear font-semibold"> · {hoodDone} בוצעו</span>}
+                        {Number.isFinite(hoodNearest) && <span> · {formatDistance(hoodNearest)}</span>}
+                      </p>
                     </div>
                     <ChevronDown size={17} className={`text-subtle shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} strokeWidth={2.1} />
                   </button>
@@ -202,8 +338,25 @@ export default function WorkPlanPage() {
 
                 {open && (
                   <div className="px-2.5 pb-2.5 flex flex-col gap-1.5">
+                    {routeStops.length > 1 && (
+                      <a
+                        href={routeUrl(routeStops.slice(0, MAX_ROUTE_STOPS).map(b => b.address))}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-2.5 h-10 rounded-xl bg-brand/[0.07] text-brand text-[13px] font-semibold flex items-center justify-center gap-1.5 hover:bg-brand/[0.12] active:scale-[0.98] transition-[background-color,transform]"
+                      >
+                        <Route size={16} strokeWidth={2} />
+                        נווט לכל השכונה
+                        <span className="num text-[11.5px] font-normal text-brand/80">
+                          ({routeStops.length > MAX_ROUTE_STOPS ? `${MAX_ROUTE_STOPS} הכתובות הראשונות` : `${routeStops.length} עצירות`})
+                        </span>
+                      </a>
+                    )}
                     {list.map(b => {
                       const isChecked = checked.has(b.id)
+                      const expanded = expandedId === b.id
+                      const km = distanceById.get(b.id)
+                      const links = [b.link1, b.link2, b.link3].filter(Boolean)
                       return (
                         <div key={b.id} className="rounded-xl bg-canvas">
                           <div className="flex items-center gap-2.5 px-2 py-2.5">
@@ -211,16 +364,27 @@ export default function WorkPlanPage() {
                               type="button"
                               onClick={() => toggleChecked(b.id)}
                               aria-label={isChecked ? 'בטל סימון' : 'סמן כבוצע'}
-                              className={`w-[26px] h-[26px] rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
+                              className={`w-[26px] h-[26px] rounded-full border-2 flex items-center justify-center shrink-0 transition-[background-color,border-color,transform] active:scale-90 cursor-pointer ${
                                 isChecked ? 'bg-clear border-clear' : 'border-hairline'
                               }`}
                             >
                               {isChecked && <Check size={13} className="text-white" strokeWidth={3} />}
                             </button>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-[14px] font-semibold text-ink truncate">{b.name}</p>
-                              <p className="text-[12.5px] text-subtle mt-0.5 truncate">{b.address}</p>
-                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setExpandedId(expanded ? null : b.id)}
+                              aria-expanded={expanded}
+                              className="flex-1 min-w-0 text-start cursor-pointer"
+                            >
+                              <p className="text-[14px] font-semibold text-ink truncate flex items-center gap-1">
+                                <span className="truncate">{b.name}</span>
+                                <ChevronDown size={14} className={`text-subtle shrink-0 transition-transform ${expanded ? 'rotate-180' : ''}`} strokeWidth={2.2} />
+                              </p>
+                              <p className="text-[12.5px] text-subtle mt-0.5 truncate">
+                                {b.address}
+                                {km !== undefined && <span className="num"> · {formatDistance(km)}</span>}
+                              </p>
+                            </button>
                             {b.suspicionRating && (
                               <Badge tone={RATING_TONE[b.suspicionRating] ?? 'neutral'} className="shrink-0">{b.suspicionRating}</Badge>
                             )}
@@ -229,7 +393,7 @@ export default function WorkPlanPage() {
                                 href={mapsUrl(b.address)}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="w-11 h-11 rounded-[11px] bg-brand text-white flex items-center justify-center shrink-0"
+                                className="w-11 h-11 rounded-[11px] bg-brand text-white flex items-center justify-center shrink-0 hover:bg-brand-light active:scale-90 transition-[background-color,transform]"
                                 aria-label={`נווט אל ${b.name}`}
                               >
                                 <Navigation size={17} strokeWidth={2} />
@@ -237,12 +401,38 @@ export default function WorkPlanPage() {
                             )}
                           </div>
 
+                          {expanded && (
+                            <div className="mx-2 mb-2 p-3 rounded-lg bg-surface border border-hairline flex flex-col gap-2 text-[12.5px]">
+                              {b.type && <DetailRow label="סוג עסק">{b.type}</DetailRow>}
+                              {b.suspicionDetail && <DetailRow label="סיבת החשד"><span className="whitespace-pre-line">{b.suspicionDetail}</span></DetailRow>}
+                              {b.unitCount && <DetailRow label="יחידות בכתובת"><span className="num">{b.unitCount}</span></DetailRow>}
+                              {b.matchedAddress && b.matchedAddress !== b.address && <DetailRow label="כתובת שזוהתה">{b.matchedAddress}</DetailRow>}
+                              {b.uploadDate && <DetailRow label="נוסף"><span className="num">{formatDate(b.uploadDate)}</span></DetailRow>}
+                              {links.length > 0 && (
+                                <div className="flex flex-wrap gap-1.5 pt-0.5">
+                                  {links.map((href, i) => (
+                                    <a
+                                      key={i}
+                                      href={href}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="h-7 px-2.5 rounded-full bg-brand/[0.07] text-brand text-[12px] font-semibold flex items-center gap-1 hover:bg-brand/[0.12] active:scale-95 transition-[background-color,transform]"
+                                    >
+                                      <ExternalLink size={12} strokeWidth={2} />
+                                      קישור {i + 1}
+                                    </a>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          )}
+
                           <div className="px-2 pb-2">
                             <a
                               href={SURVEY_FORM_URL}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="w-full h-9 rounded-lg border border-hairline bg-surface flex items-center justify-center gap-1.5 text-[12.5px] font-semibold text-charcoal hover:border-[#c7d1de] transition-colors"
+                              className="w-full h-9 rounded-lg border border-hairline bg-surface flex items-center justify-center gap-1.5 text-[12.5px] font-semibold text-charcoal hover:border-[#c7d1de] active:scale-[0.98] transition-[border-color,transform]"
                             >
                               <ClipboardEdit size={14} strokeWidth={1.9} />
                               מילוי דיווח סקר
@@ -258,6 +448,15 @@ export default function WorkPlanPage() {
           })}
         </main>
       </div>
+    </div>
+  )
+}
+
+function DetailRow({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="flex gap-2">
+      <span className="w-[86px] shrink-0 text-subtle">{label}</span>
+      <span className="flex-1 min-w-0 text-ink">{children}</span>
     </div>
   )
 }
