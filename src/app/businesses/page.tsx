@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import * as XLSX from 'xlsx'
-import { Search, SlidersHorizontal, X, Download, Send, ChevronDown, ChevronLeft, Trash2 } from 'lucide-react'
+import { Search, SlidersHorizontal, X, Download, Send, BarChart3, ChevronDown, ChevronLeft, Trash2 } from 'lucide-react'
 import { AppShell } from '@/components/AppShell'
 import { useRequireRole } from '@/lib/useRequireRole'
 import type { Business } from '@/lib/types'
@@ -101,6 +101,7 @@ export default function BusinessesPage() {
   // only needs to know which day "today" is.
   const [now] = useState(() => Date.now())
   const [filtersOpen, setFiltersOpen] = useState(false)
+  const [intakeOpen, setIntakeOpen] = useState(false)
   const [expanded, setExpanded] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState<Partial<Business>>({})
@@ -342,6 +343,10 @@ export default function BusinessesPage() {
             <Button variant="secondary" icon={<SlidersHorizontal size={15} strokeWidth={1.9} />} onClick={() => setFiltersOpen(o => !o)}>
               סננים{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
             </Button>
+            <Button variant="secondary" icon={<BarChart3 size={15} strokeWidth={1.9} />} onClick={() => setIntakeOpen(o => !o)} aria-expanded={intakeOpen}>
+              לפי יום
+              {intakeToday.count > 0 && <span className="num ms-1 px-1.5 rounded-full bg-brand/10 text-brand text-[11px] font-bold">{intakeToday.count}</span>}
+            </Button>
             {(search || activeFilterCount > 0) && (
               <Button
                 variant="ghost"
@@ -390,43 +395,45 @@ export default function BusinessesPage() {
               </Select>
             </div>
           )}
+          {intakeOpen && (
+            <div className="mt-3.5 pt-3.5 border-t border-hairline">
+              <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
+                <div className="flex items-baseline gap-2.5">
+                  <span className="text-[14.5px] font-bold text-ink">נכסים חשודים חדשים לפי יום</span>
+                  <span className="text-[11.5px] text-subtle">{INTAKE_DAYS} הימים האחרונים · לחיצה על יום מסננת את הטבלה</span>
+                </div>
+                <div className="flex items-center gap-4 text-[12.5px] text-charcoal">
+                  <span>היום: <span className="num font-bold text-ink">{intakeToday.count}</span></span>
+                  <span>אתמול: <span className="num font-bold text-ink">{intakeYesterday.count}</span></span>
+                  <span>סה״כ בתקופה: <span className="num font-bold text-ink">{intakeTotal}</span></span>
+                </div>
+              </div>
+              <div className="flex items-end gap-1.5 h-[92px]">
+                {dailyIntake.map(d => {
+                  const selected = dayFilter === d.key
+                  return (
+                    <button
+                      key={d.key}
+                      type="button"
+                      onClick={() => setDayFilter(selected ? null : d.key)}
+                      aria-pressed={selected}
+                      title={`${d.label}: ${d.count} נכסים חשודים חדשים`}
+                      className={`flex-1 min-w-0 h-full flex flex-col items-center justify-end gap-1 rounded-md cursor-pointer transition-opacity ${dayFilter && !selected ? 'opacity-40' : ''} ${selected ? 'bg-brand/[0.06]' : 'hover:bg-canvas'}`}
+                    >
+                      <span className="num text-[11px] font-semibold text-ink">{d.count > 0 ? d.count : ''}</span>
+                      <span
+                        className={`w-full max-w-[28px] rounded-t-[4px] transition-[height] duration-500 ease-out ${d.count > 0 ? 'bg-brand-light' : 'bg-[#eef1f5]'}`}
+                        style={{ height: `${d.count > 0 ? Math.max((d.count / intakeMax) * 52, 4) : 2}px` }}
+                      />
+                      <span className="num text-[10.5px] text-subtle">{d.label}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
         </Card>
 
-        <Card>
-          <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
-            <div className="flex items-baseline gap-2.5">
-              <span className="text-[14.5px] font-bold text-ink">נכסים חשודים חדשים לפי יום</span>
-              <span className="text-[11.5px] text-subtle">{INTAKE_DAYS} הימים האחרונים · לחיצה על יום מסננת את הטבלה</span>
-            </div>
-            <div className="flex items-center gap-4 text-[12.5px] text-charcoal">
-              <span>היום: <span className="num font-bold text-ink">{intakeToday.count}</span></span>
-              <span>אתמול: <span className="num font-bold text-ink">{intakeYesterday.count}</span></span>
-              <span>סה״כ בתקופה: <span className="num font-bold text-ink">{intakeTotal}</span></span>
-            </div>
-          </div>
-          <div className="flex items-end gap-1.5 h-[92px]">
-            {dailyIntake.map(d => {
-              const selected = dayFilter === d.key
-              return (
-                <button
-                  key={d.key}
-                  type="button"
-                  onClick={() => setDayFilter(selected ? null : d.key)}
-                  aria-pressed={selected}
-                  title={`${d.label}: ${d.count} נכסים חשודים חדשים`}
-                  className={`flex-1 min-w-0 h-full flex flex-col items-center justify-end gap-1 rounded-md cursor-pointer transition-opacity ${dayFilter && !selected ? 'opacity-40' : ''} ${selected ? 'bg-brand/[0.06]' : 'hover:bg-canvas'}`}
-                >
-                  <span className="num text-[11px] font-semibold text-ink">{d.count > 0 ? d.count : ''}</span>
-                  <span
-                    className={`w-full max-w-[28px] rounded-t-[4px] transition-[height] duration-500 ease-out ${d.count > 0 ? 'bg-brand-light' : 'bg-[#eef1f5]'}`}
-                    style={{ height: `${d.count > 0 ? Math.max((d.count / intakeMax) * 52, 4) : 2}px` }}
-                  />
-                  <span className="num text-[10.5px] text-subtle">{d.label}</span>
-                </button>
-              )
-            })}
-          </div>
-        </Card>
 
         {visibleSelectedIds.length > 0 && (
           <div className="flex items-center gap-3 px-4 py-3 bg-brand/[0.06] border border-brand/25 rounded-xl flex-wrap">

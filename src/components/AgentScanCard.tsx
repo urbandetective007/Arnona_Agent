@@ -1,7 +1,7 @@
 'use client'
 
-import { useMemo } from 'react'
-import { Radar } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { Radar, Plus, Minus } from 'lucide-react'
 import { Card, Badge, Spinner, Table, Thead, Tbody, Tr, Th, Td } from '@/components/ui'
 import type { Business } from '@/lib/types'
 import type { CrossFilter } from '@/lib/useCrossFilter'
@@ -20,6 +20,7 @@ export function AgentScanCard({ businesses, cf, onPick }: {
   onPick?: () => void
 }) {
   const { progress, error } = useAgentProgress()
+  const [expanded, setExpanded] = useState(false)
 
   const suspectsBy = useMemo(() => {
     const m = new Map<string, number>()
@@ -38,6 +39,17 @@ export function AgentScanCard({ businesses, cf, onPick }: {
       <div className="flex items-center gap-2 px-5 py-4 border-b border-hairline">
         <Radar size={17} className="text-brand" strokeWidth={1.9} />
         <span className="text-[14.5px] font-bold text-ink">סריקת הסוכן</span>
+        {progress && !error && (
+          <button
+            type="button"
+            onClick={() => setExpanded(o => !o)}
+            aria-expanded={expanded}
+            className="ms-auto inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-[12.5px] font-semibold text-brand hover:bg-brand/[0.06] cursor-pointer"
+          >
+            {expanded ? <Minus size={14} strokeWidth={2.2} /> : <Plus size={14} strokeWidth={2.2} />}
+            פירוט שכונות
+          </button>
+        )}
       </div>
 
       {error ? (
@@ -71,6 +83,7 @@ export function AgentScanCard({ businesses, cf, onPick }: {
             </div>
           </div>
 
+          {expanded && (
           <div className="max-h-[380px] overflow-auto border-t border-hairline">
             <Table className="rounded-none border-0">
               <Thead>
@@ -111,6 +124,7 @@ export function AgentScanCard({ businesses, cf, onPick }: {
               </Tbody>
             </Table>
           </div>
+          )}
         </>
       )}
     </Card>
