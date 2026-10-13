@@ -64,7 +64,8 @@ const DASHBOARD_DIMS = {
       if (!b.surveyResultDetail) return 'awaiting'
       return b.surveyResultDetail === NO_GAP ? 'noGap' : 'gap'
     }
-    return isIndication(b) ? 'notSent' : null
+    if (!isIndication(b)) return null
+    return b.sentToInspector === 'הוחלט לא לשלוח לסקר' ? 'declined' : 'notSent'
   },
 }
 type DashboardDim = keyof typeof DASHBOARD_DIMS
@@ -74,7 +75,7 @@ const FUNNEL_LABELS: Record<string, string> = {
   total: 'נסרקו', indication: 'אינדיקציה', sent: 'נשלחו לסוקר', reported: 'דווח מהשטח', gap: 'נמצא פער',
 }
 const PIPELINE_LABELS: Record<string, string> = {
-  notSent: 'טרם נשלח לסוקר', awaiting: 'נשלח, ממתין לדיווח', noGap: 'דווח, לא נמצא פער', gap: 'דווח, נמצא פער',
+  notSent: 'טרם נשלח לסוקר', declined: 'הוחלט לא לשלוח לסקר', awaiting: 'נשלח, ממתין לדיווח', noGap: 'דווח, לא נמצא פער', gap: 'דווח, נמצא פער',
 }
 function filterValueLabel(dim: DashboardDim, value: string) {
   if (dim === 'funnel') return FUNNEL_LABELS[value] ?? value
@@ -114,7 +115,10 @@ function computeStatsUncached(list: Business[]) {
   // "distribution" chart here — a rating breakdown would just be one
   // giant slice forever. Real fields, no invented categories.
   const highIndication = list.filter(b => b.suspicionRating === 'גבוה' || b.suspicionRating === 'בינוני')
-  const notSentYet = highIndication.filter(b => b.sentToInspector !== 'נשלח לסוקר')
+  // Same set as pendingAssignment (the bottleneck banner) — properties it was
+  // decided not to survey get their own slice instead of counting as "not sent".
+  const notSentYet = highIndication.filter(b => b.sentToInspector !== 'נשלח לסוקר' && b.sentToInspector !== 'הוחלט לא לשלוח לסקר')
+  const declinedIndication = highIndication.filter(b => b.sentToInspector === 'הוחלט לא לשלוח לסקר')
   const awaitingReport = sent.filter(b => !b.surveyResultDetail)
   const noGap = reported.filter(b => b.surveyResultDetail === 'לא נמצא עסק/פער שטח')
 
@@ -163,7 +167,7 @@ function computeStatsUncached(list: Business[]) {
   return {
     total, high, mid, indication,
     sent, declined, reported, gapFound, pendingAssignment,
-    notSentYet, awaitingReport, noGap,
+    notSentYet, declinedIndication, awaitingReport, noGap,
     hotNeighborhoods, topThreeShare, totalHistory, indicationHistory,
   }
 }
@@ -254,6 +258,7 @@ export default function Dashboard() {
   // meaningful axis (every property this team works is 'גבוה').
   const pipelineSegments = [
     { key: 'notSent', label: PIPELINE_LABELS.notSent, count: pipelineStats.notSentYet.length, color: '#7c8ba0' },
+    { key: 'declined', label: PIPELINE_LABELS.declined, count: pipelineStats.declinedIndication.length, color: '#c3ccd8' },
     { key: 'awaiting', label: PIPELINE_LABELS.awaiting, count: pipelineStats.awaitingReport.length, color: '#296ef9' },
     { key: 'noGap', label: PIPELINE_LABELS.noGap, count: pipelineStats.noGap.length, color: '#0f7a4a' },
     { key: 'gap', label: PIPELINE_LABELS.gap, count: pipelineStats.gapFound.length, color: '#c8102e' },
