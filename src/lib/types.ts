@@ -38,3 +38,35 @@ export function mapSuspicionRatingToStatus(rating: string): Business['arnonaStat
   if (r === 'לא חשוד') return 'ok'
   return 'unknown'
 }
+
+/** A file attached to a field report, stored in the private 'survey-files' bucket. */
+export interface SurveyReportFile {
+  path: string
+  name: string
+  type: string
+  size: number
+  /** Which upload field it came from: 'main' = קובץ, 'extra' = קבצים נוספים. */
+  group: 'main' | 'extra'
+}
+
+/** The surveyor's in-app field report — the questions of the municipality's survey form. */
+export interface SurveyReport {
+  id: string
+  businessId: string
+  createdAt: string
+  surveyDate: string
+  surveyorName: string
+  visitedAddress: string
+  arnonaPropertyNumber: string
+  spokeWith: string
+  actualUse: string
+  useDescription: string
+  ownerInfo: string
+  extraInfo: string
+  files: SurveyReportFile[]
+  lat: number | null
+  lon: number | null
+  accuracyM: number | null
+  /** How far the surveyor was from the property's stored location when reporting. */
+  distanceM: number | null
+}

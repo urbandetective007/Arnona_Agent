@@ -58,3 +58,17 @@ function fallbackToNeighborhood(hood: ReturnType<typeof neighborhoodOf>): Placem
     ? { state: 'placed', coords: hood.center, kind: 'neighborhood', suspiciousKm: null }
     : { state: 'missing' }
 }
+
+/**
+ * Google Street View at the property when its exact spot is known (looked up
+ * or placed by hand); otherwise a Maps search of the address, where the
+ * street-level photo is one tap away.
+ */
+export function streetViewUrl(b: { address: string; neighborhood: string }, locations: LocationMap): string {
+  const placed = placementFor(b, locations)
+  if (placed.state === 'placed' && (placed.kind === 'exact' || placed.kind === 'manual')) {
+    return `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${placed.coords.lat},${placed.coords.lon}`
+  }
+  const q = b.address.includes('ירושלים') ? b.address : `${b.address}, ירושלים`
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`
+}

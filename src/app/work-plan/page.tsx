@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
-import { Check, ChevronDown, ClipboardEdit, ExternalLink, Loader2, LocateFixed, LogOut, MapPin, Navigation, Route } from 'lucide-react'
+import { Check, ChevronDown, ClipboardEdit, ExternalLink, Loader2, LocateFixed, LogOut, MapPin, Navigation, Route, ScanEye } from 'lucide-react'
 import { useRequireRole } from '@/lib/useRequireRole'
 import { logout } from '@/lib/auth'
 import type { Business } from '@/lib/types'
@@ -11,18 +11,17 @@ import { Badge, Spinner } from '@/components/ui'
 import { formatDate } from '@/lib/dateUtils'
 import { distanceKm, type LocationMap } from '@/lib/geocode'
 import { fetchLocations } from '@/lib/locations'
-import { placementFor, neighborhoodOf } from '@/lib/placement'
+import { placementFor, neighborhoodOf, streetViewUrl } from '@/lib/placement'
+import { fetchReportsByBusiness } from '@/lib/surveyReports'
+import { SurveyReportSheet } from '@/components/SurveyReportSheet'
 import type { BadgeTone } from '@/components/ui'
 
 const RATING_TONE: Record<string, BadgeTone> = { 'גבוה': 'high', 'בינוני': 'mid', 'לא חשוד': 'clear' }
 const NO_NEIGHBORHOOD = 'ללא שכונה משויכת'
 const DAY_NAMES = ['יום ראשון', 'יום שני', 'יום שלישי', 'יום רביעי', 'יום חמישי', 'יום שישי', 'שבת']
 
-// The surveyor reports findings on the municipality's own Microsoft Forms
-// form (an external process this app doesn't replace) — this button just
-// gets them there. See the code comment above SURVEY_FORM_URL's usage for
-// how to add address/name/date pre-fill once a prefilled-link template is
-// available from that form.
+// The survey form is built in (SurveyReportSheet). The municipality's
+// Microsoft Forms version stays linked as a fallback during the transition.
 const SURVEY_FORM_URL = 'https://forms.cloud.microsoft/r/vGwE8SGUAR'
 
 function mapsUrl(address: string): string {
@@ -74,6 +73,11 @@ export default function WorkPlanPage() {
   const [locating, setLocating] = useState(false)
   const [locateError, setLocateError] = useState(false)
   const [locations, setLocations] = useState<LocationMap>({})
+  // Properties with a field report are done for the surveyor even before the
+  // office sets their result. null = still loading.
+  const [reportedIds, setReportedIds] = useState<Set<string> | null>(null)
+  const [reportFor, setReportFor] = useState<Business | null>(null)
+  const [toast, setToast] = useState<string | null>(null)
   const [today] = useState(() => new Date())
   // `checked` is live — it drives the checkmark itself and updates the
   // instant you tap one. `checkedAtLoad` is a snapshot taken once when the
@@ -90,6 +94,18 @@ export default function WorkPlanPage() {
     setChecked(loaded)
     setCheckedAtLoad(loaded)
   }, [])
+
+  useEffect(() => {
+    fetchReportsByBusiness()
+      .then(m => setReportedIds(new Set(m.keys())))
+      .catch(() => setReportedIds(new Set()))
+  }, [])
+
+  useEffect(() => {
+    if (!toast) return
+    const t = setTimeout(() => setToast(null), 3500)
+    return () => clearTimeout(t)
+  }, [toast])
 
   useEffect(() => {
     fetchLocations().then(setLocations).catch(() => { /* sorting falls back to neighborhood centers */ })
@@ -151,8 +167,8 @@ export default function WorkPlanPage() {
   }
 
   const pending = useMemo(
-    () => businesses.filter(b => b.sentToInspector === 'נשלח לסוקר' && !b.surveyResultDetail),
-    [businesses]
+    () => businesses.filter(b => b.sentToInspector === 'נשלח לסוקר' && !b.surveyResultDetail && !reportedIds?.has(b.id)),
+    [businesses, reportedIds]
   )
 
   // Distance (km) from the surveyor to each pending property, while "nearest
@@ -203,7 +219,7 @@ export default function WorkPlanPage() {
 
   if (!ready) return null
 
-  if (loading) {
+  if (loading || reportedIds === null) {
     return (
       <div className="min-h-screen flex bg-canvas">
         <Spinner fullHeight />
@@ -408,8 +424,18 @@ export default function WorkPlanPage() {
                               {b.unitCount && <DetailRow label="יחידות בכתובת"><span className="num">{b.unitCount}</span></DetailRow>}
                               {b.matchedAddress && b.matchedAddress !== b.address && <DetailRow label="כתובת שזוהתה">{b.matchedAddress}</DetailRow>}
                               {b.uploadDate && <DetailRow label="נוסף"><span className="num">{formatDate(b.uploadDate)}</span></DetailRow>}
-                              {links.length > 0 && (
-                                <div className="flex flex-wrap gap-1.5 pt-0.5">
+                              <div className="flex flex-wrap gap-1.5 pt-0.5">
+                                {b.address && (
+                                  <a
+                                    href={streetViewUrl(b, locations)}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="h-7 px-2.5 rounded-full bg-brand text-white text-[12px] font-semibold flex items-center gap-1 hover:bg-brand-deep active:scale-95 transition-[background-color,transform]"
+                                  >
+                                    <ScanEye size={13} strokeWidth={2} />
+                                    תמונת רחוב
+                                  </a>
+                                )}
                                   {links.map((href, i) => (
                                     <a
                                       key={i}
@@ -422,21 +448,19 @@ export default function WorkPlanPage() {
                                       קישור {i + 1}
                                     </a>
                                   ))}
-                                </div>
-                              )}
+                              </div>
                             </div>
                           )}
 
                           <div className="px-2 pb-2">
-                            <a
-                              href={SURVEY_FORM_URL}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="w-full h-9 rounded-lg border border-hairline bg-surface flex items-center justify-center gap-1.5 text-[12.5px] font-semibold text-charcoal hover:border-[#c7d1de] active:scale-[0.98] transition-[border-color,transform]"
+                            <button
+                              type="button"
+                              onClick={() => setReportFor(b)}
+                              className="w-full h-10 rounded-lg bg-surface border border-brand/30 flex items-center justify-center gap-1.5 text-[13px] font-semibold text-brand hover:bg-brand/[0.04] active:scale-[0.98] transition-[background-color,transform] cursor-pointer"
                             >
-                              <ClipboardEdit size={14} strokeWidth={1.9} />
+                              <ClipboardEdit size={15} strokeWidth={1.9} />
                               מילוי דיווח סקר
-                            </a>
+                            </button>
                           </div>
                         </div>
                       )
@@ -446,8 +470,31 @@ export default function WorkPlanPage() {
               </div>
             )
           })}
+          {groups.length > 0 && (
+            <a href={SURVEY_FORM_URL} target="_blank" rel="noopener noreferrer" className="self-center mt-2 text-[11.5px] text-subtle underline underline-offset-2">
+              הטופס החיצוני (מיקרוסופט) עדיין זמין
+            </a>
+          )}
         </main>
       </div>
+
+      {reportFor && (
+        <SurveyReportSheet
+          business={reportFor}
+          locations={locations}
+          onClose={() => setReportFor(null)}
+          onSaved={report => {
+            setReportedIds(prev => new Set(prev).add(report.businessId))
+            setReportFor(null)
+            setToast(`הדיווח על ${reportFor.name} נשמר ✓`)
+          }}
+        />
+      )}
+      {toast && (
+        <div role="status" className="fixed bottom-5 inset-x-0 z-50 flex justify-center px-4 pointer-events-none">
+          <div className="max-w-md px-4 py-3 rounded-xl bg-clear text-white text-[13.5px] font-semibold shadow-lg animate-fade-in">{toast}</div>
+        </div>
+      )}
     </div>
   )
 }

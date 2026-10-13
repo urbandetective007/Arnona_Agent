@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import * as XLSX from 'xlsx'
-import { Search, SlidersHorizontal, X, Download, Send, BarChart3, HelpCircle, ChevronDown, ChevronLeft, Trash2 } from 'lucide-react'
+import { Search, SlidersHorizontal, X, Download, Send, BarChart3, HelpCircle, ScanEye, ChevronDown, ChevronLeft, Trash2 } from 'lucide-react'
 import { AppShell } from '@/components/AppShell'
 import { useRequireRole } from '@/lib/useRequireRole'
 import type { Business } from '@/lib/types'
@@ -14,7 +14,13 @@ import { setCache } from '@/lib/cache'
 import { formatDate, parseUploadDate } from '@/lib/dateUtils'
 import { useBusinessTypes, isNewType } from '@/lib/businessTypes'
 import { BusinessTypeField } from '@/components/BusinessTypeField'
-import { INSPECTOR_OPTIONS, SURVEY_RESULT_OPTIONS, NO_SURVEY_RESULT, inspectorStatus, surveyResult } from '@/lib/surveyStatus'
+import { INSPECTOR_OPTIONS, SURVEY_RESULT_OPTIONS, NO_SURVEY_RESULT, REPORTED_AWAITING_DECISION, inspectorStatus, surveyResult } from '@/lib/surveyStatus'
+import type { SurveyReport } from '@/lib/types'
+import type { LocationMap } from '@/lib/geocode'
+import { fetchLocations } from '@/lib/locations'
+import { streetViewUrl } from '@/lib/placement'
+import { fetchReportsByBusiness } from '@/lib/surveyReports'
+import { FieldReportView } from '@/components/FieldReportView'
 import { Card, Button, Badge, Input, Select, Spinner, EmptyState, LoadingMoreBanner } from '@/components/ui'
 import type { BadgeTone } from '@/components/ui'
 
@@ -96,6 +102,14 @@ export default function BusinessesPage() {
   const [inspectorFilter, setInspectorFilter] = useState('הכל')
   const [sourceFilter, setSourceFilter] = useState('הכל')
   const [surveyFilter, setSurveyFilter] = useState('הכל')
+  // The surveyor's in-app field reports, by property (newest first), and the
+  // stored address coordinates used for the Street View link.
+  const [reports, setReports] = useState<Map<string, SurveyReport[]>>(new Map())
+  const [locations, setLocations] = useState<LocationMap>({})
+  useEffect(() => {
+    fetchReportsByBusiness().then(setReports).catch(() => { /* reports just don't show */ })
+    fetchLocations().then(setLocations).catch(() => { /* Street View falls back to an address search */ })
+  }, [])
   const [dayFilter, setDayFilter] = useState<string | null>(null)
   // Captured once per page load (not read during render) — the intake strip
   // only needs to know which day "today" is.
@@ -130,9 +144,9 @@ export default function BusinessesPage() {
       && (neighborhoodFilter === 'הכל' || b.neighborhood === neighborhoodFilter)
       && (inspectorFilter === 'הכל' || inspectorStatus(b) === inspectorFilter)
       && (sourceFilter === 'הכל' || b.source === sourceFilter)
-      && (surveyFilter === 'הכל' || surveyResult(b) === surveyFilter)
+      && (surveyFilter === 'הכל' || (surveyFilter === REPORTED_AWAITING_DECISION ? !b.surveyResultDetail && reports.has(b.id) : surveyResult(b) === surveyFilter))
       && (dayFilter === null || uploadDayKey(b) === dayFilter)
-  }), [businesses, search, ratingFilter, typeFilter, neighborhoodFilter, inspectorFilter, sourceFilter, surveyFilter, dayFilter])
+  }), [businesses, search, ratingFilter, typeFilter, neighborhoodFilter, inspectorFilter, sourceFilter, surveyFilter, dayFilter, reports])
 
   const activeFilterCount = [ratingFilter, typeFilter, neighborhoodFilter, inspectorFilter, sourceFilter, surveyFilter].filter(f => f !== 'הכל').length
     + (dayFilter ? 1 : 0)
@@ -423,6 +437,7 @@ export default function BusinessesPage() {
               <Select value={surveyFilter} onChange={e => setSurveyFilter(e.target.value)}>
                 <option value="הכל">כל תוצאות הסקר</option>
                 {SURVEY_RESULT_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+                <option value={REPORTED_AWAITING_DECISION}>{REPORTED_AWAITING_DECISION}</option>
                 <option value={NO_SURVEY_RESULT}>{NO_SURVEY_RESULT}</option>
               </Select>
             </div>
@@ -555,6 +570,11 @@ export default function BusinessesPage() {
                             <option value="">—</option>
                             {SURVEY_RESULT_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
                           </Select>
+                          {!b.surveyResultDetail && reports.has(b.id) && (
+                            <button type="button" onClick={() => setExpanded(b.id)} className="mt-1 block cursor-pointer">
+                              <Badge tone="clear">דווח מהשטח · ממתין להחלטה</Badge>
+                            </button>
+                          )}
                         </td>
                         <td className="px-2.5 py-3 text-center">
                           <button onClick={e => { e.stopPropagation(); deleteBusiness(b.id) }} className="text-subtle hover:text-high" title="מחק">
@@ -622,8 +642,20 @@ export default function BusinessesPage() {
                                     ))}
                                   </div>
                                 )}
-                                <div className="col-span-2">
+                                {reports.get(b.id) && <FieldReportView reports={reports.get(b.id)!} />}
+                                <div className="col-span-2 flex items-center gap-2 flex-wrap">
                                   <Button variant="secondary" onClick={() => startEdit(b)}>ערוך פרטי עסק</Button>
+                                  {b.address && (
+                                    <a
+                                      href={streetViewUrl(b, locations)}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="inline-flex items-center justify-center gap-2 h-11 px-4 rounded-lg text-[13.5px] font-semibold whitespace-nowrap transition-colors bg-surface text-charcoal border border-[#d5dce6] hover:bg-canvas"
+                                    >
+                                      <ScanEye size={15} strokeWidth={1.9} />
+                                      תמונת רחוב
+                                    </a>
+                                  )}
                                 </div>
                               </div>
                             )}

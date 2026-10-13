@@ -10,3 +10,6 @@ export const NO_SURVEY_RESULT = 'טרם התקבלה תוצאה'
 
 export const inspectorStatus = (b: Business): string => b.sentToInspector ?? NOT_SENT
 export const surveyResult = (b: Business): string => b.surveyResultDetail ?? NO_SURVEY_RESULT
+
+/** Filter value: the surveyor sent a field report, the office hasn't set a result yet. */
+export const REPORTED_AWAITING_DECISION = 'דווח מהשטח, ממתין להחלטה'
