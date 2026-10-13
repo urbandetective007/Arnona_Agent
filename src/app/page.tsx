@@ -49,11 +49,11 @@ const CATCH_SOURCES: { key: Business['source']; label: string }[] = [
   { key: 'manual', label: 'עובד עירייה' },
 ]
 const GAP_TYPES = [
-  { key: 'נמצא פער בסיווג', color: '#c8102e' },
-  { key: 'נמצא פער שטח + סיווג', color: '#e8590c' },
-  { key: 'נמצא פער שטח', color: '#f2a33a' },
+  { key: 'נמצא פער בסיווג', color: '#c8102e', text: '#ffffff' },
+  { key: 'נמצא פער שטח + סיווג', color: '#e8590c', text: '#ffffff' },
+  { key: 'נמצא פער שטח', color: '#f2a33a', text: '#4a2a00' },
 ]
-const OTHER_GAP = { key: 'אחר', color: '#7c8ba0' }
+const OTHER_GAP = { key: 'אחר', color: '#7c8ba0', text: '#ffffff' }
 
 // Cross-filter dimensions — one per clickable chart on this page. Each maps a
 // property to the category (or, for the nested funnel, categories) it counts
@@ -506,11 +506,23 @@ export default function Dashboard() {
                         <div key={row.key} {...item} className={`${item.className} flex items-center gap-3 rounded-md ${item['aria-pressed'] ? 'bg-brand/[0.06]' : ''}`}>
                           <span className="w-[84px] shrink-0 text-[13px] font-semibold text-ink">{row.label}</span>
                           <div className="flex-1 h-[22px] bg-canvas rounded-md overflow-hidden">
-                            <div className="flex h-full transition-[width] duration-500 ease-out" style={{ width: `${(row.total / catchMax) * 100}%` }}>
+                            {/* Each segment carries its own count, so it keeps a minimum
+                                width (and the bar grows to fit) even for a single gap. */}
+                            <div
+                              className="flex h-full transition-[width] duration-500 ease-out"
+                              style={{ width: `${(row.total / catchMax) * 100}%`, minWidth: `${gapTypesShown.filter(t => row.byType.has(t.key)).length * 26}px` }}
+                            >
                               {gapTypesShown.map(t => {
                                 const n = row.byType.get(t.key) ?? 0
                                 return n > 0 && (
-                                  <span key={t.key} title={`${t.key}: ${n}`} className="block h-full" style={{ width: `${(n / row.total) * 100}%`, background: t.color }} />
+                                  <span
+                                    key={t.key}
+                                    title={`${t.key}: ${n}`}
+                                    className="num flex items-center justify-center h-full min-w-[26px] text-[11.5px] font-bold"
+                                    style={{ flex: `${n} 1 0`, background: t.color, color: t.text }}
+                                  >
+                                    {n}
+                                  </span>
                                 )
                               })}
                             </div>
@@ -528,7 +540,6 @@ export default function Dashboard() {
                       <span key={t.key} className="flex items-center gap-1.5 text-[12px] text-charcoal">
                         <span className="w-2 h-2 rounded-sm shrink-0" style={{ background: t.color }} />
                         {t.key}
-                        <span className="num font-bold text-ink">{t.count}</span>
                       </span>
                     ))}
                   </div>
