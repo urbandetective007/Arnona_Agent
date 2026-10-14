@@ -13,7 +13,7 @@ interface PageHeaderProps {
 // the section headers inside cards ("משפך האכיפה · מסריקה ועד גביית פער").
 export function PageHeader({ title, subtitle, actions, size = 'page', className = '' }: PageHeaderProps) {
   return (
-    <div className={`flex items-center justify-between gap-4 ${className}`}>
+    <div className={`flex flex-wrap lg:flex-nowrap items-center justify-between gap-x-4 gap-y-2 ${className}`}>
       <div className="min-w-0">
         {size === 'page' ? (
           <h1 className="text-[17px] font-bold tracking-tight text-ink truncate">{title}</h1>
@@ -26,7 +26,8 @@ export function PageHeader({ title, subtitle, actions, size = 'page', className 
           </div>
         )}
       </div>
-      {actions && <div className="flex items-center gap-2 shrink-0">{actions}</div>}
+      {/* On a phone the actions drop to their own row (and scroll sideways if they still don't fit). */}
+      {actions && <div className="flex items-center gap-2 shrink-0 max-w-full overflow-x-auto">{actions}</div>}
     </div>
   )
 }

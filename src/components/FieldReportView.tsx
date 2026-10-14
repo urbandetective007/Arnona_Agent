@@ -38,7 +38,7 @@ export function FieldReportView({ reports }: { reports: SurveyReport[] }) {
   const long = new Set(['השימוש בנכס כפי שזוהה', 'מידע על הבעלים והמחזיק', 'מידע נוסף'])
 
   return (
-    <div className="col-span-2 mt-1 p-4 rounded-xl bg-surface border border-clear/25">
+    <div className="sm:col-span-2 mt-1 p-4 rounded-xl bg-surface border border-clear/25">
       <div className="flex items-center gap-2 flex-wrap mb-3">
         <ClipboardCheck size={16} className="text-clear" strokeWidth={2} />
         <span className="text-[14px] font-bold text-ink">דיווח מהשטח</span>
@@ -58,9 +58,9 @@ export function FieldReportView({ reports }: { reports: SurveyReport[] }) {
           </a>
         )}
       </div>
-      <div className="grid grid-cols-2 gap-x-10 gap-y-2 text-[13px]">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-2 text-[13px]">
         {answers.map(([label, value]) => (
-          <div key={label} className={long.has(label) ? 'col-span-2' : ''}>
+          <div key={label} className={long.has(label) ? 'sm:col-span-2' : ''}>
             <span className="font-semibold text-charcoal">{label}: </span>
             <span className="text-ink whitespace-pre-line">{value}</span>
           </div>

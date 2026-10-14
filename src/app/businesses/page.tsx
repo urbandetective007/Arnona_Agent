@@ -118,6 +118,16 @@ export default function BusinessesPage() {
   const [intakeOpen, setIntakeOpen] = useState(false)
   const [sendHelpOpen, setSendHelpOpen] = useState(false)
   const [expanded, setExpanded] = useState<string | null>(null)
+  // Below the md breakpoint the table becomes a list of cards (only one of
+  // the two is rendered, so a long list isn't built twice).
+  const [isPhone, setIsPhone] = useState(false)
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)')
+    const update = () => setIsPhone(mq.matches)
+    update()
+    mq.addEventListener('change', update)
+    return () => mq.removeEventListener('change', update)
+  }, [])
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState<Partial<Business>>({})
   const [updating, setUpdating] = useState<string | null>(null)
@@ -329,6 +339,86 @@ export default function BusinessesPage() {
     setEditForm({})
   }
 
+  // The expanded property: editable fields, or the read-only details with the
+  // field report and Street View. Shared by the desktop table and the phone cards.
+  function renderDetails(b: Business) {
+    return (
+      editingId === b.id ? (
+        <div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-3">
+            <EditField label="שם העסק" value={editForm.name ?? ''} onChange={v => setEditForm(f => ({ ...f, name: v }))} />
+            <div>
+              <label className="block text-[12px] font-semibold text-charcoal mb-1">סוג עסק</label>
+              <BusinessTypeField value={editForm.type ?? ''} onChange={v => setEditForm(f => ({ ...f, type: v }))} types={businessTypes} />
+            </div>
+            <EditField label="כתובת" value={editForm.address ?? ''} onChange={v => setEditForm(f => ({ ...f, address: v }))} />
+            <EditField label="שכונה" value={editForm.neighborhood ?? ''} onChange={v => setEditForm(f => ({ ...f, neighborhood: v }))} />
+            <EditField label="כתובת תואמת במערכת הגבייה" value={editForm.matchedAddress ?? ''} onChange={v => setEditForm(f => ({ ...f, matchedAddress: v }))} />
+            <EditField label="מספר יחידות" value={editForm.unitCount ?? ''} onChange={v => setEditForm(f => ({ ...f, unitCount: v }))} />
+            <div>
+              <label className="block text-[12px] font-semibold text-charcoal mb-1">דירוג אינדיקציה</label>
+              <Select value={editForm.suspicionRating || 'דרוש בדיקה'} onChange={e => setEditForm(f => ({ ...f, suspicionRating: e.target.value }))} className="w-full">
+                {ALL_RATINGS.map(r => <option key={r} value={r}>{r}</option>)}
+              </Select>
+            </div>
+            <EditField label="קישור 1" value={editForm.link1 ?? ''} onChange={v => setEditForm(f => ({ ...f, link1: v }))} />
+            <EditField label="קישור 2" value={editForm.link2 ?? ''} onChange={v => setEditForm(f => ({ ...f, link2: v }))} />
+            <EditField label="קישור 3" value={editForm.link3 ?? ''} onChange={v => setEditForm(f => ({ ...f, link3: v }))} />
+            <EditTextArea label="פירוט האינדיקציה" value={editForm.suspicionDetail ?? ''} onChange={v => setEditForm(f => ({ ...f, suspicionDetail: v }))} />
+            <EditTextArea label="סיבת אי-אינדיקציה" value={editForm.noSuspicionReason ?? ''} onChange={v => setEditForm(f => ({ ...f, noSuspicionReason: v }))} />
+          </div>
+          <div className="flex gap-2 mt-4">
+            <Button onClick={saveEdit}>שמור</Button>
+            <Button variant="secondary" onClick={cancelEdit}>ביטול</Button>
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-10 gap-y-2.5 text-[13.5px]">
+          {([
+            b.neighborhood && ['שכונה', b.neighborhood],
+            b.matchedAddress && ['כתובת תואמת במערכת הגבייה', b.matchedAddress],
+            b.unitCount && ['מספר יחידות', b.unitCount],
+            b.suspicionDetail && ['פירוט האינדיקציה', b.suspicionDetail],
+            b.noSuspicionReason && ['סיבת אי-אינדיקציה', b.noSuspicionReason],
+          ].filter(Boolean) as [string, string][]).map(([label, value]) => {
+            const full = ['פירוט האינדיקציה', 'סיבת אי-אינדיקציה'].includes(label)
+            return (
+              <div key={label} className={full ? 'sm:col-span-2' : ''}>
+                <span className="font-semibold text-charcoal">{label}: </span>
+                <span className="text-ink">{value}</span>
+              </div>
+            )
+          })}
+          {[b.link1, b.link2, b.link3].filter(Boolean).length > 0 && (
+            <div className="sm:col-span-2 flex flex-col gap-2">
+              {[b.link1, b.link2, b.link3].filter(Boolean).map((link, i) => (
+                <div key={i}>
+                  <span className="font-semibold text-charcoal">קישור {i + 1}: </span>
+                  <a href={link} target="_blank" rel="noopener noreferrer" className="text-brand hover:text-brand-deep break-all">{link}</a>
+                </div>
+              ))}
+            </div>
+          )}
+          {reports.get(b.id) && <FieldReportView reports={reports.get(b.id)!} />}
+          <div className="sm:col-span-2 flex items-center gap-2 flex-wrap">
+            <Button variant="secondary" onClick={() => startEdit(b)}>ערוך פרטי עסק</Button>
+            {b.address && (
+              <a
+                href={streetViewUrl(b, locations)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center gap-2 h-11 px-4 rounded-lg text-[13.5px] font-semibold whitespace-nowrap transition-colors bg-surface text-charcoal border border-[#d5dce6] hover:bg-canvas"
+              >
+                <ScanEye size={15} strokeWidth={1.9} />
+                תמונת רחוב
+              </a>
+            )}
+          </div>
+        </div>
+      )
+    )
+  }
+
   if (!ready) return null
 
   if (loading) {
@@ -504,6 +594,87 @@ export default function BusinessesPage() {
           </Card>
         ) : (
           <Card padded={false}>
+            {isPhone ? (
+              <div className="flex flex-col">
+                <div className="flex items-center gap-2 px-3 py-2.5 bg-canvas border-b border-hairline">
+                  <input type="checkbox" checked={allVisibleSelected} onChange={toggleSelectAllVisible} aria-label="בחר הכל" className="w-5 h-5 accent-[#024ad8] cursor-pointer" />
+                  <span className="text-[12.5px] text-graphite">בחר הכל</span>
+                  <Select
+                    value={sortKey ? `${sortKey}:${sortDir}` : ''}
+                    onChange={e => {
+                      const [k, d] = e.target.value.split(':')
+                      setSortKey((k || null) as SortKey | null)
+                      setSortDir((d || 'asc') as SortDir)
+                    }}
+                    aria-label="מיון"
+                    className="ms-auto h-9 text-[12.5px] px-2.5"
+                  >
+                    <option value="">מיון: ברירת מחדל</option>
+                    <option value="uploadDate:desc">החדשים קודם</option>
+                    <option value="uploadDate:asc">הישנים קודם</option>
+                    <option value="name:asc">שם העסק</option>
+                    <option value="neighborhood:asc">שכונה</option>
+                    <option value="suspicionRating:asc">דירוג אינדיקציה</option>
+                  </Select>
+                </div>
+                {sorted.length === 0 ? (
+                  <p className="text-center py-12 text-graphite">לא נמצאו תוצאות</p>
+                ) : sorted.map(b => {
+                  const open = expanded === b.id
+                  return (
+                    <div key={b.id} className={`border-b border-hairline ${open ? 'bg-canvas' : ''}`}>
+                      <div className="flex items-start gap-2.5 px-3 pt-3">
+                        <input type="checkbox" checked={selectedIds.has(b.id)} onChange={() => toggleSelected(b.id)} aria-label={`בחר ${b.name}`} className="mt-0.5 w-5 h-5 accent-[#024ad8] cursor-pointer shrink-0" />
+                        <button type="button" onClick={() => setExpanded(open ? null : b.id)} aria-expanded={open} className="flex-1 min-w-0 text-start cursor-pointer">
+                          <span className="block text-[14.5px] font-bold text-ink leading-snug">{b.name}</span>
+                          <span className="block text-[12.5px] text-graphite mt-0.5">{[b.type, b.address, b.neighborhood].filter(Boolean).join(' · ')}</span>
+                          <span className="flex items-center gap-1.5 flex-wrap mt-1.5">
+                            {b.suspicionRating && <Badge tone={RATING_TONE[b.suspicionRating] ?? 'neutral'}>{b.suspicionRating}</Badge>}
+                            <Badge tone={b.source === 'manual' ? 'mid' : 'neutral'}>{SOURCE_LABEL[b.source]}</Badge>
+                            <span className="num text-[11.5px] text-subtle">{formatDate(b.uploadDate)}</span>
+                          </span>
+                        </button>
+                        <ChevronDown size={18} className={`text-subtle shrink-0 mt-1 transition-transform ${open ? 'rotate-180' : ''}`} />
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 px-3 pt-2.5 pb-3">
+                        <Select
+                          value={b.sentToInspector ?? 'לא נשלח לסוקר'}
+                          onChange={e => updateInspectorStatus(b.id, e.target.value as typeof INSPECTOR_OPTIONS[number])}
+                          disabled={updating === b.id}
+                          aria-label="סוקר"
+                          className="h-10 text-[12.5px] px-2 min-w-0 w-full"
+                        >
+                          {INSPECTOR_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+                        </Select>
+                        <Select
+                          value={b.surveyResultDetail ?? ''}
+                          onChange={e => updateSurveyResult(b.id, e.target.value)}
+                          disabled={updating === b.id}
+                          aria-label="תוצאת סקר"
+                          className="h-10 text-[12.5px] px-2 min-w-0 w-full"
+                        >
+                          <option value="">תוצאת סקר: —</option>
+                          {SURVEY_RESULT_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+                        </Select>
+                        {!b.surveyResultDetail && reports.has(b.id) && (
+                          <button type="button" onClick={() => setExpanded(b.id)} className="col-span-2 justify-self-start cursor-pointer">
+                            <Badge tone="clear">דווח מהשטח · ממתין להחלטה</Badge>
+                          </button>
+                        )}
+                      </div>
+                      {open && (
+                        <div className="px-3 pb-4">
+                          {renderDetails(b)}
+                          <button type="button" onClick={() => deleteBusiness(b.id)} className="mt-3 inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-high cursor-pointer">
+                            <Trash2 size={14} strokeWidth={1.9} /> מחיקת הנכס
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            ) : (
             <div className="overflow-x-auto">
               <table className="w-full border-collapse text-[13px] min-w-[1000px]">
                 <thead>
@@ -586,79 +757,7 @@ export default function BusinessesPage() {
                       {expanded === b.id && (
                         <tr className="bg-canvas">
                           <td colSpan={14} className="px-8 py-5">
-                            {editingId === b.id ? (
-                              <div>
-                                <div className="grid grid-cols-2 gap-x-10 gap-y-3">
-                                  <EditField label="שם העסק" value={editForm.name ?? ''} onChange={v => setEditForm(f => ({ ...f, name: v }))} />
-                                  <div>
-                                    <label className="block text-[12px] font-semibold text-charcoal mb-1">סוג עסק</label>
-                                    <BusinessTypeField value={editForm.type ?? ''} onChange={v => setEditForm(f => ({ ...f, type: v }))} types={businessTypes} />
-                                  </div>
-                                  <EditField label="כתובת" value={editForm.address ?? ''} onChange={v => setEditForm(f => ({ ...f, address: v }))} />
-                                  <EditField label="שכונה" value={editForm.neighborhood ?? ''} onChange={v => setEditForm(f => ({ ...f, neighborhood: v }))} />
-                                  <EditField label="כתובת תואמת במערכת הגבייה" value={editForm.matchedAddress ?? ''} onChange={v => setEditForm(f => ({ ...f, matchedAddress: v }))} />
-                                  <EditField label="מספר יחידות" value={editForm.unitCount ?? ''} onChange={v => setEditForm(f => ({ ...f, unitCount: v }))} />
-                                  <div>
-                                    <label className="block text-[12px] font-semibold text-charcoal mb-1">דירוג אינדיקציה</label>
-                                    <Select value={editForm.suspicionRating || 'דרוש בדיקה'} onChange={e => setEditForm(f => ({ ...f, suspicionRating: e.target.value }))} className="w-full">
-                                      {ALL_RATINGS.map(r => <option key={r} value={r}>{r}</option>)}
-                                    </Select>
-                                  </div>
-                                  <EditField label="קישור 1" value={editForm.link1 ?? ''} onChange={v => setEditForm(f => ({ ...f, link1: v }))} />
-                                  <EditField label="קישור 2" value={editForm.link2 ?? ''} onChange={v => setEditForm(f => ({ ...f, link2: v }))} />
-                                  <EditField label="קישור 3" value={editForm.link3 ?? ''} onChange={v => setEditForm(f => ({ ...f, link3: v }))} />
-                                  <EditTextArea label="פירוט האינדיקציה" value={editForm.suspicionDetail ?? ''} onChange={v => setEditForm(f => ({ ...f, suspicionDetail: v }))} />
-                                  <EditTextArea label="סיבת אי-אינדיקציה" value={editForm.noSuspicionReason ?? ''} onChange={v => setEditForm(f => ({ ...f, noSuspicionReason: v }))} />
-                                </div>
-                                <div className="flex gap-2 mt-4">
-                                  <Button onClick={saveEdit}>שמור</Button>
-                                  <Button variant="secondary" onClick={cancelEdit}>ביטול</Button>
-                                </div>
-                              </div>
-                            ) : (
-                              <div className="grid grid-cols-2 gap-x-10 gap-y-2.5 text-[13.5px]">
-                                {([
-                                  b.neighborhood && ['שכונה', b.neighborhood],
-                                  b.matchedAddress && ['כתובת תואמת במערכת הגבייה', b.matchedAddress],
-                                  b.unitCount && ['מספר יחידות', b.unitCount],
-                                  b.suspicionDetail && ['פירוט האינדיקציה', b.suspicionDetail],
-                                  b.noSuspicionReason && ['סיבת אי-אינדיקציה', b.noSuspicionReason],
-                                ].filter(Boolean) as [string, string][]).map(([label, value]) => {
-                                  const full = ['פירוט האינדיקציה', 'סיבת אי-אינדיקציה'].includes(label)
-                                  return (
-                                    <div key={label} className={full ? 'col-span-2' : ''}>
-                                      <span className="font-semibold text-charcoal">{label}: </span>
-                                      <span className="text-ink">{value}</span>
-                                    </div>
-                                  )
-                                })}
-                                {[b.link1, b.link2, b.link3].filter(Boolean).length > 0 && (
-                                  <div className="col-span-2 flex flex-col gap-2">
-                                    {[b.link1, b.link2, b.link3].filter(Boolean).map((link, i) => (
-                                      <div key={i}>
-                                        <span className="font-semibold text-charcoal">קישור {i + 1}: </span>
-                                        <a href={link} target="_blank" rel="noopener noreferrer" className="text-brand hover:text-brand-deep break-all">{link}</a>
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
-                                {reports.get(b.id) && <FieldReportView reports={reports.get(b.id)!} />}
-                                <div className="col-span-2 flex items-center gap-2 flex-wrap">
-                                  <Button variant="secondary" onClick={() => startEdit(b)}>ערוך פרטי עסק</Button>
-                                  {b.address && (
-                                    <a
-                                      href={streetViewUrl(b, locations)}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="inline-flex items-center justify-center gap-2 h-11 px-4 rounded-lg text-[13.5px] font-semibold whitespace-nowrap transition-colors bg-surface text-charcoal border border-[#d5dce6] hover:bg-canvas"
-                                    >
-                                      <ScanEye size={15} strokeWidth={1.9} />
-                                      תמונת רחוב
-                                    </a>
-                                  )}
-                                </div>
-                              </div>
-                            )}
+                            {renderDetails(b)}
                           </td>
                         </tr>
                       )}
@@ -667,6 +766,7 @@ export default function BusinessesPage() {
                 </tbody>
               </table>
             </div>
+            )}
             <div className="px-5 py-3 bg-canvas border-t border-hairline text-[13px] text-graphite">
               מציג {filtered.length.toLocaleString('he')} מתוך {businesses.length.toLocaleString('he')} עסקים
             </div>
