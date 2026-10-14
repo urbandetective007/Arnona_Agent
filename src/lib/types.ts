@@ -63,6 +63,8 @@ export interface SurveyReport {
   useDescription: string
   ownerInfo: string
   extraInfo: string
+  /** The surveyor's verdict (gap type); written through to the property's surveyResultDetail by a DB trigger. */
+  surveyResult: Business['surveyResultDetail']
   files: SurveyReportFile[]
   lat: number | null
   lon: number | null

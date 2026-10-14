@@ -30,6 +30,7 @@ export function FieldReportView({ reports }: { reports: SurveyReport[] }) {
     ['מספר נכס בארנונה', report.arnonaPropertyNumber],
     ['שוחחתי עם', report.spokeWith],
     ['הנכס משמש בפועל כ', report.actualUse],
+    ['תוצאת הסקר (לפי הסוקר)', report.surveyResult ?? ''],
     ['השימוש בנכס כפי שזוהה', report.useDescription],
     ['מידע על הבעלים והמחזיק', report.ownerInfo],
     ['מידע נוסף', report.extraInfo],

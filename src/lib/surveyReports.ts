@@ -4,8 +4,10 @@ import type { SurveyReport, SurveyReportFile } from './types'
 
 // The surveyor's field reports (table survey_reports) and their files
 // (private Storage bucket 'survey-files', path {businessId}/{reportId}/…).
-// A report doesn't set the survey result itself — the form has no such
-// question — the office reads it and picks the result as before.
+// The surveyor picks the survey result in the form; a database trigger
+// (apply_survey_report_result) copies it to businesses.survey_result_detail,
+// so the property's result column updates by itself. The office can still
+// change it in the all-properties table.
 
 export const SURVEY_FILES_BUCKET = 'survey-files'
 export const MAX_FILES_PER_FIELD = 10
@@ -26,6 +28,7 @@ function dbToReport(row: any): SurveyReport {
     useDescription: row.use_description ?? '',
     ownerInfo: row.owner_info ?? '',
     extraInfo: row.extra_info ?? '',
+    surveyResult: row.survey_result ?? null,
     files: Array.isArray(row.files) ? row.files : [],
     lat: row.lat ?? null,
     lon: row.lon ?? null,
@@ -62,6 +65,7 @@ export async function insertReport(draft: ReportDraft): Promise<SurveyReport> {
     use_description: draft.useDescription,
     owner_info: draft.ownerInfo,
     extra_info: draft.extraInfo,
+    survey_result: draft.surveyResult,
     lat: draft.lat,
     lon: draft.lon,
     accuracy_m: draft.accuracyM,

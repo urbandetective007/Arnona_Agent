@@ -5,6 +5,7 @@ import { Camera, Check, FileText, Loader2, MapPin, Paperclip, X } from 'lucide-r
 import type { Business, SurveyReport, SurveyReportFile } from '@/lib/types'
 import { distanceKm, type LocationMap } from '@/lib/geocode'
 import { placementFor } from '@/lib/placement'
+import { SURVEY_RESULT_OPTIONS } from '@/lib/surveyStatus'
 import {
   MAX_FILES_PER_FIELD, MAX_FILE_BYTES,
   insertReport, uploadReportFile, saveReportFiles, shrinkImage,
@@ -55,6 +56,7 @@ export function SurveyReportSheet({ business, locations, onClose, onSaved }: {
   const [useDescription, setUseDescription] = useState('')
   const [ownerInfo, setOwnerInfo] = useState('')
   const [extraInfo, setExtraInfo] = useState('')
+  const [surveyResult, setSurveyResult] = useState('')
   const [files, setFiles] = useState<Record<Group, PickedFile[]>>({ main: [], extra: [] })
 
   const [submitting, setSubmitting] = useState(false)
@@ -114,6 +116,7 @@ export function SurveyReportSheet({ business, locations, onClose, onSaved }: {
     !surveyorName.trim() && 'שם הסוקר',
     !visitedAddress.trim() && 'הכתובת שבה ביקרת',
     !actualUseValue && 'השימוש בפועל בנכס',
+    !surveyResult && 'תוצאת הסקר',
   ].filter(Boolean) as string[]
 
   async function submit(confirmedPos?: GeolocationPosition) {
@@ -146,6 +149,7 @@ export function SurveyReportSheet({ business, locations, onClose, onSaved }: {
           useDescription: useDescription.trim(),
           ownerInfo: ownerInfo.trim(),
           extraInfo: extraInfo.trim(),
+          surveyResult: surveyResult as SurveyReport['surveyResult'],
           lat: here?.lat ?? null,
           lon: here?.lon ?? null,
           accuracyM: pos ? Math.round(pos.coords.accuracy) : null,
@@ -228,6 +232,24 @@ export function SurveyReportSheet({ business, locations, onClose, onSaved }: {
           </Field>
           <Field n={11} label="קבצים נוספים בהתאם לצורך">
             <FilePicker items={files.extra} onAdd={l => addFiles('extra', l)} onRemove={id => removeFile('extra', id)} disabled={submitting} />
+          </Field>
+          <Field n={12} label="תוצאת הסקר" hint="נרשמת אוטומטית בעמודת 'תוצאת סקר' של הנכס" required>
+            <div className="flex flex-col gap-2">
+              {SURVEY_RESULT_OPTIONS.map(o => (
+                <button
+                  key={o}
+                  type="button"
+                  onClick={() => setSurveyResult(surveyResult === o ? '' : o)}
+                  aria-pressed={surveyResult === o}
+                  className={`h-11 px-4 rounded-xl border text-[13.5px] font-semibold text-start flex items-center gap-2.5 active:scale-[0.98] transition-[background-color,color,transform] cursor-pointer ${
+                    surveyResult === o ? 'bg-brand text-white border-brand' : 'bg-surface text-charcoal border-hairline'
+                  }`}
+                >
+                  <span className={`w-4 h-4 rounded-full border-2 shrink-0 ${surveyResult === o ? 'border-white bg-white/30' : 'border-hairline'}`} />
+                  {o}
+                </button>
+              ))}
+            </div>
           </Field>
           <p className="flex items-center gap-1.5 text-[11.5px] text-subtle">
             <MapPin size={13} strokeWidth={2} /> המיקום שלך נרשם אוטומטית בעת השליחה, כאסמכתא לביקור.
