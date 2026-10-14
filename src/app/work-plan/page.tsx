@@ -419,6 +419,10 @@ export default function WorkPlanPage() {
                         </span>
                       </a>
                     )}
+                    {/* Google Maps sometimes drops the route when the link cold-starts the app; a second tap works. */}
+                    {routeStops.length > 1 && (
+                      <p className="text-[11px] text-subtle text-center">אם המסלול לא מוצג בגוגל מפות — חזרו ולחצו שוב</p>
+                    )}
                     {list.map(b => {
                       const isChecked = checked.has(b.id)
                       const expanded = expandedId === b.id
