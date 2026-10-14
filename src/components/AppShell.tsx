@@ -9,6 +9,7 @@ import { RoleProvider, useRoleContext } from './RoleContext'
 import { NAV_BY_ROLE, ROLE_DESCRIPTION_BY_ROLE, type NavItem } from '@/lib/access'
 import { ROLES } from '@/lib/roles'
 import { PageHeader } from './ui'
+import { InstallLink } from './PwaSetup'
 
 interface AppShellProps {
   children: ReactNode
@@ -120,6 +121,7 @@ function AppShellInner({ children, title, subtitle, actions, wide }: AppShellPro
           <div className="text-chrome-subtle text-[11px]">
             מחובר/ת · <span className="num" title={`עודכן ${process.env.APP_BUILD_DATE}`}>גרסה {process.env.APP_VERSION}</span>
           </div>
+          <InstallLink className="mt-1 text-[11.5px] font-semibold text-brand-light hover:text-white" />
         </div>
         <button
           type="button"

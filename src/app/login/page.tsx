@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { InstallLink } from '@/components/PwaSetup'
 import { useRouter } from 'next/navigation'
 import type { LucideIcon } from 'lucide-react'
 import { Check, Eye, EyeOff, Landmark, LayoutDashboard, Lock, Route, ShieldCheck } from 'lucide-react'
@@ -129,6 +130,7 @@ export default function LoginPage() {
             <div className="mt-auto pt-8 flex items-center gap-2">
               <Lock size={13} className="text-subtle shrink-0" strokeWidth={1.9} />
               <span className="text-[11.5px] text-subtle">חיבור מאובטח ומוצפן</span>
+              <InstallLink className="ms-auto text-[12px] font-semibold text-brand" />
             </div>
           </form>
         </div>

@@ -15,6 +15,7 @@ import { placementFor, neighborhoodOf, streetViewUrl } from '@/lib/placement'
 import { fetchReportsByBusiness } from '@/lib/surveyReports'
 import { flushQueue, listQueued, onQueueChange } from '@/lib/offlineQueue'
 import { SurveyReportSheet } from '@/components/SurveyReportSheet'
+import { InstallLink } from '@/components/PwaSetup'
 import type { BadgeTone } from '@/components/ui'
 
 const RATING_TONE: Record<string, BadgeTone> = { 'גבוה': 'high', 'בינוני': 'mid', 'לא חשוד': 'clear' }
@@ -526,6 +527,7 @@ export default function WorkPlanPage() {
             </a>
           )}
           <p className="self-center mt-1 text-[11px] text-subtle num">גרסה {process.env.APP_VERSION} · {process.env.APP_BUILD_DATE}</p>
+          <InstallLink className="self-center text-[12px] font-semibold text-brand" />
         </main>
       </div>
 
