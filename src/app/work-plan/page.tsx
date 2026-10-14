@@ -31,10 +31,8 @@ function mapsUrl(address: string): string {
 }
 
 // Google Maps directions with the stops in order. No origin, so Google starts
-// from the phone's own location. On phones Google Maps only draws a route with
-// up to 3 waypoints, so a neighborhood is split into legs of 4 stops
-// (3 waypoints + destination); each leg starts where the last one ended.
-const STOPS_PER_LEG = 4
+// from the phone's own location. Google takes at most 9 waypoints + 1 destination.
+const MAX_ROUTE_STOPS = 10
 function routeUrl(addresses: string[]): string {
   const withCity = addresses.map(a => (a.includes('ירושלים') ? a : `${a}, ירושלים`))
   const destination = withCity[withCity.length - 1]
@@ -407,30 +405,20 @@ export default function WorkPlanPage() {
 
                 {open && (
                   <div className="px-2.5 pb-2.5 flex flex-col gap-1.5">
-                    {routeStops.length > 1 && (() => {
-                      const legs: Business[][] = []
-                      for (let i = 0; i < routeStops.length; i += STOPS_PER_LEG) legs.push(routeStops.slice(i, i + STOPS_PER_LEG))
-                      return (
-                    <div className="mt-2.5 flex flex-col gap-1.5">
-                      {legs.map((leg, li) => (
+                    {routeStops.length > 1 && (
                       <a
-                        key={li}
-                        href={routeUrl(leg.map(b => b.address))}
+                        href={routeUrl(routeStops.slice(0, MAX_ROUTE_STOPS).map(b => b.address))}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="h-10 rounded-xl bg-brand/[0.07] text-brand text-[13px] font-semibold flex items-center justify-center gap-1.5 hover:bg-brand/[0.12] active:scale-[0.98] transition-[background-color,transform]"
+                        className="mt-2.5 h-10 rounded-xl bg-brand/[0.07] text-brand text-[13px] font-semibold flex items-center justify-center gap-1.5 hover:bg-brand/[0.12] active:scale-[0.98] transition-[background-color,transform]"
                       >
                         <Route size={16} strokeWidth={2} />
-                        {legs.length === 1 ? 'נווט לכל השכונה' : `מסלול ${li + 1} מתוך ${legs.length}`}
-                        <span className="num text-[11.5px] font-normal text-brand/80">({leg.length} עצירות)</span>
+                        נווט לכל השכונה
+                        <span className="num text-[11.5px] font-normal text-brand/80">
+                          ({routeStops.length > MAX_ROUTE_STOPS ? `${MAX_ROUTE_STOPS} הכתובות הראשונות` : `${routeStops.length} עצירות`})
+                        </span>
                       </a>
-                      ))}
-                      {legs.length > 1 && (
-                        <p className="text-[11px] text-subtle text-center">גוגל מפות בטלפון מציג עד 4 עצירות במסלול — סיימת מסלול? פתח את הבא.</p>
-                      )}
-                    </div>
-                      )
-                    })()}
+                    )}
                     {list.map(b => {
                       const isChecked = checked.has(b.id)
                       const expanded = expandedId === b.id
