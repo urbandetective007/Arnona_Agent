@@ -440,7 +440,9 @@ export default function JerusalemMap({ businesses, canEdit = false, fixKey = nul
   ]
 
   return (
-    <div style={{ position: 'relative', width: '100%', height: '100%', minHeight: '500px' }}>
+    // isolation: Leaflet's panes and controls use z-indexes up to 1000; this
+    // keeps them inside the map so the phone menu drawer covers the map.
+    <div style={{ position: 'relative', width: '100%', height: '100%', minHeight: '500px', isolation: 'isolate', zIndex: 0 }}>
       {locationsLoaded && review.total > 0 && !fix && (
         <div dir="rtl" style={{ position: 'absolute', top: 12, right: 12, zIndex: 1000, maxWidth: 320 }}>
           <button

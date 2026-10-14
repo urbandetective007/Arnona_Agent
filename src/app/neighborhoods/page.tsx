@@ -95,33 +95,33 @@ export default function NeighborhoodsPage() {
         </div>
 
         <Card padded={false}>
-          <div className="flex items-center justify-between px-5 py-4 border-b border-hairline">
+          <div className="flex items-center justify-between flex-wrap gap-x-4 gap-y-1.5 px-4 sm:px-5 py-4 border-b border-hairline">
             <span className="text-[14.5px] font-bold text-ink">דירוג שכונות</span>
-            <div className="flex items-center gap-3.5 text-[11.5px] text-subtle">
+            <div className="flex items-center flex-wrap gap-x-3.5 gap-y-1 text-[11.5px] text-subtle">
               <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm" style={{ background: AGENT_COLOR }} />סוכן ארנונה</span>
               <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm" style={{ background: MANUAL_COLOR }} />הוזן ידנית <span className="num">({totalManual})</span></span>
-              <span>· לחיצה על שכונה מציגה את הנכסים</span>
+              <span className="hidden sm:inline">· לחיצה על שכונה מציגה את הנכסים</span>
             </div>
           </div>
           {rows.length === 0 ? (
             <EmptyState title="אין עדיין נכסים עם אינדיקציה משויכים לשכונה" />
           ) : (
-            <div className="flex flex-col gap-1 p-3">
+            <div className="flex flex-col gap-1 p-2 sm:p-3">
               {rows.map((r, i) => {
                 const item = chartItemProps(cf, 'neighborhood', r.neighborhood, `${r.neighborhood}: ${r.count}`)
                 return (
-                <div key={r.neighborhood} {...item} className={`${item.className} animate-fade-in flex items-center gap-3.5 px-2.5 py-2.5 rounded-lg ${item['aria-pressed'] ? 'bg-brand/[0.06]' : 'hover:bg-canvas'}`}>
-                  <span className="num w-6 shrink-0 text-[13px] font-bold text-subtle">{i + 1}</span>
-                  <span className="w-32 shrink-0 text-[13.5px] font-semibold text-ink truncate">{r.neighborhood}</span>
-                  <div className="flex-1 h-[22px] bg-canvas rounded-md overflow-hidden">
+                <div key={r.neighborhood} {...item} className={`${item.className} animate-fade-in flex items-center gap-2 sm:gap-3.5 px-2 sm:px-2.5 py-2.5 rounded-lg ${item['aria-pressed'] ? 'bg-brand/[0.06]' : 'hover:bg-canvas'}`}>
+                  <span className="num w-5 sm:w-6 shrink-0 text-[13px] font-bold text-subtle">{i + 1}</span>
+                  <span className="w-[88px] sm:w-32 shrink-0 text-[13px] sm:text-[13.5px] font-semibold text-ink truncate">{r.neighborhood}</span>
+                  <div className="flex-1 min-w-[40px] h-[22px] bg-canvas rounded-md overflow-hidden">
                     <div className="flex h-full rounded-md overflow-hidden transition-[width] duration-500 ease-out min-w-[10px]" style={{ width: `${(r.count / maxCount) * 100}%` }}>
                       <span className="block h-full transition-[width] duration-500 ease-out" style={{ width: `${(r.agent / r.count) * 100}%`, background: AGENT_COLOR }} title={`סוכן ארנונה: ${r.agent}`} />
                       <span className="block h-full transition-[width] duration-500 ease-out" style={{ width: `${(r.manual / r.count) * 100}%`, background: MANUAL_COLOR }} title={`הוזן ידנית: ${r.manual}`} />
                     </div>
                   </div>
-                  <span className="num w-16 shrink-0 text-start text-[13px] font-bold text-brand"><AnimatedNumber value={r.count} /> נכסים</span>
-                  <span className="num w-24 shrink-0 text-start text-[11.5px] text-subtle">{r.agent} סוכן · {r.manual} ידני</span>
-                  <span className="num w-12 shrink-0 text-start text-[12px] text-subtle">
+                  <span className="num w-[52px] sm:w-16 shrink-0 text-start text-[13px] font-bold text-brand"><AnimatedNumber value={r.count} /><span className="hidden sm:inline"> נכסים</span></span>
+                  <span className="hidden sm:inline num w-24 shrink-0 text-start text-[11.5px] text-subtle">{r.agent} סוכן · {r.manual} ידני</span>
+                  <span className="num w-9 sm:w-12 shrink-0 text-start text-[12px] text-subtle">
                     <AnimatedNumber value={totalIndication > 0 ? Math.round((r.count / totalIndication) * 100) : 0} suffix="%" />
                   </span>
                 </div>
