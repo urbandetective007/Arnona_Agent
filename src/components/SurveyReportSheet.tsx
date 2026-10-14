@@ -8,8 +8,9 @@ import { placementFor } from '@/lib/placement'
 import { SURVEY_RESULT_OPTIONS } from '@/lib/surveyStatus'
 import {
   MAX_FILES_PER_FIELD, MAX_FILE_BYTES,
-  insertReport, uploadReportFile, saveReportFiles, shrinkImage,
+  insertReport, uploadReportFile, saveReportFiles, shrinkImage, type ReportDraft,
 } from '@/lib/surveyReports'
+import { enqueueReport, isNetworkError } from '@/lib/offlineQueue'
 
 // The municipality's survey form ("טופס איסוף מידע ונתונים לנכס"), built into
 // the surveyor's page: same questions, same order, plus an automatic location
@@ -33,7 +34,15 @@ function todayIso() {
 function getPosition(): Promise<GeolocationPosition | null> {
   if (typeof navigator === 'undefined' || !('geolocation' in navigator)) return Promise.resolve(null)
   return new Promise(resolve => {
-    navigator.geolocation.getCurrentPosition(resolve, () => resolve(null), { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 })
+    // The browser's own timeout doesn't run while a permission prompt is
+    // waiting for an answer, so cap the wait here too — the report is never
+    // held hostage by the location.
+    const giveUp = setTimeout(() => resolve(null), 12000)
+    navigator.geolocation.getCurrentPosition(
+      p => { clearTimeout(giveUp); resolve(p) },
+      () => { clearTimeout(giveUp); resolve(null) },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 },
+    )
   })
 }
 
@@ -41,7 +50,8 @@ export function SurveyReportSheet({ business, locations, onClose, onSaved }: {
   business: Business
   locations: LocationMap
   onClose: () => void
-  onSaved: (report: SurveyReport) => void
+  /** `queued` = no signal: the report waits on the phone and is sent automatically later. */
+  onSaved: (report: SurveyReport, queued: boolean) => void
 }) {
   const [surveyDate, setSurveyDate] = useState(todayIso)
   const [surveyorName, setSurveyorName] = useState(() => {
@@ -66,6 +76,7 @@ export function SurveyReportSheet({ business, locations, onClose, onSaved }: {
   // Kept across retries: once the row exists, a retry only re-sends the files
   // that didn't make it, instead of creating a second report.
   const savedReport = useRef<SurveyReport | null>(null)
+  const draftRef = useRef<ReportDraft | null>(null)
   const uploaded = useRef<Map<string, SurveyReportFile>>(new Map())
 
   const propertyPoint = useMemo(() => {
@@ -119,14 +130,30 @@ export function SurveyReportSheet({ business, locations, onClose, onSaved }: {
     !surveyResult && 'תוצאת הסקר',
   ].filter(Boolean) as string[]
 
+  // Puts the report (and whatever wasn't uploaded yet) in the phone's offline
+  // queue; it's sent automatically when the connection is back.
+  async function queueForLater(draft: ReportDraft) {
+    const all = [...files.main.map(f => ['main', f] as const), ...files.extra.map(f => ['extra', f] as const)]
+    await enqueueReport({
+      businessId: business.id,
+      businessName: business.name,
+      draft,
+      files: all.map(([group, p]) => ({ localId: p.id, file: p.file, name: p.file.name, type: p.file.type, group })),
+      serverReport: savedReport.current ?? undefined,
+      uploaded: Object.fromEntries(uploaded.current),
+    })
+    try { localStorage.setItem(SURVEYOR_NAME_KEY, surveyorName.trim()) } catch { /* ignore */ }
+    onSaved({ ...(savedReport.current ?? { ...draft, id: '', createdAt: new Date().toISOString() }), files: [] }, true)
+  }
+
   async function submit(confirmedPos?: GeolocationPosition) {
     if (missing.length) { setError(`חסר: ${missing.join(', ')}`); return }
     setSubmitting(true)
     setError(null)
     setFarWarning(null)
+    let draft = draftRef.current
     try {
-      let report = savedReport.current
-      if (!report) {
+      if (!draft) {
         setProgress('מאתר מיקום…')
         const pos = confirmedPos ?? await getPosition()
         const here = pos ? { lat: pos.coords.latitude, lon: pos.coords.longitude } : null
@@ -137,8 +164,7 @@ export function SurveyReportSheet({ business, locations, onClose, onSaved }: {
           setProgress('')
           return
         }
-        setProgress('שומר את הדיווח…')
-        report = await insertReport({
+        draft = {
           businessId: business.id,
           surveyDate,
           surveyorName: surveyorName.trim(),
@@ -154,7 +180,16 @@ export function SurveyReportSheet({ business, locations, onClose, onSaved }: {
           lon: here?.lon ?? null,
           accuracyM: pos ? Math.round(pos.coords.accuracy) : null,
           distanceM,
-        })
+        }
+        draftRef.current = draft
+      }
+
+      if (!navigator.onLine) { await queueForLater(draft); return }
+
+      let report = savedReport.current
+      if (!report) {
+        setProgress('שומר את הדיווח…')
+        report = await insertReport(draft)
         savedReport.current = report
         try { localStorage.setItem(SURVEYOR_NAME_KEY, surveyorName.trim()) } catch { /* ignore */ }
       }
@@ -172,8 +207,11 @@ export function SurveyReportSheet({ business, locations, onClose, onSaved }: {
         setProgress('מסיים…')
         await saveReportFiles(report.id, records)
       }
-      onSaved({ ...report, files: records })
+      onSaved({ ...report, files: records }, false)
     } catch (e) {
+      if (draft && isNetworkError(e)) {
+        try { await queueForLater(draft); return } catch { /* fall through to the error below */ }
+      }
       setError(`${e instanceof Error ? e.message : 'השמירה נכשלה'} — לחצו שוב על "שליחת הדיווח" כדי לנסות שוב, שום דבר לא נמחק.`)
       setSubmitting(false)
       setProgress('')

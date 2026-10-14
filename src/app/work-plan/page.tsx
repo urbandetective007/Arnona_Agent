@@ -13,6 +13,7 @@ import { distanceKm, type LocationMap } from '@/lib/geocode'
 import { fetchLocations } from '@/lib/locations'
 import { placementFor, neighborhoodOf, streetViewUrl } from '@/lib/placement'
 import { fetchReportsByBusiness } from '@/lib/surveyReports'
+import { flushQueue, listQueued, onQueueChange } from '@/lib/offlineQueue'
 import { SurveyReportSheet } from '@/components/SurveyReportSheet'
 import type { BadgeTone } from '@/components/ui'
 
@@ -78,6 +79,29 @@ export default function WorkPlanPage() {
   const [reportedIds, setReportedIds] = useState<Set<string> | null>(null)
   const [reportFor, setReportFor] = useState<Business | null>(null)
   const [toast, setToast] = useState<string | null>(null)
+  // Reports filled in without signal, waiting on the phone to be sent.
+  const [queuedCount, setQueuedCount] = useState(0)
+  const [sendingQueued, setSendingQueued] = useState(false)
+  const [online, setOnline] = useState(true)
+
+  useEffect(() => {
+    const refresh = () => { listQueued().then(q => setQueuedCount(q.length)) }
+    const send = async () => {
+      setOnline(navigator.onLine)
+      if (!navigator.onLine) return
+      setSendingQueued(true)
+      const sent = await flushQueue()
+      setSendingQueued(false)
+      if (sent > 0) setToast(sent === 1 ? 'דיווח שחיכה לקליטה נשלח ✓' : `${sent} דיווחים שחיכו לקליטה נשלחו ✓`)
+    }
+    const goOffline = () => setOnline(false)
+    refresh()
+    send()
+    const off = onQueueChange(refresh)
+    window.addEventListener('online', send)
+    window.addEventListener('offline', goOffline)
+    return () => { off(); window.removeEventListener('online', send); window.removeEventListener('offline', goOffline) }
+  }, [])
   const [today] = useState(() => new Date())
   // `checked` is live — it drives the checkmark itself and updates the
   // instant you tap one. `checkedAtLoad` is a snapshot taken once when the
@@ -96,9 +120,9 @@ export default function WorkPlanPage() {
   }, [])
 
   useEffect(() => {
-    fetchReportsByBusiness()
-      .then(m => setReportedIds(new Set(m.keys())))
-      .catch(() => setReportedIds(new Set()))
+    // Sent reports + those waiting on the phone for signal both count as done.
+    Promise.all([fetchReportsByBusiness().catch(() => new Map()), listQueued()])
+      .then(([m, queued]) => setReportedIds(new Set([...m.keys(), ...queued.map(q => q.businessId)])))
   }, [])
 
   useEffect(() => {
@@ -231,8 +255,8 @@ export default function WorkPlanPage() {
     <div className="min-h-screen bg-canvas flex justify-center">
       <div className="w-full max-w-md flex flex-col min-h-screen bg-canvas">
         <header
-          className="shrink-0 px-5 pt-6 pb-4"
-          style={{ background: 'linear-gradient(165deg, var(--color-chrome) 0%, #123256 100%)' }}
+          className="shrink-0 px-5 pb-4"
+          style={{ background: 'linear-gradient(165deg, var(--color-chrome) 0%, #123256 100%)', paddingTop: 'calc(1.5rem + env(safe-area-inset-top))' }}
         >
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
@@ -284,6 +308,32 @@ export default function WorkPlanPage() {
         </header>
 
         <main className="flex-1 px-3.5 pt-3.5 pb-8 flex flex-col gap-3">
+          {!online && (
+            <div className="px-3.5 py-2.5 rounded-xl bg-ink text-white text-[12.5px] flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-mid shrink-0" />
+              אין קליטה כרגע — אפשר להמשיך לעבוד ולמלא דיווחים, הם יישלחו כשהקליטה תחזור.
+            </div>
+          )}
+          {queuedCount > 0 && (
+            <div className="px-3.5 py-2.5 rounded-xl bg-mid/[0.08] border border-mid/25 text-[12.5px] text-[#7c3a12] flex items-center gap-2.5">
+              <span className="flex-1">
+                <strong className="num">{queuedCount}</strong> {queuedCount === 1 ? 'דיווח ממתין' : 'דיווחים ממתינים'} לשליחה — יישלחו אוטומטית כשתהיה קליטה.
+              </span>
+              <button
+                type="button"
+                disabled={sendingQueued || !online}
+                onClick={async () => {
+                  setSendingQueued(true)
+                  const sent = await flushQueue()
+                  setSendingQueued(false)
+                  setToast(sent > 0 ? `${sent} ${sent === 1 ? 'דיווח נשלח' : 'דיווחים נשלחו'} ✓` : 'עדיין אין חיבור — ננסה שוב אוטומטית')
+                }}
+                className="shrink-0 h-8 px-3 rounded-lg bg-mid text-white font-semibold active:scale-95 transition-transform cursor-pointer disabled:opacity-60"
+              >
+                {sendingQueued ? <Loader2 size={14} className="animate-spin" /> : 'שלח עכשיו'}
+              </button>
+            </div>
+          )}
           {groups.length > 0 && (
             <div className="flex flex-col gap-1.5">
               <button
@@ -484,8 +534,13 @@ export default function WorkPlanPage() {
           business={reportFor}
           locations={locations}
           onClose={() => setReportFor(null)}
-          onSaved={report => {
+          onSaved={(report, queued) => {
             setReportedIds(prev => new Set(prev).add(report.businessId))
+            if (queued) {
+              setReportFor(null)
+              setToast(`אין קליטה — הדיווח על ${reportFor.name} נשמר בטלפון ויישלח אוטומטית`)
+              return
+            }
             setReportFor(null)
             setToast(`הדיווח על ${reportFor.name} נשמר ✓`)
           }}
