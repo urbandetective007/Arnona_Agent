@@ -105,7 +105,9 @@ function AppShellInner({ children, title, subtitle, actions, wide }: AppShellPro
         <div className="p-3 border-t border-chrome-hairline flex items-center gap-2.5">
           <div className="flex-1 min-w-0">
             <div className="text-chrome-ink text-[12.5px] font-semibold truncate">{roleOption?.label ?? '—'}</div>
-            <div className="text-chrome-subtle text-[11px]">מחובר/ת</div>
+            <div className="text-chrome-subtle text-[11px]">
+              מחובר/ת · <span className="num" title={`עודכן ${process.env.APP_BUILD_DATE}`}>גרסה {process.env.APP_VERSION}</span>
+            </div>
           </div>
           <button
             type="button"

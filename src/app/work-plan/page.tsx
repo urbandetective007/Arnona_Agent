@@ -475,6 +475,7 @@ export default function WorkPlanPage() {
               הטופס החיצוני (מיקרוסופט) עדיין זמין
             </a>
           )}
+          <p className="self-center mt-1 text-[11px] text-subtle num">גרסה {process.env.APP_VERSION} · {process.env.APP_BUILD_DATE}</p>
         </main>
       </div>
 
