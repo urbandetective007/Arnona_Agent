@@ -2,8 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
-import * as XLSX from 'xlsx'
-import { AlertCircle, AlertTriangle, ArrowLeft, Check, Copy, FileSpreadsheet, Info, Pencil, Plus, Upload } from 'lucide-react'
+import { AlertCircle, AlertTriangle, ArrowLeft, Check, Copy, FileSpreadsheet, Info, Pencil, Plus, Upload, X } from 'lucide-react'
 import { AppShell } from '@/components/AppShell'
 import { useRequireRole } from '@/lib/useRequireRole'
 import type { Business, UploadSession } from '@/lib/types'
@@ -21,7 +20,10 @@ import { fetchAllRows } from '@/lib/fetchAll'
 import { markSentToInspector } from '@/lib/inspectorAssign'
 import type { GeocodeQueue } from '@/lib/geocodeQueue'
 import { fetchLocations, createLocationQueue } from '@/lib/locations'
-import { Card, Badge, Button, Input, Select, Toggle } from '@/components/ui'
+import { parseExcelFile } from '@/lib/excel/parseInWorker'
+import type { ParsedSheet } from '@/lib/excel/parseSheet'
+import { insertInBatches, BatchInsertError } from '@/lib/batchInsert'
+import { Card, Badge, Button, Input, Select, Spinner, Toggle } from '@/components/ui'
 import type { BadgeTone } from '@/components/ui'
 
 // Alphabetical for the manual-entry picker — the registry itself is ordered
@@ -66,10 +68,15 @@ const EMPTY_MANUAL: Record<TargetField, string> = { ...EMPTY_MAPPING, suspicionR
 const RATING_OPTIONS = ['גבוה', 'בינוני', 'לא חשוד', 'דרוש בדיקה']
 const RATING_TONE: Record<string, BadgeTone> = { 'גבוה': 'high', 'בינוני': 'mid', 'לא חשוד': 'clear' }
 
-interface RowIssue { row: number; kind: 'error' | 'warning'; title: string; detail: string }
-interface PendingSession { sessionId: string; today: string; allParsed: Business[] }
-interface ValidationResult { toAdd: Business[]; duplicates: number; issues: RowIssue[] }
-interface DoneSummary { added: number; skipped: number; assigned: number; fileName: string }
+/** `row` is the Excel row number; 0 for a problem with the whole file. */
+interface RowIssue { row: number; kind: 'error' | 'warning'; title: string; detail: string; file: string }
+/** A file picked for upload, parsed in the background (see parseInWorker). */
+interface LoadedFile { key: string; file: File; status: 'parsing' | 'ready' | 'error'; error?: string; sheet?: ParsedSheet }
+/** One file's share of the upload — saved as its own upload session. */
+interface FilePlan { fileName: string; sessionId: string; parsedCount: number; toAdd: Business[]; duplicates: number }
+interface ValidationResult { files: FilePlan[]; toAdd: Business[]; duplicates: number; issues: RowIssue[]; today: string }
+interface DoneSummary { added: number; skipped: number; assigned: number; fileName: string; files: { fileName: string; added: number; skipped: number }[] }
+interface SaveProgress { saved: number; total: number }
 
 // Locating the new addresses on the map, shown on the "done" card. Each
 // address is looked up once and stored for everyone (table address_locations);
@@ -203,16 +210,19 @@ function summarizeLocations(
   return report
 }
 
-function parseSheet(buffer: ArrayBuffer): { headers: string[]; hIdx: number; raw: string[][] } {
-  const wb = XLSX.read(buffer)
-  const ws = wb.Sheets[wb.SheetNames[0]]
-  const raw = XLSX.utils.sheet_to_json<string[]>(ws, { header: 1, defval: '' })
+const isExcelFile = (f: File) => /\.xlsx?$/i.test(f.name)
+const formatMb = (bytes: number) => (bytes / (1024 * 1024)).toFixed(1)
 
-  const hIdx = raw.findIndex(row => row.some(c => String(c).trim() === 'שם העסק'))
-  if (hIdx === -1) throw new Error('לא נמצאה עמודת "שם העסק" — ודא שהקובץ במבנה הנכון')
+/** Every header that appears in any of the files, in first-seen order. */
+function unionHeaders(files: LoadedFile[]): string[] {
+  const seen = new Set<string>()
+  for (const f of files) for (const h of f.sheet?.headers ?? []) if (h) seen.add(h)
+  return [...seen]
+}
 
-  const headers = raw[hIdx].map(h => String(h).trim())
-  return { headers, hIdx, raw }
+/** Required fields whose mapped column this file doesn't have. */
+function missingRequired(sheet: ParsedSheet, mapping: Record<TargetField, string>): string[] {
+  return FIELD_DEFS.filter(fd => fd.required && mapping[fd.key] && !sheet.headers.includes(mapping[fd.key])).map(fd => mapping[fd.key])
 }
 
 function autoMatch(headers: string[], hint: string): string {
@@ -228,22 +238,32 @@ function getCol(row: string[], headers: string[], header: string): string {
 }
 
 function buildBusinesses(
-  raw: string[][], hIdx: number, headers: string[], mapping: Record<TargetField, string>,
+  sheet: ParsedSheet, file: string, mapping: Record<TargetField, string>,
   sessionId: string, today: string,
 ): { businesses: Business[]; issues: RowIssue[] } {
   const businesses: Business[] = []
   const issues: RowIssue[] = []
+  const { headers } = sheet
   let seq = 0
 
-  raw.slice(hIdx + 1).forEach((row, i) => {
-    if (!row.some(c => String(c).trim())) return
-    const excelRow = hIdx + i + 2
+  const missing = missingRequired(sheet, mapping)
+  if (missing.length > 0) {
+    issues.push({
+      row: 0, file, kind: 'error', title: 'עמודת חובה חסרה בקובץ',
+      detail: `אין בקובץ עמודה ${missing.map(m => `"${m}"`).join(', ')} — הקובץ לא ייובא`,
+    })
+    return { businesses, issues }
+  }
+
+  sheet.rows.forEach((row, i) => {
+    const excelRow = sheet.rowNumbers[i]
 
     const name = getCol(row, headers, mapping.name)
     const address = getCol(row, headers, mapping.address)
     if (!name || !address) {
       issues.push({
         row: excelRow,
+        file,
         kind: 'error',
         title: !name ? 'שם עסק חסר' : 'כתובת חסרה',
         detail: !name ? `שורה ${excelRow} — ללא שם עסק, לא ניתן לייבא` : `"${name}" — ללא כתובת, לא ניתן לייבא`,
@@ -254,13 +274,13 @@ function buildBusinesses(
     const rawNeighborhood = getCol(row, headers, mapping.neighborhood)
     const neighborhood = normalizeNeighborhood(rawNeighborhood) ?? ''
     if (rawNeighborhood && !neighborhood) {
-      issues.push({ row: excelRow, kind: 'warning', title: 'שכונה לא מזוהה', detail: `"${name}" — "${rawNeighborhood}" לא זוהתה, הנכס יישמר ללא שכונה` })
+      issues.push({ row: excelRow, file, kind: 'warning', title: 'שכונה לא מזוהה', detail: `"${name}" — "${rawNeighborhood}" לא זוהתה, הנכס יישמר ללא שכונה` })
     }
 
     const rawRating = getCol(row, headers, mapping.suspicionRating)
     const rating = rawRating || 'דרוש בדיקה'
     if (!rawRating) {
-      issues.push({ row: excelRow, kind: 'warning', title: 'דירוג אינדיקציה חסר', detail: `"${name}" — יוגדר כ"דרוש בדיקה"` })
+      issues.push({ row: excelRow, file, kind: 'warning', title: 'דירוג אינדיקציה חסר', detail: `"${name}" — יוגדר כ"דרוש בדיקה"` })
     }
 
     businesses.push({
@@ -442,11 +462,8 @@ export default function UploadPage() {
 
   const [mode, setMode] = useState<Mode>('file')
   const [step, setStep] = useState<Step>('upload')
-  const [file, setFile] = useState<File | null>(null)
+  const [files, setFiles] = useState<LoadedFile[]>([])
   const [parseError, setParseError] = useState('')
-  const [headers, setHeaders] = useState<string[]>([])
-  const [raw, setRaw] = useState<string[][]>([])
-  const [hIdx, setHIdx] = useState(0)
   const [mapping, setMapping] = useState<Record<TargetField, string>>(EMPTY_MAPPING)
   const [manual, setManual] = useState<Record<TargetField, string>>(EMPTY_MANUAL)
   // The neighborhood follows the typed street. A neighborhood the employee
@@ -480,10 +497,13 @@ export default function UploadPage() {
   }
   const [checking, setChecking] = useState(false)
   const [validation, setValidation] = useState<ValidationResult | null>(null)
-  const [pendingSession, setPendingSession] = useState<PendingSession | null>(null)
   const [autoAssign, setAutoAssign] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
+  const [progress, setProgress] = useState<SaveProgress | null>(null)
+  // Rows of each file (by session id) already saved in the current upload —
+  // resuming after an error continues from there.
+  const savedRowsRef = useRef<Map<string, number>>(new Map())
   const [doneSummary, setDoneSummary] = useState<DoneSummary | null>(null)
   const [locationReport, setLocationReport] = useState<LocationReport | null>(null)
   const locationQueueRef = useRef<GeocodeQueue | null>(null)
@@ -494,40 +514,86 @@ export default function UploadPage() {
     return () => { void locationQueueRef.current?.stop() }
   }, [])
 
+  // Warn before leaving the page while rows are being saved.
+  useEffect(() => {
+    if (!submitting) return
+    const warn = (e: BeforeUnloadEvent) => { e.preventDefault() }
+    window.addEventListener('beforeunload', warn)
+    return () => window.removeEventListener('beforeunload', warn)
+  }, [submitting])
+
+  const readyFiles = useMemo(() => files.filter(f => f.status === 'ready'), [files])
+  const parsing = files.some(f => f.status === 'parsing')
+  const headers = useMemo(() => unionHeaders(readyFiles), [readyFiles])
+
+  const previewFile = readyFiles[0]
   const previewRows = useMemo(() => {
-    return raw.slice(hIdx + 1)
-      .filter(row => row.some(c => String(c).trim()))
-      .slice(0, 6)
-      .map(row => ({
-        name: getCol(row, headers, mapping.name),
-        address: getCol(row, headers, mapping.address),
-        rating: getCol(row, headers, mapping.suspicionRating),
-      }))
-  }, [raw, hIdx, headers, mapping])
+    const sheet = previewFile?.sheet
+    if (!sheet) return []
+    return sheet.rows.slice(0, 6).map(row => ({
+      name: getCol(row, sheet.headers, mapping.name),
+      address: getCol(row, sheet.headers, mapping.address),
+      rating: getCol(row, sheet.headers, mapping.suspicionRating),
+    }))
+  }, [previewFile, mapping])
+
+  const filesMissingColumns = useMemo(
+    () => readyFiles.map(f => ({ name: f.file.name, missing: missingRequired(f.sheet!, mapping) })).filter(f => f.missing.length > 0),
+    [readyFiles, mapping]
+  )
 
   const mappedCount = FIELD_DEFS.filter(fd => mapping[fd.key]).length
   const errorCount = validation ? validation.issues.filter(i => i.kind === 'error').length : 0
   const highCount = validation ? validation.toAdd.filter(b => b.suspicionRating === 'גבוה').length : 0
+  const multiFile = mode === 'file' && (validation?.files.length ?? readyFiles.length) > 1
 
-  async function handleFile(f: File) {
-    setParseError('')
-    try {
-      const buffer = await f.arrayBuffer()
-      const parsed = parseSheet(buffer)
-      const initial = { ...EMPTY_MAPPING }
-      FIELD_DEFS.forEach(fd => { initial[fd.key] = autoMatch(parsed.headers, fd.hint) })
-      setFile(f)
-      setHeaders(parsed.headers)
-      setRaw(parsed.raw)
-      setHIdx(parsed.hIdx)
-      setMapping(initial)
-      setStep('mapping')
-    } catch (e) {
-      setParseError(e instanceof Error ? e.message : 'שגיאה בקריאת הקובץ')
-    }
+  function goToMapping(ready: LoadedFile[]) {
+    const all = unionHeaders(ready)
+    const initial = { ...EMPTY_MAPPING }
+    FIELD_DEFS.forEach(fd => { initial[fd.key] = autoMatch(all, fd.hint) })
+    setMapping(initial)
+    setStep('mapping')
   }
 
-  async function checkAndValidate(businesses: Business[], issues: RowIssue[], sessionId: string, today: string) {
+  // Files are read one after another in a Web Worker, so the page stays
+  // responsive. If every file is fine the wizard moves on by itself;
+  // otherwise the list shows what went wrong with which file.
+  async function handleFiles(list: FileList | File[]) {
+    const picked = Array.from(list)
+    const excel = picked.filter(isExcelFile)
+    setParseError(excel.length < picked.length ? 'חלק מהקבצים אינם קבצי אקסל (xlsx./xls.) ולא נוספו' : '')
+    if (excel.length === 0) return
+
+    const stamp = Date.now()
+    const added: LoadedFile[] = excel.map((file, i) => ({ key: `${stamp}-${i}`, file, status: 'parsing' }))
+    setFiles(prev => [...prev, ...added])
+
+    const finished: LoadedFile[] = []
+    for (const entry of added) {
+      let result: LoadedFile
+      try {
+        const sheet = await parseExcelFile(entry.file)
+        result = sheet.rows.length > 0
+          ? { ...entry, status: 'ready', sheet }
+          : { ...entry, status: 'error', error: 'אין שורות נתונים מתחת לשורת הכותרות' }
+      } catch (e) {
+        result = { ...entry, status: 'error', error: e instanceof Error ? e.message : 'שגיאה בקריאת הקובץ' }
+      }
+      finished.push(result)
+      setFiles(prev => prev.map(f => (f.key === entry.key ? result : f)))
+    }
+
+    const all = [...files, ...finished]
+    if (step === 'upload' && all.every(f => f.status === 'ready')) goToMapping(all)
+  }
+
+  function removeFile(key: string) {
+    setFiles(prev => prev.filter(f => f.key !== key))
+  }
+
+  async function checkAndValidate(
+    built: { fileName: string; sessionId: string; businesses: Business[] }[], issues: RowIssue[], today: string,
+  ) {
     // Every existing row is needed here (Supabase returns at most 1,000 per
     // request), otherwise duplicates beyond the first 1,000 would go unnoticed.
     let existing: { name: string; address: string }[]
@@ -537,11 +603,28 @@ export default function UploadPage() {
       throw new Error(`שגיאה בבדיקת כפילויות: ${e instanceof Error ? e.message : e}`)
     }
 
+    // Keys grow as rows are accepted, so a business repeated in another file
+    // (or twice in the same one) is added only once.
     const keys = new Set(existing.map(b => `${b.name}|${b.address}`))
-    const toAdd = businesses.filter(b => !keys.has(`${b.name}|${b.address}`))
+    const plans: FilePlan[] = built.map(({ fileName, sessionId, businesses }) => {
+      const toAdd: Business[] = []
+      for (const b of businesses) {
+        const key = `${b.name}|${b.address}`
+        if (keys.has(key)) continue
+        keys.add(key)
+        toAdd.push(b)
+      }
+      return { fileName, sessionId, parsedCount: businesses.length, toAdd, duplicates: businesses.length - toAdd.length }
+    })
 
-    setPendingSession({ sessionId, today, allParsed: businesses })
-    setValidation({ toAdd, duplicates: businesses.length - toAdd.length, issues })
+    savedRowsRef.current = new Map()
+    setValidation({
+      files: plans,
+      toAdd: plans.flatMap(p => p.toAdd),
+      duplicates: plans.reduce((n, p) => n + p.duplicates, 0),
+      issues,
+      today,
+    })
     setStep('validate')
   }
 
@@ -549,10 +632,16 @@ export default function UploadPage() {
     setChecking(true)
     setSubmitError('')
     try {
-      const sessionId = `session-${Date.now()}`
+      const stamp = Date.now()
       const today = new Date().toISOString()
-      const { businesses, issues } = buildBusinesses(raw, hIdx, headers, mapping, sessionId, today)
-      await checkAndValidate(businesses, issues, sessionId, today)
+      const issues: RowIssue[] = []
+      const built = readyFiles.map((f, i) => {
+        const sessionId = `session-${stamp + i}`
+        const result = buildBusinesses(f.sheet!, f.file.name, mapping, sessionId, today)
+        issues.push(...result.issues)
+        return { fileName: f.file.name, sessionId, businesses: result.businesses }
+      })
+      await checkAndValidate(built, issues, today)
     } catch (e) {
       setSubmitError(e instanceof Error ? e.message : 'שגיאה באימות הקובץ')
     } finally {
@@ -588,7 +677,7 @@ export default function UploadPage() {
         surveyResultDetail: null,
         source: 'manual',
       }
-      await checkAndValidate([business], [], sessionId, today)
+      await checkAndValidate([{ fileName: 'הוספה ידנית', sessionId, businesses: [business] }], [], today)
     } catch (e) {
       setSubmitError(e instanceof Error ? e.message : 'שגיאה באימות הנתונים')
     } finally {
@@ -643,31 +732,56 @@ export default function UploadPage() {
   }
 
   async function confirmUpload() {
-    if (!validation || !pendingSession) return
+    if (!validation) return
     setSubmitting(true)
     setSubmitError('')
+    const { toAdd, today } = validation
+    // Files are saved one after another, each as its own upload session (so
+    // the files page still lists them one by one), in batches with progress.
+    // Everything is inserted "on conflict do nothing", so resuming after an
+    // error re-sends the interrupted file without creating duplicates.
+    const plans = validation.files.filter(p => p.toAdd.length > 0)
+    const total = toAdd.length
+    const savedRows = savedRowsRef.current
+    let saved = plans.reduce((n, p) => n + (savedRows.get(p.sessionId) ?? 0), 0)
+    setProgress({ saved, total })
     try {
-      const { toAdd } = validation
-      const { sessionId, today, allParsed } = pendingSession
-      const fileName = file?.name ?? 'הוספה ידנית'
-      const session: UploadSession = {
-        id: sessionId,
-        fileName,
-        uploadDate: today,
-        totalCount: toAdd.length,
-        suspiciousCount: toAdd.filter(b => b.arnonaStatus === 'suspicious').length,
-        okCount: toAdd.filter(b => b.arnonaStatus === 'ok').length,
-        unknownCount: toAdd.filter(b => b.arnonaStatus === 'unknown').length,
-        skippedCount: allParsed.length - toAdd.length,
-        businessIds: toAdd.map(b => b.id),
-      }
+      for (const plan of plans) {
+        const already = savedRows.get(plan.sessionId) ?? 0
+        if (already >= plan.toAdd.length) continue
+        const session: UploadSession = {
+          id: plan.sessionId,
+          fileName: plan.fileName,
+          uploadDate: today,
+          totalCount: plan.toAdd.length,
+          suspiciousCount: plan.toAdd.filter(b => b.arnonaStatus === 'suspicious').length,
+          okCount: plan.toAdd.filter(b => b.arnonaStatus === 'ok').length,
+          unknownCount: plan.toAdd.filter(b => b.arnonaStatus === 'unknown').length,
+          skippedCount: plan.duplicates,
+          businessIds: plan.toAdd.map(b => b.id),
+        }
 
-      const { error: sessionErr } = await supabase.from('upload_sessions').insert(sessionToDb(session))
-      if (sessionErr) throw new Error(`שגיאה בשמירת הסשן: ${sessionErr.message}`)
+        // The session goes first: businesses reference it.
+        const { error: sessionErr } = await supabase.from('upload_sessions')
+          .upsert(sessionToDb(session), { onConflict: 'id', ignoreDuplicates: true })
+        if (sessionErr) throw new Error(`שגיאה בשמירת הקובץ "${plan.fileName}": ${sessionErr.message}`)
 
-      if (toAdd.length > 0) {
-        const { error: bizErr } = await supabase.from('businesses').insert(toAdd.map(businessToDb))
-        if (bizErr) throw new Error(`שגיאה בשמירת העסקים: ${bizErr.message}`)
+        const before = saved
+        try {
+          await insertInBatches('businesses', plan.toAdd.slice(already).map(businessToDb), {
+            onProgress: n => {
+              savedRows.set(plan.sessionId, already + n)
+              setProgress({ saved: before + n, total })
+            },
+          })
+        } catch (e) {
+          const done = before + (e instanceof BatchInsertError ? e.saved : 0)
+          throw new Error(
+            `השמירה נעצרה בקובץ "${plan.fileName}" אחרי ${done.toLocaleString('he')} מתוך ${total.toLocaleString('he')} נכסים` +
+            ` (${e instanceof Error ? e.message : e}). לחצו "המשך העלאה" — מה שכבר נשמר לא יישמר פעמיים.`
+          )
+        }
+        saved += plan.toAdd.length - already
       }
 
       let assigned = 0
@@ -681,7 +795,13 @@ export default function UploadPage() {
       }
 
       clearCache('businesses', 'sessions')
-      setDoneSummary({ added: toAdd.length, skipped: session.skippedCount, assigned, fileName })
+      setDoneSummary({
+        added: toAdd.length,
+        skipped: validation.duplicates,
+        assigned,
+        fileName: validation.files.length === 1 ? validation.files[0].fileName : `${validation.files.length} קבצים`,
+        files: validation.files.map(p => ({ fileName: p.fileName, added: p.toAdd.length, skipped: p.duplicates })),
+      })
       setStep('done')
       void locateNewAddresses(toAdd)
     } catch (e) {
@@ -696,35 +816,38 @@ export default function UploadPage() {
     locationQueueRef.current = null
     setLocationReport(null)
     setStep('upload')
-    setFile(null)
+    setFiles([])
     setParseError('')
-    setHeaders([])
-    setRaw([])
-    setHIdx(0)
     setMapping(EMPTY_MAPPING)
     setManual(EMPTY_MANUAL)
     setPickedForStreet(null)
     setValidation(null)
-    setPendingSession(null)
     setAutoAssign(false)
     setSubmitError('')
+    setProgress(null)
+    savedRowsRef.current = new Map()
     setDoneSummary(null)
   }
 
   if (!ready) return null
 
+  const totalBytes = files.reduce((n, f) => n + f.file.size, 0)
+  const progressPct = progress && progress.total > 0 ? Math.round((progress.saved / progress.total) * 100) : 0
+  const resumable = !submitting && !!submitError && !!progress && progress.saved > 0
+
   return (
     <AppShell
       title="העלאת דוח חדש"
-      subtitle={file ? (
+      subtitle={mode === 'file' && files.length > 0 ? (
         <span className="inline-flex items-center gap-1.5">
           <FileSpreadsheet size={13} strokeWidth={2} />
-          {file.name} · <span className="num">{(file.size / (1024 * 1024)).toFixed(1)}</span> MB
+          {files.length === 1 ? files[0].file.name : <><span className="num">{files.length}</span> קבצים</>}
+          {' · '}<span className="num">{formatMb(totalBytes)}</span> MB
         </span>
       ) : mode === 'manual'
         ? 'הוספת עסק בודד לבדיקה — ישירות למאגר, בלי קובץ אקסל'
-        : 'קובץ בפורמט דוח נכסים לבדיקה — עמודות: שם העסק, כתובת, שכונה, סוג עסק, דירוג אינדיקציה, קישורים'}
-      actions={step !== 'upload' && step !== 'done' && (
+        : 'קבצים בפורמט דוח נכסים לבדיקה — עמודות: שם העסק, כתובת, שכונה, סוג עסק, דירוג אינדיקציה, קישורים'}
+      actions={(step === 'mapping' || step === 'validate' || (step === 'upload' && mode === 'file' && files.length > 0)) && !submitting && (
         <Button variant="ghost" onClick={resetWizard}>ביטול</Button>
       )}
     >
@@ -760,27 +883,70 @@ export default function UploadPage() {
           {mode === 'file' ? (
             <Card>
               <div
-                onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files?.[0]; if (f) handleFile(f) }}
+                onDrop={e => { e.preventDefault(); if (!parsing && e.dataTransfer.files?.length) void handleFiles(e.dataTransfer.files) }}
                 onDragOver={e => e.preventDefault()}
-                onClick={() => fileRef.current?.click()}
-                className="border-2 border-dashed border-hairline rounded-2xl py-16 px-10 text-center cursor-pointer hover:border-brand/40 hover:bg-brand/[0.02] transition-colors max-w-xl mx-auto"
+                onClick={() => { if (!parsing) fileRef.current?.click() }}
+                className={`border-2 border-dashed border-hairline rounded-2xl text-center transition-colors max-w-xl mx-auto ${
+                  files.length > 0 ? 'py-8 px-8' : 'py-16 px-10'
+                } ${parsing ? 'opacity-60 cursor-wait' : 'cursor-pointer hover:border-brand/40 hover:bg-brand/[0.02]'}`}
               >
                 <span className="w-14 h-14 rounded-2xl bg-brand/10 flex items-center justify-center mx-auto mb-4">
                   <Upload size={24} className="text-brand" strokeWidth={1.8} />
                 </span>
-                <p className="text-[16px] font-bold text-ink mb-1.5">גרור קובץ אקסל לכאן</p>
-                <p className="text-[13px] text-subtle">או לחץ לבחירת קובץ · פורמט xlsx./xls.</p>
+                <p className="text-[16px] font-bold text-ink mb-1.5">{files.length > 0 ? 'גרור קבצים נוספים לכאן' : 'גרור קבצי אקסל לכאן'}</p>
+                <p className="text-[13px] text-subtle">או לחץ לבחירת קבצים · אפשר כמה קבצים יחד · פורמט xlsx./xls.</p>
                 <input
                   ref={fileRef}
                   type="file"
                   accept=".xlsx,.xls"
-                  onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f) }}
+                  multiple
+                  onChange={e => { if (e.target.files?.length) void handleFiles(e.target.files); e.target.value = '' }}
                   className="hidden"
                 />
               </div>
               {parseError && (
                 <div className="max-w-xl mx-auto mt-4 px-4 py-3 rounded-lg bg-high/[0.06] border border-high/25 text-[13px] text-high font-semibold text-center">
                   {parseError}
+                </div>
+              )}
+              {files.length > 0 && (
+                <div className="max-w-xl mx-auto mt-4">
+                  <ul className="flex flex-col divide-y divide-hairline border border-hairline rounded-xl">
+                    {files.map(f => (
+                      <li key={f.key} className="flex items-center gap-3 px-3.5 py-2.5">
+                        <FileSpreadsheet size={17} className={f.status === 'error' ? 'text-high shrink-0' : 'text-brand shrink-0'} strokeWidth={1.9} />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[13px] font-semibold text-ink truncate">{f.file.name}</p>
+                          <p className={`text-[12px] mt-0.5 ${f.status === 'error' ? 'text-high' : 'text-subtle'}`}>
+                            {f.status === 'parsing' && 'קורא את הקובץ…'}
+                            {f.status === 'ready' && <><span className="num">{f.sheet!.rows.length.toLocaleString('he')}</span> שורות · <span className="num">{formatMb(f.file.size)}</span> MB</>}
+                            {f.status === 'error' && f.error}
+                          </p>
+                        </div>
+                        {f.status === 'parsing' ? (
+                          <Spinner size={16} />
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => removeFile(f.key)}
+                            disabled={parsing}
+                            aria-label="הסרת הקובץ"
+                            className="w-7 h-7 rounded-md flex items-center justify-center text-subtle hover:text-ink hover:bg-canvas disabled:opacity-40"
+                          >
+                            <X size={15} strokeWidth={2.2} />
+                          </button>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="mt-3.5 flex items-center gap-3">
+                    <Button onClick={() => goToMapping(readyFiles)} disabled={parsing || readyFiles.length === 0}>
+                      {parsing ? 'קורא קבצים…' : readyFiles.length === 1 ? 'המשך למיפוי עמודות' : `המשך למיפוי עמודות (${readyFiles.length} קבצים)`}
+                    </Button>
+                    {!parsing && files.some(f => f.status === 'error') && (
+                      <span className="text-[12.5px] text-graphite">קבצים עם שגיאה לא ייובאו</span>
+                    )}
+                  </div>
                 </div>
               )}
             </Card>
@@ -862,7 +1028,11 @@ export default function UploadPage() {
             <div className="px-5 py-4 border-b border-hairline flex items-center justify-between gap-3">
               <div>
                 <p className="font-bold text-[14.5px]">מיפוי עמודות</p>
-                <p className="text-[12px] text-subtle mt-1">המערכת השוותה את כותרות הקובץ לשדות המאגר — בדוק ותקן במידת הצורך</p>
+                <p className="text-[12px] text-subtle mt-1">
+                  {readyFiles.length > 1
+                    ? <>המערכת השוותה את כותרות <span className="num">{readyFiles.length}</span> הקבצים לשדות המאגר — המיפוי חל על כולם. בדוק ותקן במידת הצורך</>
+                    : 'המערכת השוותה את כותרות הקובץ לשדות המאגר — בדוק ותקן במידת הצורך'}
+                </p>
               </div>
               <Badge tone="clear" className="shrink-0">
                 זוהו אוטומטית <span className="num">{mappedCount}</span> מתוך <span className="num">{FIELD_DEFS.length}</span>
@@ -903,6 +1073,20 @@ export default function UploadPage() {
               })}
             </div>
 
+            {filesMissingColumns.length > 0 && (
+              <div className="mx-5 mb-3 p-2.5 px-3.5 bg-mid/[0.06] border border-mid/25 rounded-[9px] text-[12.5px] text-[#7c3a12]">
+                <div className="flex items-center gap-2 font-bold">
+                  <AlertTriangle size={15} className="text-mid shrink-0" strokeWidth={2} />
+                  {filesMissingColumns.length === 1 ? 'קובץ אחד לא ייובא' : <><span className="num">{filesMissingColumns.length}</span> קבצים לא ייובאו</>}
+                </div>
+                <ul className="mt-1 flex flex-col gap-0.5">
+                  {filesMissingColumns.map((f, i) => (
+                    <li key={i}><span className="font-semibold">{f.name}</span> — אין בו עמודה {f.missing.map(m => `"${m}"`).join(', ')}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
             <div className="px-5 py-3.5 border-t border-hairline bg-canvas flex items-center gap-3">
               <Button onClick={proceedToValidate} disabled={!mapping.name || !mapping.address || checking}>
                 {checking ? 'בודק...' : 'המשך לאימות'}
@@ -912,7 +1096,10 @@ export default function UploadPage() {
           </Card>
 
           <Card>
-            <p className="font-bold text-[14.5px] mb-3">תצוגה מקדימה מהקובץ</p>
+            <p className="font-bold text-[14.5px] mb-3">
+              תצוגה מקדימה מהקובץ
+              {readyFiles.length > 1 && previewFile && <span className="block text-[12px] font-normal text-subtle mt-0.5 truncate">{previewFile.file.name}</span>}
+            </p>
             <div className="overflow-auto max-h-[420px] text-[12.5px]">
               <table className="w-full border-collapse">
                 <thead>
@@ -978,6 +1165,27 @@ export default function UploadPage() {
                 </div>
               </Card>
 
+              {multiFile && (
+                <Card>
+                  <p className="font-bold text-[14.5px] mb-3">פירוט לפי קובץ</p>
+                  <ul className="flex flex-col divide-y divide-hairline text-[12.5px]">
+                    {validation.files.map(p => {
+                      const fileErrors = validation.issues.filter(i => i.file === p.fileName && i.kind === 'error').length
+                      return (
+                        <li key={p.sessionId} className="flex items-baseline justify-between gap-3 py-2">
+                          <span className="font-semibold text-ink truncate">{p.fileName}</span>
+                          <span className="shrink-0 text-charcoal">
+                            <span className="num font-bold text-clear">{p.toAdd.length}</span> חדשים
+                            {p.duplicates > 0 && <> · <span className="num">{p.duplicates}</span> כפולים</>}
+                            {fileErrors > 0 && <> · <span className="num text-high">{fileErrors}</span> שגיאות</>}
+                          </span>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                </Card>
+              )}
+
               {validation.issues.length > 0 && (
                 <Card>
                   <p className="font-bold text-[14.5px] mb-3">שורות שדורשות תשומת לב</p>
@@ -985,7 +1193,11 @@ export default function UploadPage() {
                     {validation.issues.slice(0, 8).map((iss, i) => (
                       <div key={i} className={`px-3 py-2.5 rounded-lg border ${iss.kind === 'error' ? 'border-high/25 bg-high/[0.04]' : 'border-mid/25 bg-mid/[0.05]'}`}>
                         <div className="flex items-center gap-2">
-                          <Badge tone={iss.kind === 'error' ? 'high' : 'mid'}>שורה {iss.row}</Badge>
+                          <Badge tone={iss.kind === 'error' ? 'high' : 'mid'}>
+                            {multiFile && <>{iss.file}{iss.row > 0 && ' · '}</>}
+                            {iss.row > 0 && <>שורה {iss.row}</>}
+                            {!multiFile && iss.row === 0 && iss.file}
+                          </Badge>
                           <span className="text-[12.5px] font-semibold text-ink">{iss.title}</span>
                         </div>
                         <p className="text-[12px] text-subtle mt-1">{iss.detail}</p>
@@ -1042,13 +1254,23 @@ export default function UploadPage() {
 
           <div className="mt-4 flex items-center gap-3 flex-wrap">
             <Button onClick={confirmUpload} disabled={submitting || validation.toAdd.length === 0}>
-              {submitting ? 'מעלה...' : `אישור והעלאת ${validation.toAdd.length} נכסים`}
+              {submitting && progress
+                ? <>מעלה… <span className="num">{progress.saved.toLocaleString('he')}</span> / <span className="num">{progress.total.toLocaleString('he')}</span></>
+                : resumable ? 'המשך העלאה' : `אישור והעלאת ${validation.toAdd.length.toLocaleString('he')} נכסים`}
             </Button>
-            <Button variant="secondary" onClick={() => setStep(mode === 'file' ? 'mapping' : 'upload')}>
+            <Button variant="secondary" onClick={() => setStep(mode === 'file' ? 'mapping' : 'upload')} disabled={submitting || resumable}>
               {mode === 'file' ? 'חזרה למיפוי' : 'חזרה לעריכת הפרטים'}
             </Button>
             {submitError && <span className="text-[12.5px] text-high font-semibold">{submitError}</span>}
           </div>
+          {progress && (submitting || resumable) && (
+            <div className="mt-3 max-w-md">
+              <div className="h-1.5 bg-[#eef1f5] rounded-full overflow-hidden">
+                <span className="block h-full bg-brand transition-[width] duration-300 ease-out" style={{ width: `${progressPct}%` }} />
+              </div>
+              {submitting && <p className="text-[11.5px] text-subtle mt-1.5">שומר במנות — נא לא לסגור את הדף עד לסיום.</p>}
+            </div>
+          )}
         </>
       )}
 
@@ -1058,7 +1280,9 @@ export default function UploadPage() {
             <span className="w-14 h-14 rounded-full bg-clear/10 flex items-center justify-center">
               <Check size={26} className="text-clear" strokeWidth={3} />
             </span>
-            <p className="text-[18px] font-bold text-ink">{mode === 'manual' ? 'העסק נוסף בהצלחה' : 'הקובץ הועלה בהצלחה'}</p>
+            <p className="text-[18px] font-bold text-ink">
+              {mode === 'manual' ? 'העסק נוסף בהצלחה' : doneSummary.files.length > 1 ? 'הקבצים הועלו בהצלחה' : 'הקובץ הועלה בהצלחה'}
+            </p>
             <p className="text-[13.5px] text-charcoal max-w-md">
               {mode === 'manual' ? (
                 <>נוסף <span className="num font-bold text-ink">{doneSummary.added}</span> עסק חדש למאגר</>
@@ -1068,11 +1292,24 @@ export default function UploadPage() {
               {doneSummary.skipped > 0 && <> · <span className="num font-bold">{doneSummary.skipped}</span> כפולים דולגו</>}
               {doneSummary.assigned > 0 && <> · <span className="num font-bold text-brand">{doneSummary.assigned}</span> הוקצו אוטומטית לסוקר</>}
             </p>
+            {mode === 'file' && doneSummary.files.length > 1 && (
+              <ul className="w-full max-w-md text-start text-[12.5px] flex flex-col divide-y divide-hairline border border-hairline rounded-xl px-3.5">
+                {doneSummary.files.map((f, i) => (
+                  <li key={i} className="flex items-baseline justify-between gap-3 py-2">
+                    <span className="font-semibold text-ink truncate">{f.fileName}</span>
+                    <span className="shrink-0 text-charcoal">
+                      {f.added > 0 ? <><span className="num font-bold text-clear">{f.added}</span> נוספו</> : 'אין חדשים'}
+                      {f.skipped > 0 && <> · <span className="num">{f.skipped}</span> כפולים</>}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
             {locationReport && <LocationBlock report={locationReport} />}
             <div className="flex items-center gap-3 mt-3 flex-wrap justify-center">
               <Button href="/">עבור לדשבורד</Button>
               <Button variant="secondary" href="/files">צפה בקבצים</Button>
-              <Button variant="ghost" onClick={resetWizard}>{mode === 'manual' ? 'הוסף עסק נוסף' : 'העלה קובץ נוסף'}</Button>
+              <Button variant="ghost" onClick={resetWizard}>{mode === 'manual' ? 'הוסף עסק נוסף' : 'העלה קבצים נוספים'}</Button>
             </div>
           </div>
         </Card>

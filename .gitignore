@@ -43,3 +43,6 @@ next-env.d.ts
 # Arnona pipeline — internal progress markers (not for repo)
 reports/__PROGRESS__*
 __pycache__/
+
+# Excel-parsing Web Worker, bundled by `npm run build:worker` (runs before dev/build)
+/public/workers/
