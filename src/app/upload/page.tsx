@@ -24,6 +24,8 @@ import { parseExcelFile } from '@/lib/excel/parseInWorker'
 import type { ParsedSheet } from '@/lib/excel/parseSheet'
 import { insertInBatches, BatchInsertError } from '@/lib/batchInsert'
 import { Card, Badge, Button, Input, Select, Spinner, Toggle } from '@/components/ui'
+import { FIELD_DEFS, RATING_OPTIONS, type TargetField } from '@/lib/uploadFormat'
+import { ExcelFormatGuide, FORMAT_GUIDE_ID } from '@/components/ExcelFormatGuide'
 import type { BadgeTone } from '@/components/ui'
 
 // Alphabetical for the manual-entry picker — the registry itself is ordered
@@ -32,25 +34,6 @@ const SORTED_NEIGHBORHOODS = [...JERUSALEM_NEIGHBORHOODS].sort((a, b) => a.local
 
 type Step = 'upload' | 'mapping' | 'validate' | 'done'
 type Mode = 'file' | 'manual'
-
-type TargetField =
-  | 'name' | 'address' | 'neighborhood' | 'type' | 'suspicionRating' | 'suspicionDetail'
-  | 'noSuspicionReason' | 'matchedAddress' | 'unitCount' | 'link1' | 'link2' | 'link3'
-
-const FIELD_DEFS: { key: TargetField; label: string; required: boolean; hint: string }[] = [
-  { key: 'name', label: 'שם העסק', required: true, hint: 'שם העסק' },
-  { key: 'address', label: 'כתובת', required: true, hint: 'כתובת' },
-  { key: 'neighborhood', label: 'שכונה', required: false, hint: 'שכונה' },
-  { key: 'type', label: 'סוג עסק', required: false, hint: 'סוג עסק' },
-  { key: 'suspicionRating', label: 'דירוג אינדיקציה', required: false, hint: 'דירוג אינדיקציה' },
-  { key: 'suspicionDetail', label: 'פירוט האינדיקציה', required: false, hint: 'פירוט האינדיקציה' },
-  { key: 'noSuspicionReason', label: 'סיבת אי-אינדיקציה', required: false, hint: 'סיבת אי-אינדיקציה' },
-  { key: 'matchedAddress', label: 'כתובת תואמת במערכת הגבייה', required: false, hint: 'כתובת תואמת במערכת הגבייה' },
-  { key: 'unitCount', label: "מס' דירות", required: false, hint: "מס' דירות" },
-  { key: 'link1', label: 'קישור 1', required: false, hint: 'קישור 1' },
-  { key: 'link2', label: 'קישור 2', required: false, hint: 'קישור 2' },
-  { key: 'link3', label: 'קישור 3', required: false, hint: 'קישור 3' },
-]
 
 // Fields shown in the manual-entry form — same set as FIELD_DEFS minus
 // noSuspicionReason, which the manual flow doesn't collect.
@@ -65,7 +48,6 @@ const EMPTY_MAPPING: Record<TargetField, string> = {
 // "needs review" fallback — an employee filling this in has already looked.
 const EMPTY_MANUAL: Record<TargetField, string> = { ...EMPTY_MAPPING, suspicionRating: 'גבוה' }
 
-const RATING_OPTIONS = ['גבוה', 'בינוני', 'לא חשוד', 'דרוש בדיקה']
 const RATING_TONE: Record<string, BadgeTone> = { 'גבוה': 'high', 'בינוני': 'mid', 'לא חשוד': 'clear' }
 
 /** `row` is the Excel row number; 0 for a problem with the whole file. */
@@ -104,6 +86,7 @@ interface LocationReport {
 }
 
 const MAX_LISTED_ISSUES = 8
+const GUIDE_CLOSED_KEY = 'upload_format_guide_closed'
 
 function IssueList({ one, many, hint, issues }: { one: string; many: string; hint: string; issues: LocationIssue[] }) {
   return (
@@ -464,6 +447,23 @@ export default function UploadPage() {
   const [step, setStep] = useState<Step>('upload')
   const [files, setFiles] = useState<LoadedFile[]>([])
   const [parseError, setParseError] = useState('')
+  // The format guide starts open; closing it is remembered on this device.
+  // (Read on first render: the page renders nothing until the role check
+  // passes in the browser, so this can't cause a hydration mismatch.)
+  const [guideOpen, setGuideOpen] = useState(() => {
+    try { return typeof window === 'undefined' || !localStorage.getItem(GUIDE_CLOSED_KEY) } catch { return true }
+  })
+  function toggleGuide(open: boolean) {
+    setGuideOpen(open)
+    try {
+      if (open) localStorage.removeItem(GUIDE_CLOSED_KEY)
+      else localStorage.setItem(GUIDE_CLOSED_KEY, '1')
+    } catch { /* ignore */ }
+  }
+  function showGuide() {
+    setGuideOpen(true)
+    requestAnimationFrame(() => document.getElementById(FORMAT_GUIDE_ID)?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+  }
   const [mapping, setMapping] = useState<Record<TargetField, string>>(EMPTY_MAPPING)
   const [manual, setManual] = useState<Record<TargetField, string>>(EMPTY_MANUAL)
   // The neighborhood follows the typed street. A neighborhood the employee
@@ -881,6 +881,8 @@ export default function UploadPage() {
           </div>
 
           {mode === 'file' ? (
+            <>
+            <ExcelFormatGuide open={guideOpen} onOpenChange={toggleGuide} />
             <Card>
               <div
                 onDrop={e => { e.preventDefault(); if (!parsing && e.dataTransfer.files?.length) void handleFiles(e.dataTransfer.files) }}
@@ -920,7 +922,10 @@ export default function UploadPage() {
                           <p className={`text-[12px] mt-0.5 ${f.status === 'error' ? 'text-high' : 'text-subtle'}`}>
                             {f.status === 'parsing' && 'קורא את הקובץ…'}
                             {f.status === 'ready' && <><span className="num">{f.sheet!.rows.length.toLocaleString('he')}</span> שורות · <span className="num">{formatMb(f.file.size)}</span> MB</>}
-                            {f.status === 'error' && f.error}
+                            {f.status === 'error' && <>
+                              {f.error}{' '}
+                              <button type="button" onClick={showGuide} className="font-semibold text-brand hover:text-brand-deep">איך צריך להיראות הקובץ?</button>
+                            </>}
                           </p>
                         </div>
                         {f.status === 'parsing' ? (
@@ -950,6 +955,7 @@ export default function UploadPage() {
                 </div>
               )}
             </Card>
+            </>
           ) : (
             <Card padded={false}>
               <div className="px-5 py-4 border-b border-hairline flex items-center justify-between gap-3">
