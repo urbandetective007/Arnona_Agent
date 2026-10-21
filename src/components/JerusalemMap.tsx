@@ -39,9 +39,15 @@ const DEFAULT_COLOR = '#9ca3af' // Gray
 // SVG marker creator function
 // `uncertain` adds an amber "!" badge — the pin marks the property's
 // neighborhood rather than its building, or sits far from its neighborhood.
-const createMarkerIcon = (color: string, uncertain = false) => {
+// `dropDelay` (ms) makes a newly added pin fall onto the map with a small
+// bounce; `ping` sends rings out from under the pin (high suspicion).
+// Leaflet positions the marker element itself with a transform, so the
+// motion lives on an inner wrapper.
+const createMarkerIcon = (color: string, uncertain = false, { dropDelay, ping = false }: { dropDelay?: number; ping?: boolean } = {}) => {
   return L.divIcon({
     html: `
+      <div class="${dropDelay !== undefined ? 'pin-drop' : ''}" style="position:relative;--d:${dropDelay ?? 0}ms">
+      ${ping ? `<span class="pin-ping" style="color:${color};--d:${Math.round(Math.random() * 2400)}ms"></span>` : ''}
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="32" height="32" style="filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.3));">
         <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" fill="${color}"/>
         ${uncertain ? `
@@ -49,6 +55,7 @@ const createMarkerIcon = (color: string, uncertain = false) => {
         <text x="18.5" y="7.3" text-anchor="middle" font-size="6.5" font-weight="700" fill="#fff" font-family="Arial, sans-serif">!</text>
         ` : ''}
       </svg>
+      </div>
     `,
     className: 'custom-leaflet-marker',
     iconSize: [32, 32],
@@ -282,6 +289,9 @@ export default function JerusalemMap({ businesses, canEdit = false, fixKey = nul
     const markers = markersRef.current
     const seen = new Set<string>()
     const bounds: L.LatLngExpression[] = []
+    // New pins drop in one after another, up to a short cap so a large
+    // batch still lands within about a second.
+    let dropped = 0
 
     businesses.forEach(b => {
       const placement = placementFor(b, locations)
@@ -304,13 +314,16 @@ export default function JerusalemMap({ businesses, canEdit = false, fixKey = nul
       const popup = document.createElement('div')
       popup.innerHTML = html
       popup.querySelector('[data-fix]')?.addEventListener('click', () => startFixRef.current(b))
-      const icon = createMarkerIcon(color, kind === 'neighborhood' || suspiciousKm !== null)
+      const uncertain = kind === 'neighborhood' || suspiciousKm !== null
+      const ping = b.suspicionRating === 'גבוה'
       if (existing) {
+        const icon = createMarkerIcon(color, uncertain, { ping })
         existing.marker.setLatLng([coords.lat, coords.lon])
         existing.marker.setIcon(icon)
         existing.marker.setPopupContent(popup)
         existing.sig = sig
       } else {
+        const icon = createMarkerIcon(color, uncertain, { ping, dropDelay: Math.min(dropped++, 40) * 22 })
         const marker = L.marker([coords.lat, coords.lon], { icon }).bindPopup(popup).addTo(markerGroup)
         markers.set(b.id, { marker, sig })
       }

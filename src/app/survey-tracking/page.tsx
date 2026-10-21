@@ -7,7 +7,7 @@ import { AppShell } from '@/components/AppShell'
 import { useRequireRole } from '@/lib/useRequireRole'
 import type { Business } from '@/lib/types'
 import { useBusinesses } from '@/lib/useBusinesses'
-import { Card, StatCard, Badge, Table, Thead, Tbody, Tr, Th, Td, Spinner, EmptyState, CrossFilterBar, AnimatedNumber, LoadingMoreBanner } from '@/components/ui'
+import { Card, StatCard, Badge, Table, Thead, Tbody, Tr, Th, Td, EmptyState, CrossFilterBar, AnimatedNumber, LoadingMoreBanner, PageSkeleton } from '@/components/ui'
 import { useCrossFilter, chartItemProps } from '@/lib/useCrossFilter'
 import type { BadgeTone } from '@/components/ui'
 
@@ -107,7 +107,7 @@ export default function SurveyTrackingPage() {
   if (loading) {
     return (
       <AppShell title="מעקב תוצאות סקר">
-        <Spinner fullHeight />
+        <PageSkeleton />
       </AppShell>
     )
   }
@@ -270,7 +270,7 @@ export default function SurveyTrackingPage() {
                       <Td>
                         <div className="flex items-center gap-2.5">
                           <div className="w-20 h-1.5 bg-canvas rounded-full overflow-hidden">
-                            <span className="block h-full bg-brand-light rounded-full transition-[width] duration-500 ease-out" style={{ width: `${r.pct}%` }} />
+                            <span className="bar-grow block h-full bg-brand-light rounded-full transition-[width] duration-500 ease-out" style={{ width: `${r.pct}%` }} />
                           </div>
                           <span className="num text-[12.5px] font-bold text-brand">{r.pct}%</span>
                         </div>

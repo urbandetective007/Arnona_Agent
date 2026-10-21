@@ -7,13 +7,13 @@ import { AppShell } from '@/components/AppShell'
 import { useRequireRole } from '@/lib/useRequireRole'
 import { useRole } from '@/lib/useRole'
 import { useBusinesses } from '@/lib/useBusinesses'
-import { Card, Button, Input, Select, Spinner, EmptyState, LoadingMoreBanner, Pill } from '@/components/ui'
+import { Card, Button, Input, Select, EmptyState, LoadingMoreBanner, SegmentedControl, Skeleton } from '@/components/ui'
 import { SURVEY_RESULT_OPTIONS, NO_SURVEY_RESULT, NOT_SENT, inspectorStatus, surveyResult } from '@/lib/surveyStatus'
 import type { Business } from '@/lib/types'
 
 const JerusalemMap = dynamic(() => import('@/components/JerusalemMap'), {
   ssr: false,
-  loading: () => <Spinner fullHeight />,
+  loading: () => <Skeleton className="h-[70vh] rounded-xl" />,
 })
 
 const ALL_RATINGS = ['גבוה', 'בינוני', 'דרוש בדיקה', 'לא חשוד']
@@ -93,7 +93,7 @@ export default function MapPage() {
   if (loading) {
     return (
       <AppShell title="מפת נכסים">
-        <Spinner fullHeight />
+        <Skeleton className="h-[70vh] rounded-xl" />
       </AppShell>
     )
   }
@@ -121,13 +121,15 @@ export default function MapPage() {
             >
               סננים{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
             </Button>
-            <div className="flex bg-canvas rounded-lg p-0.5 gap-0.5" role="group" aria-label="סטטוס סוקר">
-              {SURVEYOR_VIEWS.map(v => (
-                <Pill key={v.key} active={surveyorView === v.key} onClick={() => setSurveyorView(v.key)}>
-                  {v.label} <span className="num ms-1 text-subtle font-normal">({viewCounts[v.key].toLocaleString('he')})</span>
-                </Pill>
-              ))}
-            </div>
+            <SegmentedControl
+              ariaLabel="סטטוס סוקר"
+              options={SURVEYOR_VIEWS.map(v => ({
+                key: v.key,
+                label: <>{v.label} <span className="num ms-1 text-subtle font-normal">({viewCounts[v.key].toLocaleString('he')})</span></>,
+              }))}
+              value={surveyorView}
+              onChange={setSurveyorView}
+            />
             {(search || activeFilterCount > 0 || surveyorView !== 'notSent') && (
               <Button
                 variant="ghost"

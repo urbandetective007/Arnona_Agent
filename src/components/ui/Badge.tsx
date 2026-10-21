@@ -15,14 +15,16 @@ interface BadgeProps {
   tone?: BadgeTone
   children: ReactNode
   className?: string
+  /** A soft beating glow, for the statuses that need attention first. */
+  pulse?: boolean
 }
 
 // Small status chip — "אינדיקציה גבוהה", "פער בסיווג", the funnel's
 // bottleneck tag, etc. Tones map 1:1 to the semantic tokens in globals.css
 // so a status always reads the same color everywhere in the app.
-export function Badge({ tone = 'neutral', children, className = '' }: BadgeProps) {
+export function Badge({ tone = 'neutral', children, className = '', pulse = false }: BadgeProps) {
   return (
-    <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-bold ${TONE_CLASSES[tone]} ${className}`}>
+    <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-bold ${TONE_CLASSES[tone]} ${pulse ? 'badge-pulse' : ''} ${className}`}>
       {children}
     </span>
   )

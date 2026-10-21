@@ -22,8 +22,11 @@ import { fetchLocations } from '@/lib/locations'
 import { streetViewUrl } from '@/lib/placement'
 import { fetchReportsByBusiness } from '@/lib/surveyReports'
 import { FieldReportView } from '@/components/FieldReportView'
-import { Card, Button, Badge, Input, Select, Spinner, EmptyState, LoadingMoreBanner } from '@/components/ui'
+import { Card, Button, Badge, Input, Select, toast, EmptyState, LoadingMoreBanner, PageSkeleton } from '@/components/ui'
 import type { BadgeTone } from '@/components/ui'
+
+// Only the first screenful of rows slides in; the rest of a long table just appears.
+const STAGGER_ROWS = 16
 
 const ALL_RATINGS = ['גבוה', 'בינוני', 'דרוש בדיקה', 'לא חשוד']
 const RATING_TONE: Record<string, BadgeTone> = { 'גבוה': 'high', 'בינוני': 'mid', 'לא חשוד': 'clear' }
@@ -236,6 +239,7 @@ export default function BusinessesPage() {
         return next
       })
       setSelectedIds(new Set())
+      toast(ids.length === 1 ? 'נכס אחד נשלח לסוקר' : `${ids.length.toLocaleString('he')} נכסים נשלחו לסוקר`)
     } else {
       alert(`שגיאה בשליחה לסוקר: ${error.message}`)
     }
@@ -269,6 +273,7 @@ export default function BusinessesPage() {
           setCache('businesses', next)
           return next
         })
+        toast(`${business.name}: ${status}`)
       }
     }
     setUpdating(null)
@@ -286,6 +291,7 @@ export default function BusinessesPage() {
           setCache('businesses', next)
           return next
         })
+        toast(value ? `תוצאת הסקר של ${business.name} נשמרה` : `תוצאת הסקר של ${business.name} נמחקה`)
       }
     }
     setUpdating(null)
@@ -336,6 +342,7 @@ export default function BusinessesPage() {
     })
     setEditingId(null)
     setEditForm({})
+    toast(`הפרטים של ${name} נשמרו`)
   }
 
   // The expanded property: editable fields, or the read-only details with the
@@ -423,7 +430,7 @@ export default function BusinessesPage() {
   if (loading) {
     return (
       <AppShell title="כלל הנתונים">
-        <Spinner fullHeight />
+        <PageSkeleton tiles={0} rows={10} />
       </AppShell>
     )
   }
@@ -618,17 +625,17 @@ export default function BusinessesPage() {
                 </div>
                 {sorted.length === 0 ? (
                   <p className="text-center py-12 text-graphite">לא נמצאו תוצאות</p>
-                ) : sorted.map(b => {
+                ) : sorted.map((b, index) => {
                   const open = expanded === b.id
                   return (
-                    <div key={b.id} className={`border-b border-hairline ${open ? 'bg-canvas' : ''}`}>
+                    <div key={b.id} style={{ ['--i' as string]: index }} className={`${index < STAGGER_ROWS ? 'row-in' : ''} border-b border-hairline ${open ? 'bg-canvas' : ''}`}>
                       <div className="flex items-start gap-2.5 px-3 pt-3">
                         <input type="checkbox" checked={selectedIds.has(b.id)} onChange={() => toggleSelected(b.id)} aria-label={`בחר ${b.name}`} className="mt-0.5 w-5 h-5 accent-[#024ad8] cursor-pointer shrink-0" />
                         <button type="button" onClick={() => setExpanded(open ? null : b.id)} aria-expanded={open} className="flex-1 min-w-0 text-start cursor-pointer">
                           <span className="block text-[14.5px] font-bold text-ink leading-snug">{b.name}</span>
                           <span className="block text-[12.5px] text-graphite mt-0.5">{[b.type, b.address, b.neighborhood].filter(Boolean).join(' · ')}</span>
                           <span className="flex items-center gap-1.5 flex-wrap mt-1.5">
-                            {b.suspicionRating && <Badge tone={RATING_TONE[b.suspicionRating] ?? 'neutral'}>{b.suspicionRating}</Badge>}
+                            {b.suspicionRating && <Badge tone={RATING_TONE[b.suspicionRating] ?? 'neutral'} pulse={b.suspicionRating === 'גבוה'}>{b.suspicionRating}</Badge>}
                             <Badge tone={SOURCE_TONE[b.source]}>{SOURCE_LABEL[b.source]}</Badge>
                             <span className="num text-[11.5px] text-subtle">{formatDate(b.uploadDate)}</span>
                           </span>
@@ -697,10 +704,11 @@ export default function BusinessesPage() {
                 <tbody className="divide-y divide-hairline">
                   {sorted.length === 0 ? (
                     <tr><td colSpan={14} className="text-center py-12 text-graphite">לא נמצאו תוצאות</td></tr>
-                  ) : sorted.map(b => (
+                  ) : sorted.map((b, index) => (
                     <RowGroup key={b.id}>
                       <tr
-                        className={`cursor-pointer transition-colors ${expanded === b.id ? 'bg-canvas' : 'hover:bg-canvas/60'}`}
+                        style={{ ['--i' as string]: index }}
+                        className={`${index < STAGGER_ROWS ? 'row-in' : ''} cursor-pointer transition-colors ${expanded === b.id ? 'bg-canvas' : 'hover:bg-canvas/60'}`}
                         onClick={() => setExpanded(expanded === b.id ? null : b.id)}
                       >
                         <td className="px-2.5 py-3" onClick={e => e.stopPropagation()}>
@@ -713,7 +721,7 @@ export default function BusinessesPage() {
                         <td className="px-2.5 py-3 text-charcoal">{b.neighborhood || '—'}</td>
                         <td className="px-2.5 py-3 text-graphite">{linkCount(b)}</td>
                         <td className="px-2.5 py-3">
-                          {b.suspicionRating ? <Badge tone={RATING_TONE[b.suspicionRating] ?? 'neutral'}>{b.suspicionRating}</Badge> : '—'}
+                          {b.suspicionRating ? <Badge tone={RATING_TONE[b.suspicionRating] ?? 'neutral'} pulse={b.suspicionRating === 'גבוה'}>{b.suspicionRating}</Badge> : '—'}
                         </td>
                         <td className="px-2.5 py-3 text-graphite">{b.unitCount || '—'}</td>
                         <td className="px-2.5 py-3 text-graphite text-[12px]">{formatDate(b.uploadDate)}</td>

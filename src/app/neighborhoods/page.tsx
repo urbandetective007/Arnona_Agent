@@ -7,7 +7,7 @@ import { useRequireRole } from '@/lib/useRequireRole'
 import type { Business } from '@/lib/types'
 import { useBusinesses } from '@/lib/useBusinesses'
 import { SOURCE_LABEL, SOURCE_OPTIONS, SOURCE_COLOR, SOURCE_TONE, type BusinessSource } from '@/lib/sources'
-import { Card, StatCard, Spinner, EmptyState, CrossFilterBar, AnimatedNumber, LoadingMoreBanner, Badge, Table, Thead, Tbody, Tr, Th, Td } from '@/components/ui'
+import { Card, StatCard, EmptyState, CrossFilterBar, AnimatedNumber, LoadingMoreBanner, Badge, Table, Thead, Tbody, Tr, Th, Td, PageSkeleton } from '@/components/ui'
 import { useCrossFilter, chartItemProps } from '@/lib/useCrossFilter'
 import { AgentScanCard } from '@/components/AgentScanCard'
 
@@ -60,7 +60,7 @@ export default function NeighborhoodsPage() {
   if (loading) {
     return (
       <AppShell title="פילוח שכונות">
-        <Spinner fullHeight />
+        <PageSkeleton tiles={2} />
       </AppShell>
     )
   }
@@ -118,7 +118,7 @@ export default function NeighborhoodsPage() {
                   <span className="num w-5 sm:w-6 shrink-0 text-[13px] font-bold text-subtle">{i + 1}</span>
                   <span className="w-[88px] sm:w-32 shrink-0 text-[13px] sm:text-[13.5px] font-semibold text-ink truncate">{r.neighborhood}</span>
                   <div className="flex-1 min-w-[40px] h-[22px] bg-canvas rounded-md overflow-hidden">
-                    <div className="flex h-full rounded-md overflow-hidden transition-[width] duration-500 ease-out min-w-[10px]" style={{ width: `${(r.count / maxCount) * 100}%` }}>
+                    <div className="bar-grow flex h-full rounded-md overflow-hidden transition-[width] duration-500 ease-out min-w-[10px]" style={{ width: `${(r.count / maxCount) * 100}%` }}>
                       {SOURCE_OPTIONS.map(s => (
                         <span key={s} className="block h-full transition-[width] duration-500 ease-out" style={{ width: `${(r.bySource[s] / r.count) * 100}%`, background: SOURCE_COLOR[s] }} title={`${SOURCE_LABEL[s]}: ${r.bySource[s]}`} />
                       ))}

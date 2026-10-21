@@ -24,7 +24,7 @@ import { fetchLocations, createLocationQueue } from '@/lib/locations'
 import { parseExcelFile } from '@/lib/excel/parseInWorker'
 import type { ParsedSheet } from '@/lib/excel/parseSheet'
 import { insertInBatches, BatchInsertError } from '@/lib/batchInsert'
-import { Card, Badge, Button, Input, Select, Spinner, Toggle } from '@/components/ui'
+import { Card, Badge, Button, Input, Select, Spinner, Toggle, SuccessCheck, AnimatedNumber } from '@/components/ui'
 import { FIELD_DEFS, RATING_OPTIONS, type TargetField } from '@/lib/uploadFormat'
 import { ExcelFormatGuide, FORMAT_GUIDE_ID } from '@/components/ExcelFormatGuide'
 import type { BadgeTone } from '@/components/ui'
@@ -1300,7 +1300,7 @@ export default function UploadPage() {
           {progress && (submitting || resumable) && (
             <div className="mt-3 max-w-md">
               <div className="h-1.5 bg-[#eef1f5] rounded-full overflow-hidden">
-                <span className="block h-full bg-brand transition-[width] duration-300 ease-out" style={{ width: `${progressPct}%` }} />
+                <span className={`block h-full bg-brand transition-[width] duration-300 ease-out ${submitting ? 'progress-active' : ''}`} style={{ width: `${progressPct}%` }} />
               </div>
               {submitting && <p className="text-[11.5px] text-subtle mt-1.5">שומר במנות — נא לא לסגור את הדף עד לסיום.</p>}
             </div>
@@ -1311,20 +1311,20 @@ export default function UploadPage() {
       {step === 'done' && doneSummary && (
         <Card>
           <div className="flex flex-col items-center text-center py-10 gap-3">
-            <span className="w-14 h-14 rounded-full bg-clear/10 flex items-center justify-center">
-              <Check size={26} className="text-clear" strokeWidth={3} />
+            <span className="w-16 h-16 rounded-full bg-clear/10 flex items-center justify-center pop-in">
+              <SuccessCheck size={44} />
             </span>
             <p className="text-[18px] font-bold text-ink">
               {mode === 'manual' ? 'העסק נוסף בהצלחה' : doneSummary.files.length > 1 ? 'הקבצים הועלו בהצלחה' : 'הקובץ הועלה בהצלחה'}
             </p>
             <p className="text-[13.5px] text-charcoal max-w-md">
               {mode === 'manual' ? (
-                <>נוסף <span className="num font-bold text-ink">{doneSummary.added}</span> עסק חדש למאגר</>
+                <>נוסף <span className="num font-bold text-ink"><AnimatedNumber value={doneSummary.added} /></span> עסק חדש למאגר</>
               ) : (
-                <>נוספו <span className="num font-bold text-ink">{doneSummary.added}</span> עסקים חדשים מתוך {doneSummary.fileName}</>
+                <>נוספו <span className="num font-bold text-ink"><AnimatedNumber value={doneSummary.added} /></span> עסקים חדשים מתוך {doneSummary.fileName}</>
               )}
-              {doneSummary.skipped > 0 && <> · <span className="num font-bold">{doneSummary.skipped}</span> כפולים דולגו</>}
-              {doneSummary.assigned > 0 && <> · <span className="num font-bold text-brand">{doneSummary.assigned}</span> הוקצו אוטומטית לסוקר</>}
+              {doneSummary.skipped > 0 && <> · <span className="num font-bold"><AnimatedNumber value={doneSummary.skipped} /></span> כפולים דולגו</>}
+              {doneSummary.assigned > 0 && <> · <span className="num font-bold text-brand"><AnimatedNumber value={doneSummary.assigned} /></span> הוקצו אוטומטית לסוקר</>}
             </p>
             {mode === 'file' && doneSummary.files.length > 1 && (
               <ul className="w-full max-w-md text-start text-[12.5px] flex flex-col divide-y divide-hairline border border-hairline rounded-xl px-3.5">
