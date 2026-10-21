@@ -42,11 +42,12 @@ const NO_GAP = 'לא נמצא עסק/פער שטח'
 const isGap = (b: Business) => b.sentToInspector === 'נשלח לסוקר' && !!b.surveyResultDetail && b.surveyResultDetail !== NO_GAP
 
 // "Who caught it": every reported gap split by where the property came from —
-// the agent's scan (excel uploads) or a city employee's manual entry — and by
-// the kind of gap the surveyor found.
+// the agent's scan (excel uploads), a city employee's manual entry, or the
+// business promotion department — and by the kind of gap the surveyor found.
 const CATCH_SOURCES: { key: Business['source']; label: string }[] = [
   { key: 'excel', label: 'סוכן ארנונה' },
   { key: 'manual', label: 'עובד עירייה' },
+  { key: 'promotion', label: 'קידום עסקים' },
 ]
 const GAP_TYPES = [
   { key: 'נמצא פער בסיווג', color: '#c8102e', text: '#ffffff' },

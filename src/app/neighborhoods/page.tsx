@@ -6,6 +6,7 @@ import { AppShell } from '@/components/AppShell'
 import { useRequireRole } from '@/lib/useRequireRole'
 import type { Business } from '@/lib/types'
 import { useBusinesses } from '@/lib/useBusinesses'
+import { SOURCE_LABEL, SOURCE_OPTIONS, SOURCE_COLOR, SOURCE_TONE, type BusinessSource } from '@/lib/sources'
 import { Card, StatCard, EmptyState, CrossFilterBar, AnimatedNumber, LoadingMoreBanner, Badge, Table, Thead, Tbody, Tr, Th, Td, PageSkeleton } from '@/components/ui'
 import { useCrossFilter, chartItemProps } from '@/lib/useCrossFilter'
 import { AgentScanCard } from '@/components/AgentScanCard'
@@ -16,22 +17,21 @@ const NEIGHBORHOOD_DIMS = {
 const DIM_LABELS = { neighborhood: 'שכונה' }
 
 const isIndication = (b: Business) => b.suspicionRating === 'גבוה' || b.suspicionRating === 'בינוני'
-const AGENT_COLOR = '#024ad8'
-const MANUAL_COLOR = '#f59e0b'
+const SOURCE_SHORT: Record<BusinessSource, string> = { excel: 'סוכן', manual: 'ידני', promotion: 'קידום' }
 
 // Indication properties per neighborhood, split by where they came from —
-// the agent's reports or manual entry — so it's visible that both count.
+// the agent's reports, manual entry or the business promotion department —
+// so it's visible that all of them count.
 function rankNeighborhoods(businesses: Business[]) {
-  const byNeighborhood = new Map<string, { agent: number; manual: number }>()
+  const byNeighborhood = new Map<string, Record<BusinessSource, number>>()
   businesses.forEach(b => {
     if (!b.neighborhood || !isIndication(b)) return
-    const row = byNeighborhood.get(b.neighborhood) ?? { agent: 0, manual: 0 }
-    if (b.source === 'manual') row.manual += 1
-    else row.agent += 1
+    const row = byNeighborhood.get(b.neighborhood) ?? { excel: 0, manual: 0, promotion: 0 }
+    row[b.source] += 1
     byNeighborhood.set(b.neighborhood, row)
   })
   return [...byNeighborhood.entries()]
-    .map(([neighborhood, r]) => ({ neighborhood, ...r, count: r.agent + r.manual }))
+    .map(([neighborhood, bySource]) => ({ neighborhood, bySource, count: bySource.excel + bySource.manual + bySource.promotion }))
     .sort((a, b) => b.count - a.count)
 }
 
@@ -48,7 +48,7 @@ export default function NeighborhoodsPage() {
   const selectedRows = useMemo(() => rankNeighborhoods(cf.filtered), [cf.filtered])
 
   const totalIndication = rows.reduce((sum, r) => sum + r.count, 0)
-  const totalManual = rows.reduce((sum, r) => sum + r.manual, 0)
+  const totalBySource = (s: BusinessSource) => rows.reduce((sum, r) => sum + r.bySource[s], 0)
   const selectedList = useMemo(
     () => cf.filtered.filter(b => b.neighborhood && isIndication(b)).sort((a, b) => a.neighborhood.localeCompare(b.neighborhood, 'he') || a.name.localeCompare(b.name, 'he')),
     [cf.filtered]
@@ -98,8 +98,12 @@ export default function NeighborhoodsPage() {
           <div className="flex items-center justify-between flex-wrap gap-x-4 gap-y-1.5 px-4 sm:px-5 py-4 border-b border-hairline">
             <span className="text-[14.5px] font-bold text-ink">דירוג שכונות</span>
             <div className="flex items-center flex-wrap gap-x-3.5 gap-y-1 text-[11.5px] text-subtle">
-              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm" style={{ background: AGENT_COLOR }} />סוכן ארנונה</span>
-              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm" style={{ background: MANUAL_COLOR }} />הוזן ידנית <span className="num">({totalManual})</span></span>
+              {SOURCE_OPTIONS.map(s => (
+                <span key={s} className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-sm" style={{ background: SOURCE_COLOR[s] }} />{SOURCE_LABEL[s]}
+                  {s !== 'excel' && <span className="num">({totalBySource(s)})</span>}
+                </span>
+              ))}
               <span className="hidden sm:inline">· לחיצה על שכונה מציגה את הנכסים</span>
             </div>
           </div>
@@ -115,12 +119,15 @@ export default function NeighborhoodsPage() {
                   <span className="w-[88px] sm:w-32 shrink-0 text-[13px] sm:text-[13.5px] font-semibold text-ink truncate">{r.neighborhood}</span>
                   <div className="flex-1 min-w-[40px] h-[22px] bg-canvas rounded-md overflow-hidden">
                     <div className="bar-grow flex h-full rounded-md overflow-hidden transition-[width] duration-500 ease-out min-w-[10px]" style={{ width: `${(r.count / maxCount) * 100}%` }}>
-                      <span className="block h-full transition-[width] duration-500 ease-out" style={{ width: `${(r.agent / r.count) * 100}%`, background: AGENT_COLOR }} title={`סוכן ארנונה: ${r.agent}`} />
-                      <span className="block h-full transition-[width] duration-500 ease-out" style={{ width: `${(r.manual / r.count) * 100}%`, background: MANUAL_COLOR }} title={`הוזן ידנית: ${r.manual}`} />
+                      {SOURCE_OPTIONS.map(s => (
+                        <span key={s} className="block h-full transition-[width] duration-500 ease-out" style={{ width: `${(r.bySource[s] / r.count) * 100}%`, background: SOURCE_COLOR[s] }} title={`${SOURCE_LABEL[s]}: ${r.bySource[s]}`} />
+                      ))}
                     </div>
                   </div>
                   <span className="num w-[52px] sm:w-16 shrink-0 text-start text-[13px] font-bold text-brand"><AnimatedNumber value={r.count} /><span className="hidden sm:inline"> נכסים</span></span>
-                  <span className="hidden sm:inline num w-24 shrink-0 text-start text-[11.5px] text-subtle">{r.agent} סוכן · {r.manual} ידני</span>
+                  <span className="hidden sm:inline num min-w-24 shrink-0 whitespace-nowrap text-start text-[11.5px] text-subtle">
+                    {SOURCE_OPTIONS.filter(s => s !== 'promotion' || r.bySource.promotion > 0).map(s => `${r.bySource[s]} ${SOURCE_SHORT[s]}`).join(' · ')}
+                  </span>
                   <span className="num w-9 sm:w-12 shrink-0 text-start text-[12px] text-subtle">
                     <AnimatedNumber value={totalIndication > 0 ? Math.round((r.count / totalIndication) * 100) : 0} suffix="%" />
                   </span>
@@ -160,7 +167,7 @@ export default function NeighborhoodsPage() {
                     <Td className="text-charcoal">{b.type || '—'}</Td>
                     <Td className="text-charcoal">{b.address}</Td>
                     <Td className="text-charcoal">{b.neighborhood}</Td>
-                    <Td><Badge tone={b.source === 'manual' ? 'mid' : 'neutral'}>{b.source === 'manual' ? 'הוזן ידנית' : 'סוכן ארנונה'}</Badge></Td>
+                    <Td><Badge tone={SOURCE_TONE[b.source]}>{SOURCE_LABEL[b.source]}</Badge></Td>
                     <Td className="text-charcoal">{b.sentToInspector ?? 'לא נשלח לסוקר'}</Td>
                     <Td className="text-charcoal">{b.surveyResultDetail ?? '—'}</Td>
                   </Tr>

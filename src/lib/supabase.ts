@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import type { Business, UploadSession } from './types'
+import { parseSource } from './sources'
 
 export const supabase = createClient(
   'https://mcsygsqfyuaexxxwsgem.supabase.co',
@@ -27,7 +28,7 @@ export function dbToBusiness(row: any): Business {
     uploadSessionId: row.upload_session_id ?? '',
     sentToInspector: row.sent_to_inspector ?? null,
     surveyResultDetail: row.survey_result_detail ?? null,
-    source: row.source === 'manual' ? 'manual' : 'excel',
+    source: parseSource(row.source),
   }
 }
 

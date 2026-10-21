@@ -9,6 +9,7 @@ import type { Business } from '@/lib/types'
 import { mapSuspicionRatingToStatus } from '@/lib/types'
 import { supabase, businessToDb } from '@/lib/supabase'
 import { useBusinesses } from '@/lib/useBusinesses'
+import { SOURCE_LABEL, SOURCE_OPTIONS, SOURCE_TONE } from '@/lib/sources'
 import { markSentToInspector } from '@/lib/inspectorAssign'
 import { setCache } from '@/lib/cache'
 import { formatDate, parseUploadDate } from '@/lib/dateUtils'
@@ -29,8 +30,6 @@ const STAGGER_ROWS = 16
 
 const ALL_RATINGS = ['גבוה', 'בינוני', 'דרוש בדיקה', 'לא חשוד']
 const RATING_TONE: Record<string, BadgeTone> = { 'גבוה': 'high', 'בינוני': 'mid', 'לא חשוד': 'clear' }
-const SOURCE_LABEL: Record<Business['source'], string> = { manual: 'הוזן ידנית', excel: 'סוכן ארנונה' }
-const SOURCE_OPTIONS: Business['source'][] = ['excel', 'manual']
 
 const isIndication = (b: Business) => b.suspicionRating === 'גבוה' || b.suspicionRating === 'בינוני'
 const INTAKE_DAYS = 14
@@ -637,7 +636,7 @@ export default function BusinessesPage() {
                           <span className="block text-[12.5px] text-graphite mt-0.5">{[b.type, b.address, b.neighborhood].filter(Boolean).join(' · ')}</span>
                           <span className="flex items-center gap-1.5 flex-wrap mt-1.5">
                             {b.suspicionRating && <Badge tone={RATING_TONE[b.suspicionRating] ?? 'neutral'} pulse={b.suspicionRating === 'גבוה'}>{b.suspicionRating}</Badge>}
-                            <Badge tone={b.source === 'manual' ? 'mid' : 'neutral'}>{SOURCE_LABEL[b.source]}</Badge>
+                            <Badge tone={SOURCE_TONE[b.source]}>{SOURCE_LABEL[b.source]}</Badge>
                             <span className="num text-[11.5px] text-subtle">{formatDate(b.uploadDate)}</span>
                           </span>
                         </button>
@@ -727,7 +726,7 @@ export default function BusinessesPage() {
                         <td className="px-2.5 py-3 text-graphite">{b.unitCount || '—'}</td>
                         <td className="px-2.5 py-3 text-graphite text-[12px]">{formatDate(b.uploadDate)}</td>
                         <td className="px-2.5 py-3">
-                          <Badge tone={b.source === 'manual' ? 'mid' : 'neutral'}>{SOURCE_LABEL[b.source]}</Badge>
+                          <Badge tone={SOURCE_TONE[b.source]}>{SOURCE_LABEL[b.source]}</Badge>
                         </td>
                         <td className="px-2.5 py-3" onClick={e => e.stopPropagation()}>
                           <Select
