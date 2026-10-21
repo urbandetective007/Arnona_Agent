@@ -11,6 +11,7 @@ import {
   insertReport, uploadReportFile, saveReportFiles, shrinkImage, type ReportDraft,
 } from '@/lib/surveyReports'
 import { enqueueReport, isNetworkError } from '@/lib/offlineQueue'
+import { SuccessCheck } from '@/components/ui'
 
 // The municipality's survey form ("טופס איסוף מידע ונתונים לנכס"), built into
 // the surveyor's page: same questions, same order, plus an automatic location
@@ -20,6 +21,7 @@ const SPOKE_WITH = ['בעל/ת הנכס', 'המחזיק/ה בנכס']
 const ACTUAL_USE = ['דירת מגורים', 'עסק', 'דירת מגורים ועסק']
 const OTHER = 'אחר'
 const FAR_WARNING_M = 150
+const SAVED_PAUSE_MS = 1100
 const SURVEYOR_NAME_KEY = 'survey-report-surveyor-name'
 const ACCEPT = 'image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx'
 
@@ -70,6 +72,9 @@ export function SurveyReportSheet({ business, locations, onClose, onSaved }: {
   const [files, setFiles] = useState<Record<Group, PickedFile[]>>({ main: [], extra: [] })
 
   const [submitting, setSubmitting] = useState(false)
+  // Set once the report is safely on the server: the button turns green with a
+  // check for a moment, so the surveyor sees it worked before the sheet closes.
+  const [saved, setSaved] = useState(false)
   const [progress, setProgress] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [farWarning, setFarWarning] = useState<{ meters: number; pos: GeolocationPosition } | null>(null)
@@ -207,7 +212,9 @@ export function SurveyReportSheet({ business, locations, onClose, onSaved }: {
         setProgress('מסיים…')
         await saveReportFiles(report.id, records)
       }
-      onSaved({ ...report, files: records }, false)
+      setSaved(true)
+      const done = { ...report, files: records }
+      setTimeout(() => onSaved(done, false), SAVED_PAUSE_MS)
     } catch (e) {
       if (draft && isNetworkError(e)) {
         try { await queueForLater(draft); return } catch { /* fall through to the error below */ }
@@ -309,9 +316,13 @@ export function SurveyReportSheet({ business, locations, onClose, onSaved }: {
             type="button"
             onClick={() => submit()}
             disabled={submitting || !!farWarning}
-            className="h-12 rounded-xl bg-brand text-white text-[14.5px] font-bold flex items-center justify-center gap-2 hover:bg-brand-deep active:scale-[0.98] transition-[background-color,transform] cursor-pointer disabled:opacity-70 disabled:cursor-default"
+            className={`h-12 rounded-xl text-white text-[14.5px] font-bold flex items-center justify-center gap-2 active:scale-[0.98] transition-[background-color,transform] duration-300 cursor-pointer disabled:cursor-default ${
+              saved ? 'bg-clear' : 'bg-brand hover:bg-brand-deep disabled:opacity-70'
+            }`}
           >
-            {submitting ? <><Loader2 size={18} className="animate-spin" /> {progress || 'שולח…'}</> : <><Check size={18} strokeWidth={2.4} /> שליחת הדיווח</>}
+            {saved
+              ? <><SuccessCheck size={22} className="text-white" /> הדיווח נשמר</>
+              : submitting ? <><Loader2 size={18} className="animate-spin" /> {progress || 'שולח…'}</> : <><Check size={18} strokeWidth={2.4} /> שליחת הדיווח</>}
           </button>
         </footer>
       </div>

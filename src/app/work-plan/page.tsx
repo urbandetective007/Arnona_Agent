@@ -7,7 +7,7 @@ import { useRequireRole } from '@/lib/useRequireRole'
 import { logout } from '@/lib/auth'
 import type { Business } from '@/lib/types'
 import { useBusinesses } from '@/lib/useBusinesses'
-import { Badge, Spinner } from '@/components/ui'
+import { Badge, Skeleton, toast } from '@/components/ui'
 import { formatDate } from '@/lib/dateUtils'
 import { distanceKm, type LocationMap } from '@/lib/geocode'
 import { fetchLocations } from '@/lib/locations'
@@ -79,7 +79,6 @@ export default function WorkPlanPage() {
   // office sets their result. null = still loading.
   const [reportedIds, setReportedIds] = useState<Set<string> | null>(null)
   const [reportFor, setReportFor] = useState<Business | null>(null)
-  const [toast, setToast] = useState<string | null>(null)
   // Reports filled in without signal, waiting on the phone to be sent.
   const [queuedCount, setQueuedCount] = useState(0)
   const [sendingQueued, setSendingQueued] = useState(false)
@@ -93,7 +92,7 @@ export default function WorkPlanPage() {
       setSendingQueued(true)
       const sent = await flushQueue()
       setSendingQueued(false)
-      if (sent > 0) setToast(sent === 1 ? 'דיווח שחיכה לקליטה נשלח ✓' : `${sent} דיווחים שחיכו לקליטה נשלחו ✓`)
+      if (sent > 0) toast(sent === 1 ? 'דיווח שחיכה לקליטה נשלח' : `${sent} דיווחים שחיכו לקליטה נשלחו`)
     }
     const goOffline = () => setOnline(false)
     refresh()
@@ -125,12 +124,6 @@ export default function WorkPlanPage() {
     Promise.all([fetchReportsByBusiness().catch(() => new Map()), listQueued()])
       .then(([m, queued]) => setReportedIds(new Set([...m.keys(), ...queued.map(q => q.businessId)])))
   }, [])
-
-  useEffect(() => {
-    if (!toast) return
-    const t = setTimeout(() => setToast(null), 3500)
-    return () => clearTimeout(t)
-  }, [toast])
 
   useEffect(() => {
     fetchLocations().then(setLocations).catch(() => { /* sorting falls back to neighborhood centers */ })
@@ -246,8 +239,13 @@ export default function WorkPlanPage() {
 
   if (loading || reportedIds === null) {
     return (
-      <div className="min-h-screen flex bg-canvas">
-        <Spinner fullHeight />
+      <div className="min-h-screen bg-canvas flex justify-center">
+        <div className="w-full max-w-md flex flex-col gap-3">
+          <div className="h-[150px] bg-chrome" />
+          <div className="px-3.5 flex flex-col gap-3">
+            {[0, 1, 2, 3].map(i => <Skeleton key={i} className="h-[68px] rounded-2xl" />)}
+          </div>
+        </div>
       </div>
     )
   }
@@ -298,7 +296,7 @@ export default function WorkPlanPage() {
             {pending.length > 0 && (
               <div className="mt-3">
                 <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.12)' }}>
-                  <span className="block h-full rounded-full bg-clear transition-[width] duration-500 ease-out" style={{ width: `${donePct}%` }} />
+                  <span className="bar-grow block h-full rounded-full bg-clear transition-[width] duration-500 ease-out" style={{ width: `${donePct}%` }} />
                 </div>
                 <p className="text-[11.5px] mt-1.5" style={{ color: '#8fa8c8' }}>
                   <span className="num font-semibold text-white">{doneCount}</span> מתוך <span className="num">{pending.length}</span> בוצעו ({donePct}%)
@@ -327,7 +325,7 @@ export default function WorkPlanPage() {
                   setSendingQueued(true)
                   const sent = await flushQueue()
                   setSendingQueued(false)
-                  setToast(sent > 0 ? `${sent} ${sent === 1 ? 'דיווח נשלח' : 'דיווחים נשלחו'} ✓` : 'עדיין אין חיבור — ננסה שוב אוטומטית')
+                  toast(sent > 0 ? `${sent} ${sent === 1 ? 'דיווח נשלח' : 'דיווחים נשלחו'}` : 'עדיין אין חיבור — ננסה שוב אוטומטית', sent > 0 ? 'success' : 'info')
                 }}
                 className="shrink-0 h-8 px-3 rounded-lg bg-mid text-white font-semibold active:scale-95 transition-transform cursor-pointer disabled:opacity-60"
               >
@@ -358,7 +356,7 @@ export default function WorkPlanPage() {
             <div className="flex-1 flex items-center justify-center text-subtle text-[14px] text-center px-6">
               אין נכסים הממתינים לסקר כרגע
             </div>
-          ) : groups.map(([neighborhood, list]) => {
+          ) : groups.map(([neighborhood, list], groupIndex) => {
             const open = openNeighborhood === neighborhood
             const neighborhoodChecked = list.every(b => checked.has(b.id))
             const hoodDone = list.filter(b => checked.has(b.id)).length
@@ -367,7 +365,8 @@ export default function WorkPlanPage() {
             return (
               <div
                 key={neighborhood}
-                className={`bg-surface rounded-2xl overflow-hidden border-2 transition-colors ${
+                style={{ ['--i' as string]: Math.min(groupIndex, 12) }}
+                className={`row-in bg-surface rounded-2xl overflow-hidden border-2 transition-colors ${
                   open ? 'border-brand/25 shadow-[0_2px_8px_rgba(2,74,216,0.08)]' : 'border-transparent shadow-[0_1px_3px_rgba(15,26,40,0.06)]'
                 }`}
               >
@@ -423,13 +422,13 @@ export default function WorkPlanPage() {
                     {routeStops.length > 1 && (
                       <p className="text-[11px] text-subtle text-center">אם המסלול לא מוצג בגוגל מפות — חזרו ולחצו שוב</p>
                     )}
-                    {list.map(b => {
+                    {list.map((b, rowIndex) => {
                       const isChecked = checked.has(b.id)
                       const expanded = expandedId === b.id
                       const km = distanceById.get(b.id)
                       const links = [b.link1, b.link2, b.link3].filter(Boolean)
                       return (
-                        <div key={b.id} className="rounded-xl bg-canvas">
+                        <div key={b.id} className="row-in rounded-xl bg-canvas" style={{ ['--i' as string]: Math.min(rowIndex, 12) }}>
                           <div className="flex items-center gap-2.5 px-2 py-2.5">
                             <button
                               type="button"
@@ -544,18 +543,13 @@ export default function WorkPlanPage() {
             setReportedIds(prev => new Set(prev).add(report.businessId))
             if (queued) {
               setReportFor(null)
-              setToast(`אין קליטה — הדיווח על ${reportFor.name} נשמר בטלפון ויישלח אוטומטית`)
+              toast(`אין קליטה — הדיווח על ${reportFor.name} נשמר בטלפון ויישלח אוטומטית`, 'info')
               return
             }
             setReportFor(null)
-            setToast(`הדיווח על ${reportFor.name} נשמר ✓`)
+            toast(`הדיווח על ${reportFor.name} נשמר`)
           }}
         />
-      )}
-      {toast && (
-        <div role="status" className="fixed bottom-5 inset-x-0 z-50 flex justify-center px-4 pointer-events-none">
-          <div className="max-w-md px-4 py-3 rounded-xl bg-clear text-white text-[13.5px] font-semibold shadow-lg animate-fade-in">{toast}</div>
-        </div>
       )}
     </div>
   )

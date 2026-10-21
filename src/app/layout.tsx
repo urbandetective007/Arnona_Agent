@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import { Assistant, Heebo } from 'next/font/google'
 import { IosActiveFix } from '@/components/IosActiveFix'
 import { PwaSetup } from '@/components/PwaSetup'
+import { Toaster } from '@/components/ui/Toast'
 import './globals.css'
 
 // Assistant (UI text) + Heebo (tabular digits, via the `.num` helper class) —
@@ -46,6 +47,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <IosActiveFix />
         {children}
         <PwaSetup />
+        <Toaster />
       </body>
     </html>
   )

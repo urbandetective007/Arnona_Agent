@@ -9,7 +9,7 @@ import { supabase, sessionToDb } from '@/lib/supabase'
 import { useBusinesses } from '@/lib/useBusinesses'
 import { setCache } from '@/lib/cache'
 import { formatDate } from '@/lib/dateUtils'
-import { Card, Badge, Button, Spinner, EmptyState, LoadingMoreBanner } from '@/components/ui'
+import { Card, Badge, Button, EmptyState, LoadingMoreBanner, PageSkeleton } from '@/components/ui'
 import type { BadgeTone } from '@/components/ui'
 
 const RATING_TONE: Record<string, BadgeTone> = { 'גבוה': 'high', 'בינוני': 'mid', 'לא חשוד': 'clear' }
@@ -66,7 +66,7 @@ export default function FilesPage() {
   if (loading) {
     return (
       <AppShell title="קבצים שהועלו">
-        <Spinner fullHeight />
+        <PageSkeleton tiles={0} rows={6} />
       </AppShell>
     )
   }

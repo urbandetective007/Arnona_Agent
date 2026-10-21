@@ -5,6 +5,7 @@ import type { Business, UploadSession } from './types'
 import { dbToBusiness, dbToSession } from './supabase'
 import { getCache, setCache } from './cache'
 import { fetchAllRows } from './fetchAll'
+import { saveLoginStats } from './loginStats'
 
 /** `total` is null when the table's row count couldn't be read. */
 export interface LoadingMore { loaded: number; total: number | null }
@@ -53,6 +54,7 @@ export function useBusinesses({ sessions: withSessions = false }: { sessions?: b
         const b = rows.map(dbToBusiness)
         setBusinesses(b)
         setCache('businesses', b)
+        saveLoginStats(b)
         setLoadingMore(null)
         if (sessionRows) {
           const s = (await sessionRows).map(dbToSession)

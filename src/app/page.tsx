@@ -9,7 +9,7 @@ import { useRole } from '@/lib/useRole'
 import type { Business } from '@/lib/types'
 import { useBusinesses } from '@/lib/useBusinesses'
 import { timeAgo, parseUploadDate } from '@/lib/dateUtils'
-import { Card, StatCard, Button, Spinner, EmptyState, Pill, Sparkline, CrossFilterBar, AnimatedNumber, LoadingMoreBanner } from '@/components/ui'
+import { Card, StatCard, Button, EmptyState, SegmentedControl, Sparkline, CrossFilterBar, AnimatedNumber, LoadingMoreBanner, PageSkeleton } from '@/components/ui'
 import { useCrossFilter, chartItemProps } from '@/lib/useCrossFilter'
 
 const RANGE_OPTIONS = [
@@ -248,7 +248,7 @@ export default function Dashboard() {
   if (loading) {
     return (
       <AppShell title="מרכז בקרה">
-        <Spinner fullHeight />
+        <PageSkeleton />
       </AppShell>
     )
   }
@@ -313,13 +313,12 @@ export default function Dashboard() {
       subtitle={lastUpdated ? `עודכן ${lastUpdated} · נתוני אמת מ-Supabase` : 'נתוני אמת מ-Supabase'}
       actions={
         <>
-          <div className="flex bg-canvas rounded-lg p-0.5 gap-0.5">
-            {RANGE_OPTIONS.map(opt => (
-              <Pill key={opt.days} active={rangeDays === opt.days} onClick={() => setRangeDays(opt.days)}>
-                {opt.label}
-              </Pill>
-            ))}
-          </div>
+          <SegmentedControl
+            ariaLabel="טווח תאריכים"
+            options={RANGE_OPTIONS.map(opt => ({ key: opt.days, label: opt.label }))}
+            value={rangeDays}
+            onChange={setRangeDays}
+          />
           <div className="flex items-center gap-1.5">
             <Button variant="secondary" icon={<Download size={15} strokeWidth={1.9} />} onClick={() => downloadBusinessesCsv(cf.filtered, cf.hasSelection() ? `${rangeLabel}-מסונן` : rangeLabel)}>
               ייצוא דוח
@@ -391,7 +390,7 @@ export default function Dashboard() {
             footer={
               <div className="h-1.5 bg-white/15 rounded-full overflow-hidden flex w-36">
                 <span
-                  className="transition-[width] duration-500 ease-out bg-white block h-full"
+                  className="bar-grow transition-[width] duration-500 ease-out bg-white block h-full"
                   style={{ width: `${stats.sent.length > 0 ? (stats.gapFound.length / stats.sent.length) * 100 : 0}%` }}
                 />
               </div>
@@ -421,7 +420,7 @@ export default function Dashboard() {
                 <div className={`num text-2xl font-bold mt-1 ${stage.tone === 'clear' ? 'text-clear' : 'text-ink'}`}><AnimatedNumber value={stage.value} /></div>
                 <div className={`h-1 rounded-full mt-2.5 overflow-hidden ${stage.tone === 'clear' ? 'bg-clear/20' : 'bg-[#eef1f5]'}`}>
                   <span
-                    className={`transition-[width] duration-500 ease-out block h-full ${stage.tone === 'clear' ? 'bg-clear' : 'bg-brand-light'}`}
+                    className={`bar-grow transition-[width] duration-500 ease-out block h-full ${stage.tone === 'clear' ? 'bg-clear' : 'bg-brand-light'}`}
                     style={{ width: `${(stage.value / funnelMax) * 100}%` }}
                   />
                 </div>
@@ -467,7 +466,7 @@ export default function Dashboard() {
                           text around them, growing from the right like the label does. */}
                       <div className="flex-1 h-[22px] bg-canvas rounded-md overflow-hidden">
                         <span
-                          className="transition-[width] duration-500 ease-out block h-full rounded-md min-w-[10px]"
+                          className="bar-grow transition-[width] duration-500 ease-out block h-full rounded-md min-w-[10px]"
                           style={{ width: `${(n.count / max) * 100}%`, background: 'linear-gradient(90deg, #a9c8ff 0%, #024ad8 100%)' }}
                         />
                       </div>
@@ -509,7 +508,7 @@ export default function Dashboard() {
                             {/* Each segment carries its own count, so it keeps a minimum
                                 width (and the bar grows to fit) even for a single gap. */}
                             <div
-                              className="flex h-full transition-[width] duration-500 ease-out"
+                              className="bar-grow flex h-full transition-[width] duration-500 ease-out"
                               style={{ width: `${(row.total / catchMax) * 100}%`, minWidth: `${gapTypesShown.filter(t => row.byType.has(t.key)).length * 26}px` }}
                             >
                               {gapTypesShown.map(t => {
