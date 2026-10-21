@@ -17,7 +17,7 @@ export interface Business {
   uploadSessionId: string
   sentToInspector: 'נשלח לסוקר' | 'לא נשלח לסוקר' | 'הוחלט לא לשלוח לסקר' | null
   surveyResultDetail: 'נמצא פער בסיווג' | 'נמצא פער שטח + סיווג' | 'נמצא פער שטח' | 'לא נמצא עסק/פער שטח' | null
-  source: 'manual' | 'excel'
+  source: 'manual' | 'excel' | 'promotion'
 }
 
 export interface UploadSession {

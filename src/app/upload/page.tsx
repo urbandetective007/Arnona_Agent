@@ -7,6 +7,7 @@ import { AppShell } from '@/components/AppShell'
 import { useRequireRole } from '@/lib/useRequireRole'
 import type { Business, UploadSession } from '@/lib/types'
 import { mapSuspicionRatingToStatus } from '@/lib/types'
+import { SOURCE_LABEL, SOURCE_TONE, type BusinessSource } from '@/lib/sources'
 import { supabase, businessToDb, sessionToDb } from '@/lib/supabase'
 import { normalizeNeighborhood, JERUSALEM_NEIGHBORHOODS } from '@/lib/neighborhoods'
 import { useBusinessTypes } from '@/lib/businessTypes'
@@ -34,6 +35,13 @@ const SORTED_NEIGHBORHOODS = [...JERUSALEM_NEIGHBORHOODS].sort((a, b) => a.local
 
 type Step = 'upload' | 'mapping' | 'validate' | 'done'
 type Mode = 'file' | 'manual'
+// Where the uploaded businesses came from. A file is the agent's report unless
+// it came from the business promotion department; a manual entry is a city
+// employee's unless it came from that department.
+type FileSource = Extract<BusinessSource, 'excel' | 'promotion'>
+type ManualSource = Extract<BusinessSource, 'manual' | 'promotion'>
+const FILE_SOURCES: FileSource[] = ['excel', 'promotion']
+const MANUAL_SOURCES: ManualSource[] = ['manual', 'promotion']
 
 // Fields shown in the manual-entry form — same set as FIELD_DEFS minus
 // noSuspicionReason, which the manual flow doesn't collect.
@@ -222,7 +230,7 @@ function getCol(row: string[], headers: string[], header: string): string {
 
 function buildBusinesses(
   sheet: ParsedSheet, file: string, mapping: Record<TargetField, string>,
-  sessionId: string, today: string,
+  sessionId: string, today: string, source: FileSource,
 ): { businesses: Business[]; issues: RowIssue[] } {
   const businesses: Business[] = []
   const issues: RowIssue[] = []
@@ -285,7 +293,7 @@ function buildBusinesses(
       uploadSessionId: sessionId,
       sentToInspector: null,
       surveyResultDetail: null,
-      source: 'excel',
+      source,
     })
   })
 
@@ -466,6 +474,8 @@ export default function UploadPage() {
   }
   const [mapping, setMapping] = useState<Record<TargetField, string>>(EMPTY_MAPPING)
   const [manual, setManual] = useState<Record<TargetField, string>>(EMPTY_MANUAL)
+  const [fileSource, setFileSource] = useState<FileSource>('excel')
+  const [manualSource, setManualSource] = useState<ManualSource>('manual')
   // The neighborhood follows the typed street. A neighborhood the employee
   // picks by hand holds only for the street it was picked for — this is that
   // street (or NO_STREET if none was recognized); typing a different street
@@ -637,7 +647,7 @@ export default function UploadPage() {
       const issues: RowIssue[] = []
       const built = readyFiles.map((f, i) => {
         const sessionId = `session-${stamp + i}`
-        const result = buildBusinesses(f.sheet!, f.file.name, mapping, sessionId, today)
+        const result = buildBusinesses(f.sheet!, f.file.name, mapping, sessionId, today, fileSource)
         issues.push(...result.issues)
         return { fileName: f.file.name, sessionId, businesses: result.businesses }
       })
@@ -675,7 +685,7 @@ export default function UploadPage() {
         uploadSessionId: sessionId,
         sentToInspector: null,
         surveyResultDetail: null,
-        source: 'manual',
+        source: manualSource,
       }
       await checkAndValidate([{ fileName: 'הוספה ידנית', sessionId, businesses: [business] }], [], today)
     } catch (e) {
@@ -820,6 +830,8 @@ export default function UploadPage() {
     setParseError('')
     setMapping(EMPTY_MAPPING)
     setManual(EMPTY_MANUAL)
+    setFileSource('excel')
+    setManualSource('manual')
     setPickedForStreet(null)
     setValidation(null)
     setAutoAssign(false)
@@ -944,6 +956,12 @@ export default function UploadPage() {
                       </li>
                     ))}
                   </ul>
+                  <label className="mt-3.5 flex items-center gap-2.5 text-[13px]">
+                    <span className="font-semibold text-ink">מקור הקבצים</span>
+                    <Select value={fileSource} onChange={e => setFileSource(e.target.value as FileSource)} disabled={parsing}>
+                      {FILE_SOURCES.map(s => <option key={s} value={s}>{SOURCE_LABEL[s]}</option>)}
+                    </Select>
+                  </label>
                   <div className="mt-3.5 flex items-center gap-3">
                     <Button onClick={() => goToMapping(readyFiles)} disabled={parsing || readyFiles.length === 0}>
                       {parsing ? 'קורא קבצים…' : readyFiles.length === 1 ? 'המשך למיפוי עמודות' : `המשך למיפוי עמודות (${readyFiles.length} קבצים)`}
@@ -963,7 +981,12 @@ export default function UploadPage() {
                   <p className="font-bold text-[14.5px]">פרטי העסק שאותר</p>
                   <p className="text-[12px] text-subtle mt-1">מלאו את הפרטים הידועים — שדות עם * הם שדות חובה</p>
                 </div>
-                <Badge tone="clear" className="shrink-0">יסומן כ&quot;הוזן ידנית&quot;</Badge>
+                <label className="shrink-0 flex items-center gap-2 text-[12.5px]">
+                  <span className="font-semibold text-ink">מקור</span>
+                  <Select value={manualSource} onChange={e => setManualSource(e.target.value as ManualSource)}>
+                    {MANUAL_SOURCES.map(s => <option key={s} value={s}>{SOURCE_LABEL[s]}</option>)}
+                  </Select>
+                </label>
               </div>
 
               <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1137,7 +1160,12 @@ export default function UploadPage() {
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.2fr] gap-4 items-start">
             <div className="flex flex-col gap-4">
               <Card>
-                <p className="font-bold text-[14.5px] mb-3.5">תוצאות האימות</p>
+                <div className="flex items-center justify-between gap-3 mb-3.5">
+                  <p className="font-bold text-[14.5px]">תוצאות האימות</p>
+                  <Badge tone={SOURCE_TONE[mode === 'file' ? fileSource : manualSource]} className="shrink-0">
+                    מקור: {SOURCE_LABEL[mode === 'file' ? fileSource : manualSource]}
+                  </Badge>
+                </div>
                 <div className="flex flex-col gap-2.5">
                   <div className="flex items-center gap-3 px-3.5 py-3 rounded-lg bg-clear/[0.08]">
                     <span className="w-[30px] h-[30px] rounded-lg bg-clear flex items-center justify-center shrink-0">
