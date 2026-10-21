@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { Landmark } from 'lucide-react'
 import { AnimatedNumber } from './ui'
-import { readLoginStats, type LoginStats } from '@/lib/loginStats'
+import { fetchLoginStats, readLoginStats, type LoginStats } from '@/lib/loginStats'
 
 // Property pins on the decorative map: x, y, radius, color. `ping` sends
 // rings out from the high-suspicion (red) ones.
@@ -25,6 +25,9 @@ const NEIGHBORHOODS = [
   'M420 420 L520 350 L640 400 L620 560 L400 550Z',
 ]
 
+// The status line's totals refresh while the login screen stays open.
+const STATS_REFRESH_MS = 60_000
+
 const layer = (depth: number): CSSProperties => ({ ['--depth' as string]: depth })
 const indexed = (i: number): CSSProperties => ({ ['--i' as string]: i })
 
@@ -40,6 +43,11 @@ export function LoginHero() {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- reads localStorage, which only exists on the client
     setStats(readLoginStats())
+    let cancelled = false
+    const refresh = () => fetchLoginStats().then(live => { if (live && !cancelled) setStats(live) })
+    refresh()
+    const timer = setInterval(refresh, STATS_REFRESH_MS)
+    return () => { cancelled = true; clearInterval(timer) }
   }, [])
 
   useEffect(() => {

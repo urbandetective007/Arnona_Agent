@@ -40,14 +40,12 @@ const DEFAULT_COLOR = '#9ca3af' // Gray
 // `uncertain` adds an amber "!" badge — the pin marks the property's
 // neighborhood rather than its building, or sits far from its neighborhood.
 // `dropDelay` (ms) makes a newly added pin fall onto the map with a small
-// bounce; `ping` sends rings out from under the pin (high suspicion).
-// Leaflet positions the marker element itself with a transform, so the
-// motion lives on an inner wrapper.
-const createMarkerIcon = (color: string, uncertain = false, { dropDelay, ping = false }: { dropDelay?: number; ping?: boolean } = {}) => {
+// bounce. Leaflet positions the marker element itself with a transform, so
+// the motion lives on an inner wrapper.
+const createMarkerIcon = (color: string, uncertain = false, dropDelay?: number) => {
   return L.divIcon({
     html: `
       <div class="${dropDelay !== undefined ? 'pin-drop' : ''}" style="position:relative;--d:${dropDelay ?? 0}ms">
-      ${ping ? `<span class="pin-ping" style="color:${color};--d:${Math.round(Math.random() * 2400)}ms"></span>` : ''}
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="32" height="32" style="filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.3));">
         <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" fill="${color}"/>
         ${uncertain ? `
@@ -315,15 +313,14 @@ export default function JerusalemMap({ businesses, canEdit = false, fixKey = nul
       popup.innerHTML = html
       popup.querySelector('[data-fix]')?.addEventListener('click', () => startFixRef.current(b))
       const uncertain = kind === 'neighborhood' || suspiciousKm !== null
-      const ping = b.suspicionRating === 'גבוה'
       if (existing) {
-        const icon = createMarkerIcon(color, uncertain, { ping })
+        const icon = createMarkerIcon(color, uncertain)
         existing.marker.setLatLng([coords.lat, coords.lon])
         existing.marker.setIcon(icon)
         existing.marker.setPopupContent(popup)
         existing.sig = sig
       } else {
-        const icon = createMarkerIcon(color, uncertain, { ping, dropDelay: Math.min(dropped++, 40) * 22 })
+        const icon = createMarkerIcon(color, uncertain, Math.min(dropped++, 40) * 22)
         const marker = L.marker([coords.lat, coords.lon], { icon }).bindPopup(popup).addTo(markerGroup)
         markers.set(b.id, { marker, sig })
       }
