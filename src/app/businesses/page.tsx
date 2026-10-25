@@ -20,6 +20,7 @@ import type { SurveyReport } from '@/lib/types'
 import type { LocationMap } from '@/lib/geocode'
 import { fetchLocations } from '@/lib/locations'
 import { streetViewUrl } from '@/lib/placement'
+import { splitLink, siteAddressMismatch } from '@/lib/links'
 import { fetchReportsByBusiness } from '@/lib/surveyReports'
 import { FieldReportView } from '@/components/FieldReportView'
 import { Card, Button, Badge, Input, Select, toast, EmptyState, LoadingMoreBanner, PageSkeleton } from '@/components/ui'
@@ -397,12 +398,22 @@ export default function BusinessesPage() {
           })}
           {[b.link1, b.link2, b.link3].filter(Boolean).length > 0 && (
             <div className="sm:col-span-2 flex flex-col gap-2">
-              {[b.link1, b.link2, b.link3].filter(Boolean).map((link, i) => (
-                <div key={i}>
-                  <span className="font-semibold text-charcoal">קישור {i + 1}: </span>
-                  <a href={link} target="_blank" rel="noopener noreferrer" className="text-brand hover:text-brand-deep break-all">{link}</a>
-                </div>
-              ))}
+              {[b.link1, b.link2, b.link3].filter(Boolean).map((raw, i) => {
+                const { url, siteAddress } = splitLink(raw)
+                return (
+                  <div key={i}>
+                    <span className="font-semibold text-charcoal">קישור {i + 1}: </span>
+                    {url
+                      ? <a href={url} target="_blank" rel="noopener noreferrer" className="text-brand hover:text-brand-deep break-all">{url}</a>
+                      : <span className="text-ink break-all">{raw}</span>}
+                    {siteAddress && (
+                      <span className={siteAddressMismatch(siteAddress, b.address) ? 'text-high font-semibold' : 'text-graphite'}>
+                        {' '}(כתובת בקישור: {siteAddress})
+                      </span>
+                    )}
+                  </div>
+                )
+              })}
             </div>
           )}
           {reports.get(b.id) && <FieldReportView reports={reports.get(b.id)!} />}

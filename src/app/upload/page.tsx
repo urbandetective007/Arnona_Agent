@@ -21,11 +21,12 @@ import { fetchAllRows } from '@/lib/fetchAll'
 import { markSentToInspector } from '@/lib/inspectorAssign'
 import type { GeocodeQueue } from '@/lib/geocodeQueue'
 import { fetchLocations, createLocationQueue } from '@/lib/locations'
-import { parseExcelFile } from '@/lib/excel/parseInWorker'
+import { parseExcelFile, ParseCancelled } from '@/lib/excel/parseInWorker'
 import type { ParsedSheet } from '@/lib/excel/parseSheet'
 import { insertInBatches, BatchInsertError } from '@/lib/batchInsert'
 import { Card, Badge, Button, Input, Select, Spinner, Toggle, SuccessCheck, AnimatedNumber } from '@/components/ui'
 import { FIELD_DEFS, RATING_OPTIONS, type TargetField } from '@/lib/uploadFormat'
+import { splitLink, siteAddressMismatch } from '@/lib/links'
 import { ExcelFormatGuide, FORMAT_GUIDE_ID } from '@/components/ExcelFormatGuide'
 import type { BadgeTone } from '@/components/ui'
 
@@ -268,8 +269,19 @@ function buildBusinesses(
       issues.push({ row: excelRow, file, kind: 'warning', title: 'שכונה לא מזוהה', detail: `"${name}" — "${rawNeighborhood}" לא זוהתה, הנכס יישמר ללא שכונה` })
     }
 
+    const links = [mapping.link1, mapping.link2, mapping.link3].map(col => getCol(row, headers, col))
+    links.forEach((raw, li) => {
+      if (raw && !splitLink(raw).url) {
+        issues.push({ row: excelRow, file, kind: 'warning', title: 'קישור לא תקין', detail: `"${name}" — בקישור ${li + 1} אין כתובת אינטרנט (https://…)` })
+      }
+    })
+
     const rawRating = getCol(row, headers, mapping.suspicionRating)
     const rating = rawRating || 'דרוש בדיקה'
+    const mismatched = links.map(splitLink).find(l => l.siteAddress && siteAddressMismatch(l.siteAddress, address))
+    if (rating === 'גבוה' && mismatched) {
+      issues.push({ row: excelRow, file, kind: 'warning', title: 'כתובת בקישור שונה', detail: `"${name}" — דורג "גבוה", אבל בקישור כתוב "${mismatched.siteAddress}" ולא "${address}". כדאי לבדוק` })
+    }
     if (!rawRating) {
       issues.push({ row: excelRow, file, kind: 'warning', title: 'דירוג אינדיקציה חסר', detail: `"${name}" — יוגדר כ"דרוש בדיקה"` })
     }
@@ -285,9 +297,9 @@ function buildBusinesses(
       suspicionRating: rating,
       suspicionDetail: getCol(row, headers, mapping.suspicionDetail),
       noSuspicionReason: getCol(row, headers, mapping.noSuspicionReason),
-      link1: getCol(row, headers, mapping.link1),
-      link2: getCol(row, headers, mapping.link2),
-      link3: getCol(row, headers, mapping.link3),
+      link1: links[0],
+      link2: links[1],
+      link3: links[2],
       arnonaStatus: mapSuspicionRatingToStatus(rating),
       uploadDate: today,
       uploadSessionId: sessionId,
@@ -453,7 +465,18 @@ export default function UploadPage() {
 
   const [mode, setMode] = useState<Mode>('file')
   const [step, setStep] = useState<Step>('upload')
-  const [files, setFiles] = useState<LoadedFile[]>([])
+  const [files, setFilesState] = useState<LoadedFile[]>([])
+  // The file list as of the latest change, for code that runs after awaits
+  // (where `files` would be the value from before them).
+  const filesRef = useRef<LoadedFile[]>([])
+  function setFiles(update: (prev: LoadedFile[]) => LoadedFile[]) {
+    filesRef.current = update(filesRef.current)
+    setFilesState(filesRef.current)
+  }
+  // One per file still waiting to be read or being read; aborting it (the
+  // employee removed the file) stops its worker.
+  const parseControllersRef = useRef<Map<string, AbortController>>(new Map())
+  const fileSeqRef = useRef(0)
   const [parseError, setParseError] = useState('')
   // The format guide starts open; closing it is remembered on this device.
   // (Read on first render: the page renders nothing until the role check
@@ -567,37 +590,44 @@ export default function UploadPage() {
 
   // Files are read one after another in a Web Worker, so the page stays
   // responsive. If every file is fine the wizard moves on by itself;
-  // otherwise the list shows what went wrong with which file.
+  // otherwise the list shows what went wrong with which file. A file that
+  // hangs is given up on after a minute (see parseExcelFile), and any file
+  // can be removed while it is being read.
   async function handleFiles(list: FileList | File[]) {
     const picked = Array.from(list)
     const excel = picked.filter(isExcelFile)
     setParseError(excel.length < picked.length ? 'חלק מהקבצים אינם קבצי אקסל (xlsx./xls.) ולא נוספו' : '')
     if (excel.length === 0) return
 
-    const stamp = Date.now()
-    const added: LoadedFile[] = excel.map((file, i) => ({ key: `${stamp}-${i}`, file, status: 'parsing' }))
+    const added: LoadedFile[] = excel.map(file => ({ key: `file-${++fileSeqRef.current}`, file, status: 'parsing' }))
+    added.forEach(entry => parseControllersRef.current.set(entry.key, new AbortController()))
     setFiles(prev => [...prev, ...added])
 
-    const finished: LoadedFile[] = []
     for (const entry of added) {
+      const controller = parseControllersRef.current.get(entry.key)
+      if (!controller) continue // removed while waiting its turn
       let result: LoadedFile
       try {
-        const sheet = await parseExcelFile(entry.file)
+        const sheet = await parseExcelFile(entry.file, controller.signal)
         result = sheet.rows.length > 0
           ? { ...entry, status: 'ready', sheet }
-          : { ...entry, status: 'error', error: 'אין שורות נתונים מתחת לשורת הכותרות' }
+          : { ...entry, status: 'error', error: 'אין שורות נתונים מתחת לשורת הכותרות (ייתכן שהסוכן לא מצא עסקים בריצה הזו)' }
       } catch (e) {
+        if (e instanceof ParseCancelled) continue
         result = { ...entry, status: 'error', error: e instanceof Error ? e.message : 'שגיאה בקריאת הקובץ' }
+      } finally {
+        parseControllersRef.current.delete(entry.key)
       }
-      finished.push(result)
       setFiles(prev => prev.map(f => (f.key === entry.key ? result : f)))
     }
 
-    const all = [...files, ...finished]
-    if (step === 'upload' && all.every(f => f.status === 'ready')) goToMapping(all)
+    const all = filesRef.current
+    if (step === 'upload' && all.length > 0 && all.every(f => f.status === 'ready')) goToMapping(all)
   }
 
   function removeFile(key: string) {
+    parseControllersRef.current.get(key)?.abort()
+    parseControllersRef.current.delete(key)
     setFiles(prev => prev.filter(f => f.key !== key))
   }
 
@@ -826,7 +856,7 @@ export default function UploadPage() {
     locationQueueRef.current = null
     setLocationReport(null)
     setStep('upload')
-    setFiles([])
+    setFiles(() => [])
     setParseError('')
     setMapping(EMPTY_MAPPING)
     setManual(EMPTY_MANUAL)
@@ -940,19 +970,16 @@ export default function UploadPage() {
                             </>}
                           </p>
                         </div>
-                        {f.status === 'parsing' ? (
-                          <Spinner size={16} />
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => removeFile(f.key)}
-                            disabled={parsing}
-                            aria-label="הסרת הקובץ"
-                            className="w-7 h-7 rounded-md flex items-center justify-center text-subtle hover:text-ink hover:bg-canvas disabled:opacity-40"
-                          >
-                            <X size={15} strokeWidth={2.2} />
-                          </button>
-                        )}
+                        {f.status === 'parsing' && <Spinner size={16} />}
+                        <button
+                          type="button"
+                          onClick={() => removeFile(f.key)}
+                          aria-label={f.status === 'parsing' ? 'ביטול הקריאה והסרת הקובץ' : 'הסרת הקובץ'}
+                          title={f.status === 'parsing' ? 'ביטול הקריאה והסרת הקובץ' : 'הסרת הקובץ'}
+                          className="w-7 h-7 rounded-md flex items-center justify-center text-subtle hover:text-ink hover:bg-canvas"
+                        >
+                          <X size={15} strokeWidth={2.2} />
+                        </button>
                       </li>
                     ))}
                   </ul>
