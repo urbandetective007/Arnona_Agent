@@ -6,6 +6,7 @@ import { Check, ChevronDown, ClipboardEdit, ExternalLink, Loader2, LocateFixed, 
 import { useRequireRole } from '@/lib/useRequireRole'
 import { logout } from '@/lib/auth'
 import type { Business } from '@/lib/types'
+import { splitLink, siteAddressMismatch } from '@/lib/links'
 import { useBusinesses } from '@/lib/useBusinesses'
 import { Badge, Skeleton, toast } from '@/components/ui'
 import { formatDate } from '@/lib/dateUtils'
@@ -426,7 +427,7 @@ export default function WorkPlanPage() {
                       const isChecked = checked.has(b.id)
                       const expanded = expandedId === b.id
                       const km = distanceById.get(b.id)
-                      const links = [b.link1, b.link2, b.link3].filter(Boolean)
+                      const links = [b.link1, b.link2, b.link3].map(splitLink).filter(l => l.url)
                       return (
                         <div key={b.id} className="row-in rounded-xl bg-canvas" style={{ ['--i' as string]: Math.min(rowIndex, 12) }}>
                           <div className="flex items-center gap-2.5 px-2 py-2.5">
@@ -478,6 +479,11 @@ export default function WorkPlanPage() {
                               {b.unitCount && <DetailRow label="יחידות בכתובת"><span className="num">{b.unitCount}</span></DetailRow>}
                               {b.matchedAddress && b.matchedAddress !== b.address && <DetailRow label="כתובת שזוהתה">{b.matchedAddress}</DetailRow>}
                               {b.uploadDate && <DetailRow label="נוסף"><span className="num">{formatDate(b.uploadDate)}</span></DetailRow>}
+                              {links.map((link, i) => link.siteAddress && (
+                                <DetailRow key={i} label={`כתובת בקישור ${i + 1}`}>
+                                  <span className={siteAddressMismatch(link.siteAddress, b.address) ? 'text-high font-semibold' : ''}>{link.siteAddress}</span>
+                                </DetailRow>
+                              ))}
                               <div className="flex flex-wrap gap-1.5 pt-0.5">
                                 {b.address && (
                                   <a
@@ -490,10 +496,11 @@ export default function WorkPlanPage() {
                                     תמונת רחוב
                                   </a>
                                 )}
-                                  {links.map((href, i) => (
+                                  {links.map((link, i) => (
                                     <a
                                       key={i}
-                                      href={href}
+                                      href={link.url}
+                                      title={link.siteAddress ? `כתובת בקישור: ${link.siteAddress}` : undefined}
                                       target="_blank"
                                       rel="noopener noreferrer"
                                       className="h-7 px-2.5 rounded-full bg-brand/[0.07] text-brand text-[12px] font-semibold flex items-center gap-1 hover:bg-brand/[0.12] active:scale-95 transition-[background-color,transform]"

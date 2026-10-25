@@ -8,6 +8,7 @@ import { cleanAddress, isInJerusalem, type LocationMap } from '@/lib/geocode'
 import type { GeocodeQueue, GeocodeItem } from '@/lib/geocodeQueue'
 import { fetchLocations, saveLocations, createLocationQueue } from '@/lib/locations'
 import { placementFor, neighborhoodOf, type Placement, type PlacementKind } from '@/lib/placement'
+import { splitLink, siteAddressMismatch } from '@/lib/links'
 
 interface JerusalemMapProps {
   businesses: Business[]
@@ -148,10 +149,12 @@ function popupHtml(b: Business, info: PopupInfo, canEdit: boolean): string {
             <strong>סיבה לאי-אינדיקציה:</strong> ${esc(b.noSuspicionReason)}
           </p>
         ` : ''}
-        ${[b.link1, b.link2, b.link3].some(l => safeUrl(l)) ? `
+        ${[b.link1, b.link2, b.link3].some(l => safeUrl(splitLink(l).url)) ? `
           <div style="margin-top: 8px; border-top: 1px solid var(--hairline); padding-top: 8px;">
-            ${[b.link1, b.link2, b.link3].map((l, i) => safeUrl(l)
-              ? `<div style="font-size: 11px; margin-bottom: ${i === 2 ? 0 : 6}px;"><strong>קישור ${i + 1}:</strong> <a href="${safeUrl(l)}" target="_blank" rel="noopener noreferrer" style="color: var(--hp-blue); text-decoration: none; word-break: break-all;">${esc(l)}</a></div>`
+            ${[b.link1, b.link2, b.link3].map(splitLink).map(({ url, siteAddress }, i) => safeUrl(url)
+              ? `<div style="font-size: 11px; margin-bottom: ${i === 2 ? 0 : 6}px;"><strong>קישור ${i + 1}:</strong> <a href="${safeUrl(url)}" target="_blank" rel="noopener noreferrer" style="color: var(--hp-blue); text-decoration: none; word-break: break-all;">${esc(url)}</a>${siteAddress
+                ? ` <span style="${siteAddressMismatch(siteAddress, b.address) ? 'color: var(--color-high); font-weight: 700;' : 'color: var(--color-graphite);'}">(כתובת בקישור: ${esc(siteAddress)})</span>`
+                : ''}</div>`
               : '').join('')}
           </div>
         ` : ''}

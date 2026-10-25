@@ -28,23 +28,23 @@ Your Excel file **MUST** have these columns in this order:
    - **Prefer a type from the closed list** in the Supabase table `business_types` — e.g. "משרד עורכי דין", "מרפאת שיניים", "מסעדות, בתי קפה וקייטרינג"
    - Known variants (e.g. "עורכי דין") are rewritten to their list entry on insert (table `business_type_aliases`). A genuinely new type is kept as written and added to the list automatically, marked as brought by the agent, and the employees see it under "סוגי עסק חדשים" — so only use a new type when no list entry fits
 
-5. **דירוג אינדיקציה** (Suspicion Rating) - *Required - ALWAYS "גבוה"*
-   - **This field is mandatory and MUST always be "גבוה"** (High)
-   - Do NOT use "בינוני", "לא חשוד", or "דרוש בדיקה"
-   - The system requires this value to be present in every row
+5. **דירוג אינדיקציה** (Suspicion Rating) - *Required - "גבוה" or "דרוש בדיקה"*
+   - **"גבוה"** only when the address on the business's page is a **full match** for the municipal address: the same street words (in any order, after dropping "רח'", ", ירושלים", hyphens and quotes) **and** the same house number
+   - **"דרוש בדיקה"** in every other case — e.g. the page says "מאה שערים 5" and the municipal address is "ב אונגר מאה שערים 5" (a different street: בתי אונגרין), a missing/extra word, or a social-network page that couldn't be opened to verify
+   - Do NOT use "בינוני" or "לא חשוד"
    - Example: "גבוה"
 
 6. **קישור 1** (Link 1) - *Optional*
-   - First source link (URL)
-   - Can be any source that mentions the business
-   - Example: "https://zips.co.il/עסקים/ירושלים"
+   - First source link: the full URL, a space, and **in parentheses the address as written on that page**
+   - Can be any source that mentions the business (directories, Facebook/Instagram, Google Maps, the business's own site)
+   - Example: "https://www.d.co.il/80218901/41760/ (מאה שערים 5, ירושלים)"
 
 7. **קישור 2** (Link 2) - *Optional*
-   - Second source link (URL)
-   - Example: "https://prog.co.il/threads/אספקט"
+   - Second source link, same format
+   - Example: "https://www.facebook.com/example (אבא אחימאיר 11, ירושלים)"
 
 8. **קישור 3** (Link 3) - *Optional*
-   - Third source link (URL)
+   - Third source link, same format
    - Leave empty if not available
 
 ---
@@ -62,12 +62,13 @@ Your Excel file **MUST** have these columns in this order:
 - **All rows MUST have:**
   - Business Name (required)
   - Address (required)
-  - Suspicion Rating = "גבוה" (required)
+  - Suspicion Rating = "גבוה" or "דרוש בדיקה" (required)
 - Links are optional (leave empty if none)
 
 ### Links Handling
 - The website can display up to 3 links per business
-- Links should be FULL URLs starting with `http://` or `https://`
+- Links should be FULL URLs starting with `http://` or `https://`, followed by a space and the page's address in parentheses
+- The website shows that address next to the link, and highlights it when it doesn't match the business's address
 - Multiple links are displayed as a vertical list, each on its own line
 - If a link is invalid or empty, it is simply not displayed
 
@@ -88,9 +89,8 @@ These fields are not parsed from the Excel file.
 
 | שם העסק | כתובת | שכונה | סוג עסק | דירוג אינדיקציה | קישור 1 | קישור 2 | קישור 3 |
 |---------|-------|-------|--------|-----------------|---------|---------|---------|
-| אספקט לימודי איור | אבא אחימאיר 11, ירושלים | קטמון | מרכז לימודים | גבוה | https://zips.co.il/עסקים | https://prog.co.il/threads | |
-| קפה גורדון | דרך כעגל 5, ירושלים | בקעה | קפה וברים | גבוה | https://waze.com/go/cafe | https://google.com/maps | https://example.com |
-| משרד נ. כהן | הטיבי 2, ירושלים | | משרד עו״ד | גבוה | https://linkedin.com/company | | |
+| אספקט לימודי איור | אבא אחימאיר 11 | קטמון | מרכז לימודים | גבוה | https://zips.co.il/aspect (אבא אחימאיר 11, ירושלים) | https://www.facebook.com/aspect (אבא אחימאיר 11 ירושלים) | |
+| מלאכת מחשבת | ב אונגר מאה שערים 5 | מאה שערים | חנות / מסחר קמעונאי | דרוש בדיקה | https://www.d.co.il/21681770/10160/ (מאה שערים 5, ירושלים) | | |
 
 ---
 
@@ -112,11 +112,11 @@ These fields are not parsed from the Excel file.
 ❌ **Wrong:** Diacritics or spelling variations
 - "שם העסק" ✓ | "שם העסק " (extra space) ✗ | "שם עסק" (missing letter) ✗
 
-❌ **Wrong:** Suspicion rating other than "גבוה"
-- "גבוה" ✓ | "בינוני" ✗ | "גבוה " (with space) ✗
+❌ **Wrong:** Suspicion rating other than "גבוה" / "דרוש בדיקה", or "גבוה" without a full address match
+- "גבוה" ✓ | "דרוש בדיקה" ✓ | "בינוני" ✗ | "גבוה " (with space) ✗
 
 ❌ **Wrong:** Links without http:// or https://
-- "https://example.com" ✓ | "example.com" ✗
+- "https://example.com (הלל 5, ירושלים)" ✓ | "example.com" ✗
 
 ❌ **Wrong:** Extra columns that break parsing
 - Create only the 8 columns above, no more
