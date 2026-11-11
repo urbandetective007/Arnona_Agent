@@ -9,8 +9,9 @@ import { useRole } from '@/lib/useRole'
 import type { Business } from '@/lib/types'
 import { useBusinesses } from '@/lib/useBusinesses'
 import { timeAgo, parseUploadDate } from '@/lib/dateUtils'
-import { Card, StatCard, Button, EmptyState, SegmentedControl, Sparkline, CrossFilterBar, AnimatedNumber, LoadingMoreBanner, PageSkeleton } from '@/components/ui'
+import { Card, StatCard, Button, Badge, Table, Thead, Tbody, Tr, Th, Td, EmptyState, SegmentedControl, Sparkline, CrossFilterBar, AnimatedNumber, LoadingMoreBanner, PageSkeleton } from '@/components/ui'
 import { useCrossFilter, chartItemProps } from '@/lib/useCrossFilter'
+import type { BadgeTone } from '@/components/ui'
 
 const RANGE_OPTIONS = [
   { label: '7 ימים', days: 7 },
@@ -94,6 +95,17 @@ const FUNNEL_LABELS: Record<string, string> = {
 const PIPELINE_LABELS: Record<string, string> = {
   notSent: 'טרם נשלח לסוקר', declined: 'הוחלט לא לשלוח לסקר', awaiting: 'נשלח, ממתין לדיווח', noGap: 'דווח, לא נמצא פער', gap: 'דווח, נמצא פער',
 }
+const RATING_TONE: Record<string, BadgeTone> = { 'גבוה': 'high', 'בינוני': 'mid' }
+
+// One readable status per property for the dashboard's detail table — the
+// concrete finding when a gap was reported, otherwise its pipeline stage.
+function surveyStatusLabel(b: Business) {
+  const stage = DASHBOARD_DIMS.pipeline(b)
+  if (stage === 'gap') return b.surveyResultDetail
+  if (stage) return PIPELINE_LABELS[stage]
+  return b.sentToInspector ?? '—'
+}
+
 function filterValueLabel(dim: DashboardDim, value: string) {
   if (dim === 'funnel') return FUNNEL_LABELS[value] ?? value
   if (dim === 'pipeline') return PIPELINE_LABELS[value] ?? value
@@ -233,6 +245,9 @@ export default function Dashboard() {
   const neighborhoodStats = computeStats(cf.filteredExcept('neighborhood'))
   const pipelineStats = computeStats(cf.filteredExcept('pipeline'))
   const catchStats = computeStats(cf.filteredExcept('catchSource'))
+  // Detail table under the hot neighborhoods: with a chart selection it lists
+  // every property in it; otherwise the indication properties in range.
+  const tableRows = cf.hasSelection() ? cf.filtered : cf.filtered.filter(isIndication)
 
   const lastUpdated = useMemo(() => {
     const timestamps = sessions.map(s => parseUploadDate(s.uploadDate)?.getTime()).filter((t): t is number => t !== undefined)
@@ -446,7 +461,8 @@ export default function Dashboard() {
         {/* TWO COLUMNS */}
         <div className="grid grid-cols-1 lg:grid-cols-[1.35fr_1fr] gap-5">
 
-          {/* Hot neighborhoods */}
+          {/* Hot neighborhoods + the properties behind the current selection */}
+          <div className="flex flex-col gap-5 min-w-0">
           <Card className="flex flex-col">
             <div className="flex items-center justify-between mb-3.5">
               <span className="text-[14.5px] font-bold text-ink">שכונות חמות</span>
@@ -478,7 +494,7 @@ export default function Dashboard() {
               </div>
             )}
             {neighborhoodStats.hotNeighborhoods.length >= 3 && (
-              <div className="mt-auto pt-3.5 border-t border-[#eef1f5] flex items-center gap-2">
+              <div className="mt-4 pt-3.5 border-t border-[#eef1f5] flex items-center gap-2">
                 <Flame size={15} className="text-brand shrink-0" strokeWidth={1.9} />
                 <span className="text-[12.5px] text-charcoal">
                   3 השכונות המובילות מרכזות <strong className="font-semibold num"><AnimatedNumber value={neighborhoodStats.topThreeShare} suffix="%" /></strong> מכלל הנכסים באינדיקציה.
@@ -486,6 +502,49 @@ export default function Dashboard() {
               </div>
             )}
           </Card>
+
+          <Card padded={false} className="flex flex-col flex-1 min-h-0">
+            <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-hairline">
+              <span className="text-[14.5px] font-bold text-ink">
+                {cf.hasSelection() ? 'רשימה מפורטת — הנכסים בבחירה' : 'נכסים באינדיקציה'}
+              </span>
+              <span className="num text-[12.5px] text-subtle"><AnimatedNumber value={tableRows.length} /> נכסים</span>
+            </div>
+            {!cf.hasSelection() && (
+              <p className="px-5 pt-3 text-[11.5px] text-subtle">לחיצה על שכונה, שלב או סטטוס בגרפים מסננת את הרשימה ומציגה את כל הנכסים בבחירה.</p>
+            )}
+            {tableRows.length === 0 ? (
+              <EmptyState title="אין נכסים בבחירה הזו" />
+            ) : (
+              <div className="p-3 flex-1 min-h-0">
+                <Table className="max-h-[440px] overflow-y-auto">
+                  <Thead>
+                    <Tr>
+                      <Th className="sticky top-0 bg-canvas">נכס</Th>
+                      <Th className="sticky top-0 bg-canvas">סוג עסק</Th>
+                      <Th className="sticky top-0 bg-canvas">כתובת</Th>
+                      <Th className="sticky top-0 bg-canvas">שכונה</Th>
+                      <Th className="sticky top-0 bg-canvas">דירוג</Th>
+                      <Th className="sticky top-0 bg-canvas">סטטוס סקר</Th>
+                    </Tr>
+                  </Thead>
+                  <Tbody>
+                    {tableRows.map(b => (
+                      <Tr key={b.id}>
+                        <Td className="font-semibold">{b.name || '—'}</Td>
+                        <Td className="text-charcoal">{b.type || '—'}</Td>
+                        <Td className="text-charcoal">{b.address || '—'}</Td>
+                        <Td className="text-charcoal">{b.neighborhood || '—'}</Td>
+                        <Td>{b.suspicionRating ? <Badge tone={RATING_TONE[b.suspicionRating] ?? 'neutral'}>{b.suspicionRating}</Badge> : '—'}</Td>
+                        <Td className="text-charcoal text-[12.5px] whitespace-nowrap">{surveyStatusLabel(b)}</Td>
+                      </Tr>
+                    ))}
+                  </Tbody>
+                </Table>
+              </div>
+            )}
+          </Card>
+          </div>
 
           {/* Gap catches by source + donut + activity */}
           <div className="flex flex-col gap-5 min-h-0">
