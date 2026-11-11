@@ -18,10 +18,10 @@ create table if not exists public.street_neighborhood_overrides (
 
 alter table public.street_neighborhood_overrides enable row level security;
 
-drop policy if exists employee_all on public.street_neighborhood_overrides;
+-- Purely additive: no DROP / DELETE / UPDATE anywhere in this file — existing
+-- tables, columns and rows are not touched.
 create policy employee_all on public.street_neighborhood_overrides for all to authenticated
   using ((select public.app_role()) = 'employee') with check ((select public.app_role()) = 'employee');
 
-drop policy if exists staff_read on public.street_neighborhood_overrides;
 create policy staff_read on public.street_neighborhood_overrides for select to authenticated
   using ((select public.app_role()) in ('manager','surveyor'));
