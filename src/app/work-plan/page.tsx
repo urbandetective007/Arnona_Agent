@@ -427,7 +427,7 @@ export default function WorkPlanPage() {
                       const isChecked = checked.has(b.id)
                       const expanded = expandedId === b.id
                       const km = distanceById.get(b.id)
-                      const links = [b.link1, b.link2, b.link3].map(splitLink).filter(l => l.url)
+                      const links = [b.link1, b.link2, b.link3, b.link4, b.link5].map(splitLink).filter(l => l.url)
                       return (
                         <div key={b.id} className="row-in rounded-xl bg-canvas" style={{ ['--i' as string]: Math.min(rowIndex, 12) }}>
                           <div className="flex items-center gap-2.5 px-2 py-2.5">

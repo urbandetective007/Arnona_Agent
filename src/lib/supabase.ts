@@ -7,8 +7,15 @@ export const supabase = createClient(
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1jc3lnc3FmeXVhZXh4eHdzZ2VtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1Njk1MTIsImV4cCI6MjA5NDE0NTUxMn0.Hu6t2PLjE_D113NMQEGvEv8QGhqN6udKNO9McqK3ST8'
 )
 
+// link4/link5 were added after the original schema. Until the migration that
+// adds them (supabase/migrations/20261111_links_and_street_overrides.sql) is
+// applied, sending them would make every insert/update fail — so they are only
+// sent once a fetched row shows the columns exist, or when actually filled.
+let hasExtraLinkColumns = false
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function dbToBusiness(row: any): Business {
+  if (!hasExtraLinkColumns && row && 'link4' in row) hasExtraLinkColumns = true
   return {
     id: row.id,
     name: row.name,
@@ -23,6 +30,8 @@ export function dbToBusiness(row: any): Business {
     link1: row.link1 ?? '',
     link2: row.link2 ?? '',
     link3: row.link3 ?? '',
+    link4: row.link4 ?? '',
+    link5: row.link5 ?? '',
     arnonaStatus: row.arnona_status ?? 'unknown',
     uploadDate: row.upload_date ?? '',
     uploadSessionId: row.upload_session_id ?? '',
@@ -47,6 +56,7 @@ export function businessToDb(b: Business) {
     link1: b.link1,
     link2: b.link2,
     link3: b.link3,
+    ...(hasExtraLinkColumns || b.link4 || b.link5 ? { link4: b.link4 ?? '', link5: b.link5 ?? '' } : {}),
     arnona_status: b.arnonaStatus,
     upload_date: b.uploadDate,
     upload_session_id: b.uploadSessionId,

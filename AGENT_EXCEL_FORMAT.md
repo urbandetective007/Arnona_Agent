@@ -43,9 +43,15 @@ Your Excel file **MUST** have these columns in this order:
    - Second source link, same format
    - Example: "https://www.facebook.com/example (אבא אחימאיר 11, ירושלים)"
 
-8. **קישור 3** (Link 3) - *Optional*
-   - Third source link, same format
-   - Leave empty if not available
+8. **קישור 3**, **קישור 4**, **קישור 5** (Links 3–5) - *Optional*
+   - More source links, same format — **only links you actually opened (tavily_extract) and that show this business**
+   - Leave empty if not available. There is **no requirement to fill all 5**: never invent a URL, guess one, or add a category/search page to fill a slot
+
+### Which businesses go in the file
+- **Active businesses only.** Skip a business marked "נסגר לצמיתות" / "Permanently closed" on Google, "העסק סגור" on a directory, one that moved to another address, or one with no sign of activity in the last 2 years. In doubt → leave it out.
+- **No home-service businesses** — service given at the customer's place: movers, exterminators, cleaning, plumbers, electricians, handymen/renovation, technicians, locksmiths, gardeners, mobile beauticians/tutors. Exception: the page shows customers come to the address (store, showroom, workshop, reception hours).
+- **At least one verified link** (קישור 1) per business.
+- **Neighborhood** is set from the street by the upload (with the employees' street corrections), so a wrong neighborhood in the file is corrected automatically.
 
 ---
 
@@ -66,7 +72,7 @@ Your Excel file **MUST** have these columns in this order:
 - Links are optional (leave empty if none)
 
 ### Links Handling
-- The website can display up to 3 links per business
+- The website can display up to 5 links per business
 - Links should be FULL URLs starting with `http://` or `https://`, followed by a space and the page's address in parentheses
 - The website shows that address next to the link, and highlights it when it doesn't match the business's address
 - Multiple links are displayed as a vertical list, each on its own line
@@ -87,7 +93,7 @@ These fields are not parsed from the Excel file.
 
 ## Example Excel Structure
 
-| שם העסק | כתובת | שכונה | סוג עסק | דירוג אינדיקציה | קישור 1 | קישור 2 | קישור 3 |
+| שם העסק | כתובת | שכונה | סוג עסק | דירוג אינדיקציה | קישור 1 | קישור 2 | קישור 3 | קישור 4 | קישור 5 |
 |---------|-------|-------|--------|-----------------|---------|---------|---------|
 | אספקט לימודי איור | אבא אחימאיר 11 | קטמון | מרכז לימודים | גבוה | https://zips.co.il/aspect (אבא אחימאיר 11, ירושלים) | https://www.facebook.com/aspect (אבא אחימאיר 11 ירושלים) | |
 | מלאכת מחשבת | ב אונגר מאה שערים 5 | מאה שערים | חנות / מסחר קמעונאי | דרוש בדיקה | https://www.d.co.il/21681770/10160/ (מאה שערים 5, ירושלים) | | |
@@ -129,7 +135,7 @@ These fields are not parsed from the Excel file.
 ## Troubleshooting
 
 **Q: "The website shows only one link, but I added three"**
-A: The website now displays all 3 links correctly, each on its own line in the expanded view. Make sure you use column names "קישור 1", "קישור 2", "קישור 3" exactly.
+A: The website displays up to 5 links, each on its own line in the expanded view. Use column names "קישור 1" … "קישור 5" exactly.
 
 **Q: "The business doesn't appear on the website"**
 A: Check:

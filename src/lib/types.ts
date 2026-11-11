@@ -12,6 +12,8 @@ export interface Business {
   link1: string
   link2: string
   link3: string
+  link4: string
+  link5: string
   arnonaStatus: 'suspicious' | 'ok' | 'unknown'
   uploadDate: string
   uploadSessionId: string

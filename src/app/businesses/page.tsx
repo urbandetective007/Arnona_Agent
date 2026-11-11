@@ -11,6 +11,7 @@ import { supabase, businessToDb } from '@/lib/supabase'
 import { useBusinesses } from '@/lib/useBusinesses'
 import { SOURCE_LABEL, SOURCE_OPTIONS, SOURCE_TONE } from '@/lib/sources'
 import { markSentToInspector } from '@/lib/inspectorAssign'
+import { JERUSALEM_NEIGHBORHOODS } from '@/lib/neighborhoods'
 import { setCache } from '@/lib/cache'
 import { formatDate, parseUploadDate } from '@/lib/dateUtils'
 import { useBusinessTypes, isNewType } from '@/lib/businessTypes'
@@ -28,6 +29,7 @@ import type { BadgeTone } from '@/components/ui'
 
 // Only the first screenful of rows slides in; the rest of a long table just appears.
 const STAGGER_ROWS = 16
+const SORTED_NEIGHBORHOODS = [...JERUSALEM_NEIGHBORHOODS].sort((a, b) => a.localeCompare(b, 'he'))
 
 const ALL_RATINGS = ['גבוה', 'בינוני', 'דרוש בדיקה', 'לא חשוד']
 const RATING_TONE: Record<string, BadgeTone> = { 'גבוה': 'high', 'בינוני': 'mid', 'לא חשוד': 'clear' }
@@ -46,25 +48,30 @@ function uploadDayKey(b: Business): string | null {
   return d ? dayKey(d) : null
 }
 
+function linksOf(b: Business): string[] {
+  return [b.link1, b.link2, b.link3, b.link4, b.link5].filter(Boolean)
+}
+
 function linkCount(b: Business): number {
-  return [b.link1, b.link2, b.link3].filter(Boolean).length
+  return linksOf(b).length
 }
 
 type SortKey = 'name' | 'type' | 'address' | 'neighborhood' | 'suspicionRating' | 'unitCount' | 'linksCount' | 'uploadDate' | 'sentToInspector' | 'surveyResultDetail' | 'source'
 type SortDir = 'asc' | 'desc'
 
-const COLUMNS: { key: SortKey | null; label: string; accessor?: (b: Business) => string | number }[] = [
-  { key: 'name', label: 'שם העסק', accessor: b => b.name },
-  { key: 'type', label: 'סוג עסק', accessor: b => b.type },
-  { key: 'address', label: 'כתובת', accessor: b => b.address },
-  { key: 'neighborhood', label: 'שכונה', accessor: b => b.neighborhood },
-  { key: 'linksCount', label: 'קישורים', accessor: b => linkCount(b) },
-  { key: 'suspicionRating', label: 'דירוג אינדיקציה', accessor: b => ALL_RATINGS.indexOf(b.suspicionRating) },
-  { key: 'unitCount', label: 'יחידות', accessor: b => parseFloat(b.unitCount) || 0 },
-  { key: 'uploadDate', label: 'תאריך', accessor: b => b.uploadDate },
-  { key: 'source', label: 'מקור', accessor: b => SOURCE_LABEL[b.source] },
-  { key: 'sentToInspector', label: 'סוקר', accessor: b => b.sentToInspector ?? '' },
-  { key: 'surveyResultDetail', label: 'תוצאת סקר', accessor: b => b.surveyResultDetail ?? '' },
+// Fixed column widths (table-layout: fixed) so the whole table fits the
+// screen without sideways scrolling: long text wraps inside its column, units
+// sit under the address and the source under the date.
+const COLUMNS: { key: SortKey | null; label: string; width: string; accessor?: (b: Business) => string | number }[] = [
+  { key: 'name', label: 'שם העסק', width: '16%', accessor: b => b.name },
+  { key: 'type', label: 'סוג עסק', width: '11%', accessor: b => b.type },
+  { key: 'address', label: 'כתובת', width: '14%', accessor: b => b.address },
+  { key: 'neighborhood', label: 'שכונה', width: '9%', accessor: b => b.neighborhood },
+  { key: 'linksCount', label: 'קישורים', width: '6%', accessor: b => linkCount(b) },
+  { key: 'suspicionRating', label: 'דירוג', width: '9%', accessor: b => ALL_RATINGS.indexOf(b.suspicionRating) },
+  { key: 'uploadDate', label: 'תאריך · מקור', width: '9%', accessor: b => b.uploadDate },
+  { key: 'sentToInspector', label: 'סוקר', width: '13%', accessor: b => b.sentToInspector ?? '' },
+  { key: 'surveyResultDetail', label: 'תוצאת סקר', width: '13%', accessor: b => b.surveyResultDetail ?? '' },
 ]
 
 function compareValues(a: string | number, b: string | number): number {
@@ -252,7 +259,7 @@ export default function BusinessesPage() {
       'שם העסק': b.name, 'סוג עסק': b.type, 'כתובת': b.address, 'שכונה': b.neighborhood,
       'כתובת תואמת במערכת הגבייה': b.matchedAddress, 'דירוג אינדיקציה': b.suspicionRating, 'פירוט האינדיקציה': b.suspicionDetail,
       'סיבת אי-אינדיקציה': b.noSuspicionReason, 'מספר יחידות': b.unitCount,
-      'קישור 1': b.link1, 'קישור 2': b.link2, 'קישור 3': b.link3, 'תאריך העלאה': formatDate(b.uploadDate),
+      'קישור 1': b.link1, 'קישור 2': b.link2, 'קישור 3': b.link3, 'קישור 4': b.link4, 'קישור 5': b.link5, 'תאריך העלאה': formatDate(b.uploadDate),
       'מקור': SOURCE_LABEL[b.source],
       'נשלח לסוקר': b.sentToInspector ?? 'לא נשלח לסוקר', 'תוצאת סקר': b.surveyResultDetail ?? '',
     }))
@@ -359,7 +366,14 @@ export default function BusinessesPage() {
               <BusinessTypeField value={editForm.type ?? ''} onChange={v => setEditForm(f => ({ ...f, type: v }))} types={businessTypes} />
             </div>
             <EditField label="כתובת" value={editForm.address ?? ''} onChange={v => setEditForm(f => ({ ...f, address: v }))} />
-            <EditField label="שכונה" value={editForm.neighborhood ?? ''} onChange={v => setEditForm(f => ({ ...f, neighborhood: v }))} />
+            <div>
+              <label className="block text-[12px] font-semibold text-charcoal mb-1">שכונה</label>
+              <Select value={editForm.neighborhood ?? ''} onChange={e => setEditForm(f => ({ ...f, neighborhood: e.target.value }))} className="w-full">
+                <option value="">ללא שכונה</option>
+                {editForm.neighborhood && !SORTED_NEIGHBORHOODS.includes(editForm.neighborhood) && <option value={editForm.neighborhood}>{editForm.neighborhood}</option>}
+                {SORTED_NEIGHBORHOODS.map(n => <option key={n} value={n}>{n}</option>)}
+              </Select>
+            </div>
             <EditField label="כתובת תואמת במערכת הגבייה" value={editForm.matchedAddress ?? ''} onChange={v => setEditForm(f => ({ ...f, matchedAddress: v }))} />
             <EditField label="מספר יחידות" value={editForm.unitCount ?? ''} onChange={v => setEditForm(f => ({ ...f, unitCount: v }))} />
             <div>
@@ -371,6 +385,8 @@ export default function BusinessesPage() {
             <EditField label="קישור 1" value={editForm.link1 ?? ''} onChange={v => setEditForm(f => ({ ...f, link1: v }))} />
             <EditField label="קישור 2" value={editForm.link2 ?? ''} onChange={v => setEditForm(f => ({ ...f, link2: v }))} />
             <EditField label="קישור 3" value={editForm.link3 ?? ''} onChange={v => setEditForm(f => ({ ...f, link3: v }))} />
+            <EditField label="קישור 4" value={editForm.link4 ?? ''} onChange={v => setEditForm(f => ({ ...f, link4: v }))} />
+            <EditField label="קישור 5" value={editForm.link5 ?? ''} onChange={v => setEditForm(f => ({ ...f, link5: v }))} />
             <EditTextArea label="פירוט האינדיקציה" value={editForm.suspicionDetail ?? ''} onChange={v => setEditForm(f => ({ ...f, suspicionDetail: v }))} />
             <EditTextArea label="סיבת אי-אינדיקציה" value={editForm.noSuspicionReason ?? ''} onChange={v => setEditForm(f => ({ ...f, noSuspicionReason: v }))} />
           </div>
@@ -396,9 +412,9 @@ export default function BusinessesPage() {
               </div>
             )
           })}
-          {[b.link1, b.link2, b.link3].filter(Boolean).length > 0 && (
+          {linksOf(b).length > 0 && (
             <div className="sm:col-span-2 flex flex-col gap-2">
-              {[b.link1, b.link2, b.link3].filter(Boolean).map((raw, i) => {
+              {linksOf(b).map((raw, i) => {
                 const { url, siteAddress } = splitLink(raw)
                 return (
                   <div key={i}>
@@ -693,7 +709,7 @@ export default function BusinessesPage() {
               </div>
             ) : (
             <div className="overflow-x-auto">
-              <table className="w-full border-collapse text-[13px] min-w-[1000px]">
+              <table className="w-full table-fixed border-collapse text-[13px] min-w-[860px]">
                 <thead>
                   <tr className="bg-canvas border-b border-hairline">
                     <th className="px-2.5 py-2.5 w-9">
@@ -704,17 +720,18 @@ export default function BusinessesPage() {
                       <th
                         key={c.key}
                         onClick={() => toggleSort(c.key as SortKey)}
-                        className="px-2.5 py-2.5 text-start text-[12px] font-semibold text-graphite whitespace-nowrap cursor-pointer select-none"
+                        style={{ width: c.width }}
+                        className="px-2 py-2.5 text-start text-[12px] font-semibold text-graphite cursor-pointer select-none"
                       >
                         {c.label}{sortKey === c.key && (sortDir === 'asc' ? ' ▲' : ' ▼')}
                       </th>
                     ))}
-                    <th className="w-11" />
+                    <th className="w-9" />
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-hairline">
                   {sorted.length === 0 ? (
-                    <tr><td colSpan={14} className="text-center py-12 text-graphite">לא נמצאו תוצאות</td></tr>
+                    <tr><td colSpan={12} className="text-center py-12 text-graphite">לא נמצאו תוצאות</td></tr>
                   ) : sorted.map((b, index) => (
                     <RowGroup key={b.id}>
                       <tr
@@ -726,25 +743,28 @@ export default function BusinessesPage() {
                           <input type="checkbox" checked={selectedIds.has(b.id)} onChange={() => toggleSelected(b.id)} className="w-4 h-4 accent-[#024ad8] cursor-pointer" />
                         </td>
                         <td className="text-subtle">{expanded === b.id ? <ChevronDown size={14} /> : <ChevronLeft size={14} />}</td>
-                        <td className="px-2.5 py-3 font-semibold text-ink">{b.name}</td>
-                        <td className="px-2.5 py-3 text-charcoal">{b.type}</td>
-                        <td className="px-2.5 py-3 text-charcoal">{b.address}</td>
-                        <td className="px-2.5 py-3 text-charcoal">{b.neighborhood || '—'}</td>
-                        <td className="px-2.5 py-3 text-graphite">{linkCount(b)}</td>
-                        <td className="px-2.5 py-3">
+                        <td className="px-2 py-3 font-semibold text-ink break-words">{b.name}</td>
+                        <td className="px-2 py-3 text-charcoal break-words">{b.type}</td>
+                        <td className="px-2 py-3 text-charcoal break-words">
+                          {b.address}
+                          {b.unitCount && <span className="block text-[11.5px] text-subtle">{b.unitCount} יחידות</span>}
+                        </td>
+                        <td className="px-2 py-3 text-charcoal break-words">{b.neighborhood || '—'}</td>
+                        <td className="px-2 py-3 text-graphite num">{linkCount(b)}</td>
+                        <td className="px-2 py-3">
                           {b.suspicionRating ? <Badge tone={RATING_TONE[b.suspicionRating] ?? 'neutral'} pulse={b.suspicionRating === 'גבוה'}>{b.suspicionRating}</Badge> : '—'}
                         </td>
-                        <td className="px-2.5 py-3 text-graphite">{b.unitCount || '—'}</td>
-                        <td className="px-2.5 py-3 text-graphite text-[12px]">{formatDate(b.uploadDate)}</td>
-                        <td className="px-2.5 py-3">
+                        <td className="px-2 py-3">
+                          <span className="block text-graphite text-[12px] mb-1">{formatDate(b.uploadDate)}</span>
                           <Badge tone={SOURCE_TONE[b.source]}>{SOURCE_LABEL[b.source]}</Badge>
                         </td>
-                        <td className="px-2.5 py-3" onClick={e => e.stopPropagation()}>
+                        <td className="px-2 py-3" onClick={e => e.stopPropagation()}>
                           <Select
                             value={b.sentToInspector ?? 'לא נשלח לסוקר'}
                             onChange={e => updateInspectorStatus(b.id, e.target.value as typeof INSPECTOR_OPTIONS[number])}
                             disabled={updating === b.id}
-                            className="h-9 text-[12.5px] px-2.5"
+                            title={b.sentToInspector ?? 'לא נשלח לסוקר'}
+                            className="h-9 w-full min-w-0 text-[12.5px] px-2"
                           >
                             {INSPECTOR_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
                           </Select>
@@ -754,7 +774,8 @@ export default function BusinessesPage() {
                             value={b.surveyResultDetail ?? ''}
                             onChange={e => updateSurveyResult(b.id, e.target.value)}
                             disabled={updating === b.id}
-                            className="h-9 text-[12.5px] px-2.5"
+                            title={b.surveyResultDetail ?? ''}
+                            className="h-9 w-full min-w-0 text-[12.5px] px-2"
                           >
                             <option value="">—</option>
                             {SURVEY_RESULT_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
@@ -765,7 +786,7 @@ export default function BusinessesPage() {
                             </button>
                           )}
                         </td>
-                        <td className="px-2.5 py-3 text-center">
+                        <td className="px-1 py-3 text-center">
                           <button onClick={e => { e.stopPropagation(); deleteBusiness(b.id) }} className="text-subtle hover:text-high" title="מחק">
                             <Trash2 size={15} strokeWidth={1.8} />
                           </button>
@@ -774,7 +795,7 @@ export default function BusinessesPage() {
 
                       {expanded === b.id && (
                         <tr className="bg-canvas">
-                          <td colSpan={14} className="px-8 py-5">
+                          <td colSpan={12} className="px-8 py-5">
                             {renderDetails(b)}
                           </td>
                         </tr>

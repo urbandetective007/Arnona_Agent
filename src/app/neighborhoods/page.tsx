@@ -10,6 +10,8 @@ import { SOURCE_LABEL, SOURCE_OPTIONS, SOURCE_COLOR, SOURCE_TONE, type BusinessS
 import { Card, StatCard, EmptyState, CrossFilterBar, AnimatedNumber, LoadingMoreBanner, Badge, Table, Thead, Tbody, Tr, Th, Td, PageSkeleton } from '@/components/ui'
 import { useCrossFilter, chartItemProps } from '@/lib/useCrossFilter'
 import { AgentScanCard } from '@/components/AgentScanCard'
+import { StreetOverridesCard } from '@/components/StreetOverridesCard'
+import { useRole } from '@/lib/useRole'
 
 const NEIGHBORHOOD_DIMS = {
   neighborhood: (b: Business) => b.neighborhood || null,
@@ -37,7 +39,8 @@ function rankNeighborhoods(businesses: Business[]) {
 
 export default function NeighborhoodsPage() {
   const ready = useRequireRole(['employee', 'manager'])
-  const { businesses, loading, loadingMore } = useBusinesses()
+  const { businesses, setBusinesses, loading, loadingMore } = useBusinesses()
+  const canEdit = useRole() === 'employee'
 
 
   const cf = useCrossFilter(businesses, NEIGHBORHOOD_DIMS)
@@ -178,6 +181,7 @@ export default function NeighborhoodsPage() {
           </Card>
           </div>
         )}
+        {canEdit && <StreetOverridesCard businesses={businesses} setBusinesses={setBusinesses} />}
       </div>
     </AppShell>
   )

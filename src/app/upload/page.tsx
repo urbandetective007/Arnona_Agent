@@ -13,7 +13,7 @@ import { normalizeNeighborhood, JERUSALEM_NEIGHBORHOODS } from '@/lib/neighborho
 import { useBusinessTypes } from '@/lib/businessTypes'
 import { BusinessTypeField } from '@/components/BusinessTypeField'
 import { useStreetTable, neighborhoodsForAddress, NO_MATCH } from '@/lib/streetNeighborhoods'
-import type { NeighborhoodMatch } from '@/lib/streetNeighborhoods'
+import type { NeighborhoodMatch, StreetTable } from '@/lib/streetNeighborhoods'
 import { clearCache } from '@/lib/cache'
 import { cleanAddress, type LocationMap } from '@/lib/geocode'
 import { placementFor, neighborhoodOf } from '@/lib/placement'
@@ -50,7 +50,7 @@ const MANUAL_FIELD_DEFS = FIELD_DEFS.filter(fd => fd.key !== 'noSuspicionReason'
 
 const EMPTY_MAPPING: Record<TargetField, string> = {
   name: '', address: '', neighborhood: '', type: '', suspicionRating: '', suspicionDetail: '',
-  noSuspicionReason: '', matchedAddress: '', unitCount: '', link1: '', link2: '', link3: '',
+  noSuspicionReason: '', matchedAddress: '', unitCount: '', link1: '', link2: '', link3: '', link4: '', link5: '',
 }
 
 // Manual entries default to the highest rating rather than the file flow's
@@ -231,7 +231,7 @@ function getCol(row: string[], headers: string[], header: string): string {
 
 function buildBusinesses(
   sheet: ParsedSheet, file: string, mapping: Record<TargetField, string>,
-  sessionId: string, today: string, source: FileSource,
+  sessionId: string, today: string, source: FileSource, streetTable: StreetTable | null,
 ): { businesses: Business[]; issues: RowIssue[] } {
   const businesses: Business[] = []
   const issues: RowIssue[] = []
@@ -263,13 +263,25 @@ function buildBusinesses(
       return
     }
 
+    // The street decides the neighborhood (with the employees' street
+    // corrections applied); the file's column is only a fallback for streets
+    // the table doesn't know, or to pick between a street's neighborhoods.
     const rawNeighborhood = getCol(row, headers, mapping.neighborhood)
-    const neighborhood = normalizeNeighborhood(rawNeighborhood) ?? ''
+    const fileNeighborhood = normalizeNeighborhood(rawNeighborhood) ?? ''
+    const byStreet = streetTable ? neighborhoodsForAddress(streetTable, address) : NO_MATCH
+    const streetSure = byStreet.match !== 'close' && byStreet.options.length > 0
+    const neighborhood = !streetSure
+      ? fileNeighborhood
+      : byStreet.options.length === 1 ? byStreet.options[0]
+      : byStreet.options.includes(fileNeighborhood) ? fileNeighborhood : byStreet.options[0]
+    if (streetSure && fileNeighborhood && fileNeighborhood !== neighborhood) {
+      issues.push({ row: excelRow, file, kind: 'warning', title: 'שכונה עודכנה לפי הרחוב', detail: `"${name}" — בקובץ "${fileNeighborhood}", לפי הרחוב ${byStreet.street}: "${neighborhood}"` })
+    }
     if (rawNeighborhood && !neighborhood) {
       issues.push({ row: excelRow, file, kind: 'warning', title: 'שכונה לא מזוהה', detail: `"${name}" — "${rawNeighborhood}" לא זוהתה, הנכס יישמר ללא שכונה` })
     }
 
-    const links = [mapping.link1, mapping.link2, mapping.link3].map(col => getCol(row, headers, col))
+    const links = [mapping.link1, mapping.link2, mapping.link3, mapping.link4, mapping.link5].map(col => getCol(row, headers, col))
     links.forEach((raw, li) => {
       if (raw && !splitLink(raw).url) {
         issues.push({ row: excelRow, file, kind: 'warning', title: 'קישור לא תקין', detail: `"${name}" — בקישור ${li + 1} אין כתובת אינטרנט (https://…)` })
@@ -300,6 +312,8 @@ function buildBusinesses(
       link1: links[0],
       link2: links[1],
       link3: links[2],
+      link4: links[3],
+      link5: links[4],
       arnonaStatus: mapSuspicionRatingToStatus(rating),
       uploadDate: today,
       uploadSessionId: sessionId,
@@ -677,7 +691,7 @@ export default function UploadPage() {
       const issues: RowIssue[] = []
       const built = readyFiles.map((f, i) => {
         const sessionId = `session-${stamp + i}`
-        const result = buildBusinesses(f.sheet!, f.file.name, mapping, sessionId, today, fileSource)
+        const result = buildBusinesses(f.sheet!, f.file.name, mapping, sessionId, today, fileSource, streetTable)
         issues.push(...result.issues)
         return { fileName: f.file.name, sessionId, businesses: result.businesses }
       })
@@ -710,6 +724,8 @@ export default function UploadPage() {
         link1: manual.link1.trim(),
         link2: manual.link2.trim(),
         link3: manual.link3.trim(),
+        link4: manual.link4.trim(),
+        link5: manual.link5.trim(),
         arnonaStatus: mapSuspicionRatingToStatus(rating),
         uploadDate: today,
         uploadSessionId: sessionId,

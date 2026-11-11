@@ -6,7 +6,7 @@ import { JERUSALEM_NEIGHBORHOODS } from './neighborhoods'
 
 export type TargetField =
   | 'name' | 'address' | 'neighborhood' | 'type' | 'suspicionRating' | 'suspicionDetail'
-  | 'noSuspicionReason' | 'matchedAddress' | 'unitCount' | 'link1' | 'link2' | 'link3'
+  | 'noSuspicionReason' | 'matchedAddress' | 'unitCount' | 'link1' | 'link2' | 'link3' | 'link4' | 'link5'
 
 export interface FieldDef {
   key: TargetField
@@ -35,6 +35,8 @@ export const FIELD_DEFS: FieldDef[] = [
   { key: 'link1', label: 'קישור 1', required: false, hint: 'קישור 1', description: 'קישור מלא למקור (https://…)', example: 'https://example.co.il/dr-cohen' },
   { key: 'link2', label: 'קישור 2', required: false, hint: 'קישור 2', description: 'קישור נוסף', example: '' },
   { key: 'link3', label: 'קישור 3', required: false, hint: 'קישור 3', description: 'קישור נוסף', example: '' },
+  { key: 'link4', label: 'קישור 4', required: false, hint: 'קישור 4', description: 'קישור נוסף — רק אם אומת', example: '' },
+  { key: 'link5', label: 'קישור 5', required: false, hint: 'קישור 5', description: 'קישור נוסף — רק אם אומת', example: '' },
 ]
 
 /** The format rules that matter most, in the order the guide lists them. */

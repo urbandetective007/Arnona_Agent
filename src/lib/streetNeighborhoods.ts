@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { cleanAddress, parseAddress } from './geocode'
+import { supabase } from './supabase'
 
 // Street → neighborhood table, built by tools/neighborhoods/build_street_index.py
 // from the agent's address list and the municipality's street list. Loaded with
@@ -64,7 +65,7 @@ function editDistance(a: string, b: string): number {
 const CLOSE_MIN_SIMILARITY = 0.8
 const CLOSE_MIN_LENGTH = 4
 
-function resolveKey(table: StreetTable, key: string): { key: string; match: StreetMatchKind } | null {
+export function resolveKey(table: StreetTable, key: string): { key: string; match: StreetMatchKind } | null {
   if (table.streets[key]) return { key, match: 'exact' }
   if (key.length < 3) return null
   const words = key.split(' ')
@@ -85,6 +86,14 @@ function resolveKey(table: StreetTable, key: string): { key: string; match: Stre
   return best && bestScore >= CLOSE_MIN_SIMILARITY ? { key: best, match: 'close' } : null
 }
 
+/** Key of the street an address is on (resolved against the table), or null. */
+export function streetKeyOfAddress(table: StreetTable, address: string): string | null {
+  const { street } = parseAddress(cleanAddress(address))
+  if (!street) return null
+  const hit = resolveKey(table, streetKey(street))
+  return hit && hit.match !== 'close' ? hit.key : null
+}
+
 export function neighborhoodsForAddress(table: StreetTable, address: string): NeighborhoodMatch {
   const { street, number } = parseAddress(cleanAddress(address))
   if (!street) return NO_MATCH
@@ -96,16 +105,67 @@ export function neighborhoodsForAddress(table: StreetTable, address: string): Ne
   return { options: table.streets[hit.key], byHouse: false, street: name, match: hit.match }
 }
 
+// Employees' street corrections (table street_neighborhood_overrides). Each
+// one replaces the whole street's mapping — every house number — so a street
+// the static table got wrong (e.g. אבולעפיה under מקור ברוך) is fixed once
+// for every future entry and upload.
+export interface StreetOverride {
+  streetKey: string
+  streetLabel: string
+  neighborhood: string
+  updatedAt: string
+}
+
+export async function fetchStreetOverrides(): Promise<StreetOverride[]> {
+  const { data, error } = await supabase.from('street_neighborhood_overrides').select('*').order('street_label')
+  if (error) throw error
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (data ?? []).map((r: any) => ({ streetKey: r.street_key, streetLabel: r.street_label, neighborhood: r.neighborhood, updatedAt: r.updated_at }))
+}
+
+export function applyOverrides(base: StreetTable, overrides: StreetOverride[]): StreetTable {
+  if (overrides.length === 0) return base
+  const table: StreetTable = { streets: { ...base.streets }, names: { ...base.names }, houses: { ...base.houses } }
+  for (const o of overrides) {
+    table.streets[o.streetKey] = [o.neighborhood]
+    table.names[o.streetKey] ??= o.streetLabel
+    delete table.houses[o.streetKey]
+  }
+  return table
+}
+
+let basePromise: Promise<StreetTable | null> | null = null
 let tablePromise: Promise<StreetTable | null> | null = null
+
+/** The static street table, without corrections (for the editing screen). */
+export function loadBaseStreetTable(): Promise<StreetTable | null> {
+  basePromise ??= import('../../data/street_neighborhoods.json')
+    .then(m => m.default as StreetTable)
+    .catch(() => null)
+  return basePromise
+}
+
+function loadStreetTable(): Promise<StreetTable | null> {
+  tablePromise ??= loadBaseStreetTable().then(async base => {
+    if (!base) return null
+    // No corrections table yet (migration not applied) or no access — the
+    // static table alone still works.
+    const overrides = await fetchStreetOverrides().catch(() => [])
+    return applyOverrides(base, overrides)
+  })
+  return tablePromise
+}
+
+/** Call after a correction is saved, so the next lookup sees it. */
+export function invalidateStreetTable() {
+  tablePromise = null
+}
 
 export function useStreetTable(): StreetTable | null {
   const [table, setTable] = useState<StreetTable | null>(null)
   useEffect(() => {
     let cancelled = false
-    tablePromise ??= import('../../data/street_neighborhoods.json')
-      .then(m => m.default as StreetTable)
-      .catch(() => null)
-    tablePromise.then(t => { if (!cancelled) setTable(t) })
+    loadStreetTable().then(t => { if (!cancelled) setTable(t) })
     return () => { cancelled = true }
   }, [])
   return table
