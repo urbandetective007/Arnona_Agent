@@ -2901,3 +2901,849 @@
 {"address": "אשכנזי 27", "found": true, "lat": 31.7915685, "lon": 35.2229834, "precision": "street", "osm_area": ["בית ישראל"]}
 {"address": "ירמיהו 78", "found": true, "lat": 31.7909283, "lon": 35.2012779, "precision": "exact", "osm_area": ["רוממה"]}
 {"address": "אהליאב 2", "found": true, "lat": 31.7909958, "lon": 35.2010129, "precision": "exact", "osm_area": ["רוממה"]}
+{"address": "שניאור 48", "found": true, "lat": 31.7811436, "lon": 35.2220006, "precision": "street", "osm_area": ["מגרש הרוסים"]}
+{"address": "שכונת התימנים 94", "found": false}
+{"address": "שכונת התימנים 84", "found": false}
+{"address": "שכונת התימנים 153", "found": false}
+{"address": "שירת חנה 5", "found": true, "lat": 31.8414078, "lon": 35.2396242, "precision": "street", "osm_area": ["בית חנינא"]}
+{"address": "שירת חנה 1", "found": true, "lat": 31.8414078, "lon": 35.2396242, "precision": "street", "osm_area": ["בית חנינא"]}
+{"address": "שיר למעלות 5", "found": false}
+{"address": "שיר למעלות 3", "found": false}
+{"address": "שיח סואן 9999", "found": false}
+{"address": "שטרוק 8", "found": true, "lat": 31.8150588, "lon": 35.1927881, "precision": "street", "osm_area": ["רמות"]}
+{"address": "שטרוק 4", "found": true, "lat": 31.8150588, "lon": 35.1927881, "precision": "street", "osm_area": ["רמות"]}
+{"address": "שטרוק 1", "found": true, "lat": 31.8150588, "lon": 35.1927881, "precision": "street", "osm_area": ["רמות"]}
+{"address": "שורץ 4", "found": true, "lat": 31.7864334, "lon": 35.2129706, "precision": "street", "osm_area": ["זכרון משה"]}
+{"address": "שורץ 2", "found": true, "lat": 31.7864334, "lon": 35.2129706, "precision": "street", "osm_area": ["זכרון משה"]}
+{"address": "שוק הצורפים 43", "found": false}
+{"address": "שומרון 18", "found": true, "lat": 31.7828603, "lon": 35.2142566, "precision": "exact", "osm_area": ["נחלאות"]}
+{"address": "שוחט מניה 9", "found": true, "lat": 31.8208923, "lon": 35.2558046, "precision": "exact", "osm_area": ["פסגת זאב"]}
+{"address": "שוחט מניה 6", "found": true, "lat": 31.820497, "lon": 35.2563324, "precision": "exact", "osm_area": ["פסגת זאב"]}
+{"address": "שוחט מניה 10", "found": true, "lat": 31.8208363, "lon": 35.2560903, "precision": "exact", "osm_area": ["פסגת זאב"]}
+{"address": "שדרת רמות 8", "found": true, "lat": 31.8204186, "lon": 35.2027533, "precision": "exact", "osm_area": ["רמות א'"]}
+{"address": "שדרת רמות 14", "found": true, "lat": 31.8211479, "lon": 35.2015672, "precision": "street", "osm_area": ["רמות א'"]}
+{"address": "שדרת רמות 4", "found": true, "lat": 31.8211479, "lon": 35.2015672, "precision": "street", "osm_area": ["רמות א'"]}
+{"address": "שד האוניברסיטה 48", "found": false}
+{"address": "שד האוניברסיטה 1", "found": true, "lat": 31.7953531, "lon": 35.2361193, "precision": "street", "osm_area": ["שייח' ג'ראח"]}
+{"address": "שביל החסידות 9999", "found": false}
+{"address": "שביל החסידות 3", "found": false}
+{"address": "ש פגי ג שאול 17", "found": false}
+{"address": "ש פגי ג שאול 14", "found": false}
+{"address": "ש פגי ג שאול 20", "found": false}
+{"address": "ש ותיק ק משה 10", "found": false}
+{"address": "רפאל עזרא 27", "found": true, "lat": 31.7832502, "lon": 35.2125048, "precision": "street", "osm_area": ["נחלאות"]}
+{"address": "רמת בית הכרם 73", "found": true, "lat": 31.771929, "lon": 35.190955, "precision": "street", "osm_area": ["רמת בית הכרם"]}
+{"address": "רמת בית הכרם 135", "found": true, "lat": 31.771929, "lon": 35.190955, "precision": "street", "osm_area": ["רמת בית הכרם"]}
+{"address": "רמת בית הכרם 113", "found": true, "lat": 31.771929, "lon": 35.190955, "precision": "street", "osm_area": ["רמת בית הכרם"]}
+{"address": "רמת איילות 114", "found": false}
+{"address": "רמות רחל 33", "found": false}
+{"address": "רבי חנינא 6", "found": true, "lat": 31.7578947, "lon": 35.2121986, "precision": "street", "osm_area": ["מקור חיים"]}
+{"address": "רבי חנינא 4", "found": true, "lat": 31.7578947, "lon": 35.2121986, "precision": "street", "osm_area": ["מקור חיים"]}
+{"address": "רבי חנינא 2", "found": true, "lat": 31.7578947, "lon": 35.2121986, "precision": "street", "osm_area": ["מקור חיים"]}
+{"address": "רבי חייא 3", "found": true, "lat": 31.7623814, "lon": 35.2127347, "precision": "exact", "osm_area": ["המושבה היוונית"]}
+{"address": "רבי חייא 11", "found": true, "lat": 31.7613009, "lon": 35.2132545, "precision": "exact", "osm_area": ["המושבה היוונית"]}
+{"address": "ראס אל עקבה 9999", "found": false}
+{"address": "ראס אל עקבה 8", "found": false}
+{"address": "ראס אל בושתן 9999", "found": false}
+{"address": "ראס אל בושתן 33", "found": false}
+{"address": "קרית אריה 22", "found": false}
+{"address": "קרטבה סמ1 9", "found": true, "lat": 31.7299001, "lon": 35.223791, "precision": "street", "osm_area": ["חומת שמואל"]}
+{"address": "קרטבה 6", "found": true, "lat": 31.7299001, "lon": 35.223791, "precision": "street", "osm_area": ["חומת שמואל"]}
+{"address": "קרטבה 24", "found": true, "lat": 31.7299001, "lon": 35.223791, "precision": "street", "osm_area": ["חומת שמואל"]}
+{"address": "קרטבה 10", "found": true, "lat": 31.7299001, "lon": 35.223791, "precision": "street", "osm_area": ["חומת שמואל"]}
+{"address": "קע אל חארה 9999", "found": false}
+{"address": "קע אל חארה 63", "found": false}
+{"address": "קע אל חארה 101", "found": false}
+{"address": "קסילה 22", "found": true, "lat": 31.7990652, "lon": 35.2469923, "precision": "street", "osm_area": ["עיסוויה"]}
+{"address": "קסילה 18", "found": true, "lat": 31.7990652, "lon": 35.2469923, "precision": "street", "osm_area": ["עיסוויה"]}
+{"address": "קסילה 12", "found": true, "lat": 31.7990652, "lon": 35.2469923, "precision": "street", "osm_area": ["עיסוויה"]}
+{"address": "קלרמון גנו 5", "found": true, "lat": 31.795801, "lon": 35.2334792, "precision": "street", "osm_area": ["שייח' ג'ראח"]}
+{"address": "קלימקר דב 2", "found": false}
+{"address": "קואנקה 8", "found": false}
+{"address": "קואנקה 14", "found": false}
+{"address": "קואנקה 6", "found": false}
+{"address": "קדמת ציון 9", "found": true, "lat": 31.7606118, "lon": 35.2544404, "precision": "street", "osm_area": ["קדמת ציון", "ג'בל מוכאבר"]}
+{"address": "קדמת ציון 60", "found": true, "lat": 31.7606118, "lon": 35.2544404, "precision": "street", "osm_area": ["קדמת ציון", "ג'בל מוכאבר"]}
+{"address": "צורי 7", "found": true, "lat": 31.7452893, "lon": 35.2321814, "precision": "exact", "osm_area": ["גבעות ארנונה", "תלפיות מזרח"]}
+{"address": "צורי 5", "found": true, "lat": 31.7451062, "lon": 35.2324399, "precision": "exact", "osm_area": ["גבעות ארנונה", "תלפיות מזרח"]}
+{"address": "צורי 3", "found": true, "lat": 31.745139, "lon": 35.2327753, "precision": "exact", "osm_area": ["גבעות ארנונה", "תלפיות מזרח"]}
+{"address": "צוער 4", "found": true, "lat": 31.7507604, "lon": 35.1671499, "precision": "exact", "osm_area": ["גבעת משואה"]}
+{"address": "צוער 3", "found": true, "lat": 31.7827925, "lon": 35.2111141, "precision": "exact", "osm_area": ["נחלאות"]}
+{"address": "צוער 1", "found": true, "lat": 31.782685, "lon": 35.2109117, "precision": "street", "osm_area": ["נחלאות"]}
+{"address": "צבאח אל-מג'ד סמ1 9999", "found": false}
+{"address": "צבאח אל-מג'ד סמ1 19", "found": false}
+{"address": "צבאח אל-מג'ד סמ1 11", "found": false}
+{"address": "צבאח אל-מג'ד 9999", "found": false}
+{"address": "צבאח אל-מג'ד 32", "found": false}
+{"address": "צבאח אל-מג'ד 1", "found": false}
+{"address": "פרופ' יעקב נאמן 6", "found": false}
+{"address": "פרופ' יעקב נאמן 18", "found": false}
+{"address": "פרופ' יעקב נאמן 1", "found": false}
+{"address": "פרדס רימונים 91", "found": false}
+{"address": "פרדס רימונים 82", "found": false}
+{"address": "פרדס רימונים 64", "found": false}
+{"address": "פסגת זאב מזרח 202", "found": true, "lat": 31.820224, "lon": 35.2519697, "precision": "street", "osm_area": ["פסגת זאב מזרח", "פסגת זאב"]}
+{"address": "פסגת זאב מזרח 1902", "found": true, "lat": 31.820224, "lon": 35.2519697, "precision": "street", "osm_area": ["פסגת זאב מזרח", "פסגת זאב"]}
+{"address": "פאת השולחן 4", "found": true, "lat": 31.7883142, "lon": 35.2171673, "precision": "exact", "osm_area": ["גאולה"]}
+{"address": "פאת השולחן 10", "found": true, "lat": 31.7882653, "lon": 35.2173754, "precision": "exact", "osm_area": ["גאולה"]}
+{"address": "פאת השולחן 12", "found": true, "lat": 31.7881748, "lon": 35.2177011, "precision": "exact", "osm_area": ["גאולה"]}
+{"address": "ערפה סמ3 7", "found": false}
+{"address": "ערפה סמ3 12", "found": false}
+{"address": "ערפה סמ3 10", "found": false}
+{"address": "ערפה 9999", "found": false}
+{"address": "ערפה 31", "found": false}
+{"address": "ערפה 25", "found": false}
+{"address": "ערוגות הבושם 9999", "found": false}
+{"address": "עראק אל טאירה סמ2 9999", "found": false}
+{"address": "עראק אל טאירה סמ2 14", "found": false}
+{"address": "עראק אל טאירה סמ2", "found": false}
+{"address": "עראק אל טאירה 3", "found": false}
+{"address": "עראק אל טאירה 1", "found": false}
+{"address": "עקבת א נאצר", "found": false}
+{"address": "עק אבו מדין 8", "found": false}
+{"address": "עכרמה בן ג'הל סמ1 8", "found": false}
+{"address": "עכרמה בן ג'הל סמ1 3", "found": false}
+{"address": "עכרמה בן ג'הל סמ1 1", "found": false}
+{"address": "עומר אל ח'יאם 1", "found": false}
+{"address": "עבאסיה 9999", "found": false}
+{"address": "עאידה 684", "found": false}
+{"address": "סרור 16", "found": false}
+{"address": "סרור 12", "found": false}
+{"address": "סרור 10", "found": false}
+{"address": "ספח 9999", "found": true, "lat": 31.741692, "lon": 35.200588, "precision": "street", "osm_area": ["גבעת המטוס"]}
+{"address": "ספח 22", "found": false}
+{"address": "סכת אל-חדיד 40", "found": false}
+{"address": "סכת אל-חדיד 26", "found": false}
+{"address": "סכת אל-חדיד 13", "found": false}
+{"address": "סירת אל חג'ה סמ2 5", "found": false}
+{"address": "סירת אל חג'ה סמ2 13", "found": false}
+{"address": "סירת אל חג'ה סמ2 1", "found": false}
+{"address": "סירת אל חג'ה סמ1 7", "found": false}
+{"address": "סירת אל חג'ה סמ1 19", "found": false}
+{"address": "סירת אל חג'ה סמ1 11", "found": false}
+{"address": "סירת אל חג'ה 5", "found": false}
+{"address": "סירת אל חג'ה 17", "found": false}
+{"address": "סירת אל חג'ה 1", "found": false}
+{"address": "סילמן 11", "found": false}
+{"address": "סוק אל לחמין 9", "found": false}
+{"address": "סוק אבטימוס 35", "found": true, "lat": 31.7777592, "lon": 35.2301115, "precision": "street", "osm_area": ["העיר העתיקה"]}
+{"address": "סולטן סולימאן 29", "found": true, "lat": 31.7834111, "lon": 35.2343769, "precision": "street", "osm_area": ["באב א-זהרה"]}
+{"address": "סולטן סולימאן 27", "found": true, "lat": 31.7843332, "lon": 35.2360675, "precision": "exact", "osm_area": ["באב א-זהרה"]}
+{"address": "סולטן סולימאן 17", "found": true, "lat": 31.7829328, "lon": 35.2327401, "precision": "street", "osm_area": ["באב א-זהרה"]}
+{"address": "סולובייציק 7", "found": false}
+{"address": "סגולת ישראל 8", "found": true, "lat": 31.8163556, "lon": 35.254659, "precision": "exact", "osm_area": ["פסגת זאב"]}
+{"address": "סגולת ישראל 4", "found": true, "lat": 31.8166136, "lon": 35.2542964, "precision": "exact", "osm_area": ["פסגת זאב"]}
+{"address": "סגולת ישראל 1", "found": true, "lat": 31.8166168, "lon": 35.2545294, "precision": "exact", "osm_area": ["פסגת זאב"]}
+{"address": "נתיב יצחק 3", "found": true, "lat": 31.7870243, "lon": 35.2115924, "precision": "street", "osm_area": ["מקור ברוך"]}
+{"address": "נעמאן 76", "found": true, "lat": 31.7656405, "lon": 35.1843111, "precision": "street", "osm_area": ["בית וגן"]}
+{"address": "נעמאן 3", "found": true, "lat": 31.7431839, "lon": 35.2242602, "precision": "street", "osm_area": ["גבעות ארנונה", "ארנונה"]}
+{"address": "נעמאן 10", "found": true, "lat": 31.7420722, "lon": 35.223859, "precision": "exact", "osm_area": ["גבעות ארנונה", "ארנונה"]}
+{"address": "נוף גילה 20", "found": false}
+{"address": "משעול זהב מרדכי 5", "found": false}
+{"address": "משעול זהב מרדכי 1", "found": false}
+{"address": "מרטין לותר קינג 2", "found": true, "lat": 31.7676796, "lon": 35.2220133, "precision": "street", "osm_area": ["המושבה הגרמנית"]}
+{"address": "מקסימוס צאייג 999", "found": true, "lat": 31.8276431, "lon": 35.2322527, "precision": "street", "osm_area": ["בית חנינא"]}
+{"address": "מקסימוס צאייג 23", "found": true, "lat": 31.8276431, "lon": 35.2322527, "precision": "street", "osm_area": ["בית חנינא"]}
+{"address": "מפעלות 8", "found": true, "lat": 31.8575172, "lon": 35.2188858, "precision": "street", "osm_area": ["אזור תעשיה עטרות"]}
+{"address": "מפעלות 1", "found": true, "lat": 31.8575172, "lon": 35.2188858, "precision": "street", "osm_area": ["אזור תעשיה עטרות"]}
+{"address": "מפעלות 22", "found": true, "lat": 31.85782, "lon": 35.2181793, "precision": "street", "osm_area": ["אזור תעשיה עטרות"]}
+{"address": "מעלות מי השילוח 999", "found": false}
+{"address": "מעלות מי השילוח 30", "found": false}
+{"address": "מעלות מי השילוח 22", "found": false}
+{"address": "מעלות הנזירות 599", "found": false}
+{"address": "מעלות המדרשה 17", "found": true, "lat": 31.779046, "lon": 35.2329678, "precision": "street", "osm_area": ["העיר העתיקה"]}
+{"address": "מעלות אהל שלמה 68", "found": false}
+{"address": "מעלה החאלבים 9", "found": true, "lat": 31.7788318, "lon": 35.241555, "precision": "street", "osm_area": ["א-טור"]}
+{"address": "מעלה החאלבים 16", "found": true, "lat": 31.7788318, "lon": 35.241555, "precision": "street", "osm_area": ["א-טור"]}
+{"address": "מעלה החאלבים 15", "found": true, "lat": 31.7788318, "lon": 35.241555, "precision": "street", "osm_area": ["א-טור"]}
+{"address": "מנשה נחמה 8", "found": false}
+{"address": "מנשה נחמה 4", "found": false}
+{"address": "מנשה נחמה 1", "found": false}
+{"address": "מנורי 8", "found": false}
+{"address": "מנורי 18", "found": false}
+{"address": "מנורי 10", "found": false}
+{"address": "מלכי צדק 904", "found": false}
+{"address": "מלכי צדק 3", "found": false}
+{"address": "מכה סמ1 15", "found": true, "lat": 31.7263109, "lon": 35.2318326, "precision": "street", "osm_area": ["אום טובא"]}
+{"address": "מכה 49", "found": true, "lat": 31.7263109, "lon": 35.2318326, "precision": "street", "osm_area": ["אום טובא"]}
+{"address": "מכה 25", "found": true, "lat": 31.7263109, "lon": 35.2318326, "precision": "street", "osm_area": ["אום טובא"]}
+{"address": "מיטיב נגן 3", "found": true, "lat": 31.7758016, "lon": 35.2250837, "precision": "street", "osm_area": ["ממילא"]}
+{"address": "מיטיב נגן 2", "found": true, "lat": 31.7758016, "lon": 35.2250837, "precision": "street", "osm_area": ["ממילא"]}
+{"address": "מזרחי מישאל 7", "found": true, "lat": 31.8342235, "lon": 35.2493123, "precision": "street", "osm_area": ["פסגת זאב"]}
+{"address": "מזרחי מישאל 13", "found": true, "lat": 31.8342235, "lon": 35.2493123, "precision": "street", "osm_area": ["פסגת זאב"]}
+{"address": "מזרחי מישאל 2", "found": true, "lat": 31.8342235, "lon": 35.2493123, "precision": "street", "osm_area": ["פסגת זאב"]}
+{"address": "מזרחי יוחנן 11", "found": true, "lat": 31.7887037, "lon": 35.2231559, "precision": "street", "osm_area": ["בית ישראל"]}
+{"address": "מזר בנימין 13", "found": true, "lat": 31.7912461, "lon": 35.2436646, "precision": "street", "osm_area": ["הר הצופים"]}
+{"address": "מוסא פידי אל עלמי 6", "found": false}
+{"address": "מוסא פידי אל עלמי 14", "found": false}
+{"address": "מוסא פידי אל עלמי 1", "found": false}
+{"address": "מוחמד חמדן רבאיעה 82", "found": false}
+{"address": "מוחמד חמדן רבאיעה 46", "found": false}
+{"address": "מוחמד חמדן רבאיעה 4", "found": false}
+{"address": "מדרגות גן עדן 3", "found": true, "lat": 31.7689681, "lon": 35.1625332, "precision": "street", "osm_area": ["עין כרם"]}
+{"address": "מדרגות גן עדן 2", "found": true, "lat": 31.7689681, "lon": 35.1625332, "precision": "street", "osm_area": ["עין כרם"]}
+{"address": "מדרגות גן עדן 1", "found": true, "lat": 31.7689681, "lon": 35.1625332, "precision": "street", "osm_area": ["עין כרם"]}
+{"address": "מבקר המדינה 5", "found": true, "lat": 31.7837284, "lon": 35.2050245, "precision": "exact", "osm_area": ["קרית הממשלה"]}
+{"address": "מבוא בית דוד 6", "found": false}
+{"address": "מבוא בית דוד 4", "found": false}
+{"address": "מבוא בית דוד 25", "found": false}
+{"address": "לשם 416", "found": true, "lat": 31.728274, "lon": 35.1883346, "precision": "street", "osm_area": ["גילה"]}
+{"address": "לפידות 8", "found": true, "lat": 31.7892652, "lon": 35.2219706, "precision": "street", "osm_area": ["בית ישראל"]}
+{"address": "לפידות 20", "found": true, "lat": 31.7892652, "lon": 35.2219706, "precision": "street", "osm_area": ["בית ישראל"]}
+{"address": "לפידות 10", "found": true, "lat": 31.7892652, "lon": 35.2219706, "precision": "street", "osm_area": ["בית ישראל"]}
+{"address": "למפרונטי 8", "found": true, "lat": 31.7882519, "lon": 35.2056978, "precision": "street", "osm_area": ["רוממה"]}
+{"address": "למפרונטי 10", "found": true, "lat": 31.7882519, "lon": 35.2056978, "precision": "street", "osm_area": ["רוממה"]}
+{"address": "לכיש 6", "found": true, "lat": 31.7825051, "lon": 35.211253, "precision": "street", "osm_area": ["נחלאות"]}
+{"address": "לכיש 21", "found": true, "lat": 31.7825051, "lon": 35.211253, "precision": "street", "osm_area": ["נחלאות"]}
+{"address": "לכיש 1", "found": true, "lat": 31.7825051, "lon": 35.211253, "precision": "street", "osm_area": ["נחלאות"]}
+{"address": "כתובת", "found": false}
+{"address": "כרם ארסאס 9999", "found": false}
+{"address": "כרם ארסאס 5", "found": false}
+{"address": "כרם ארסאס", "found": false}
+{"address": "כף החיים 8", "found": true, "lat": 31.8444709, "lon": 35.2412316, "precision": "street", "osm_area": []}
+{"address": "כף החיים 3", "found": true, "lat": 31.8444709, "lon": 35.2412316, "precision": "street", "osm_area": []}
+{"address": "כף החיים 1", "found": true, "lat": 31.8444709, "lon": 35.2412316, "precision": "street", "osm_area": []}
+{"address": "ככר ספרא 9999", "found": true, "lat": 31.781182, "lon": 35.224544, "precision": "street", "osm_area": ["מגרש הרוסים"]}
+{"address": "ככר דניה 1", "found": false}
+{"address": "ככר דוד(דאצא)אלקלעי 76", "found": false}
+{"address": "ככר דוד(דאצא)אלקלעי 32", "found": false}
+{"address": "יתרב סמ1 50", "found": false}
+{"address": "יתרב סמ1 21", "found": false}
+{"address": "יתרב סמ1 1", "found": false}
+{"address": "יצחק ארנסט נבנצל 8", "found": true, "lat": 31.7432731, "lon": 35.2226119, "precision": "exact", "osm_area": ["גבעות ארנונה", "ארנונה"]}
+{"address": "יצחק ארנסט נבנצל 4", "found": true, "lat": 31.742801, "lon": 35.2216741, "precision": "exact", "osm_area": ["גבעות ארנונה", "ארנונה"]}
+{"address": "יצחק ארנסט נבנצל 10", "found": true, "lat": 31.7428626, "lon": 35.2214008, "precision": "exact", "osm_area": ["גבעות ארנונה", "ארנונה"]}
+{"address": "יפה עינים 5", "found": false}
+{"address": "יעקב ונחמה אבן חן 9", "found": false}
+{"address": "יעקב ונחמה אבן חן 3", "found": false}
+{"address": "יעקב ונחמה אבן חן 10", "found": false}
+{"address": "טלעת אלמשהאד 32", "found": false}
+{"address": "טלחה 23", "found": false}
+{"address": "טיילת עיר שלם 9999", "found": true, "lat": 31.7705557, "lon": 35.2312183, "precision": "street", "osm_area": ["הר ציון"]}
+{"address": "טיילת עיר שלם 22", "found": true, "lat": 31.7705557, "lon": 35.2312183, "precision": "street", "osm_area": ["הר ציון"]}
+{"address": "טיילת עיר שלם 16", "found": true, "lat": 31.7705557, "lon": 35.2312183, "precision": "street", "osm_area": ["הר ציון"]}
+{"address": "טובלר 8", "found": true, "lat": 31.7923866, "lon": 35.2284329, "precision": "street", "osm_area": ["מעלות דפנה"]}
+{"address": "טובלר 5", "found": true, "lat": 31.7923866, "lon": 35.2284329, "precision": "street", "osm_area": ["מעלות דפנה"]}
+{"address": "טבנקין יצחק 8", "found": true, "lat": 31.8368767, "lon": 35.2398981, "precision": "exact", "osm_area": ["בית חנינא"]}
+{"address": "טבנקין יצחק 2", "found": true, "lat": 31.8369015, "lon": 35.2389509, "precision": "exact", "osm_area": ["בית חנינא"]}
+{"address": "טבנקין יצחק 10", "found": true, "lat": 31.8369291, "lon": 35.2402306, "precision": "exact", "osm_area": ["בית חנינא"]}
+{"address": "טאבליא 7", "found": false}
+{"address": "טאבליא 3", "found": false}
+{"address": "טאבליא 13", "found": false}
+{"address": "חרבת סאלח 9999", "found": false}
+{"address": "חרבת סאלח", "found": false}
+{"address": "חלאת חממה 9999", "found": false}
+{"address": "חיל הנדסה 59", "found": false}
+{"address": "חיל הנדסה 4", "found": false}
+{"address": "חי קראעין 27", "found": false}
+{"address": "חי אלנעמאן סמ7 7", "found": false}
+{"address": "חי אלנעמאן סמ5 1", "found": false}
+{"address": "חי אלנעמאן סמ4 9", "found": false}
+{"address": "חי אלנעמאן סמ4 6", "found": false}
+{"address": "חי אלנעמאן סמ4 14", "found": false}
+{"address": "חי אל נעמאן סמ3 4", "found": false}
+{"address": "חי אל נעמאן סמ3 22", "found": false}
+{"address": "חי אל נעמאן סמ3 12", "found": false}
+{"address": "חי אל נעמאן 9999", "found": false}
+{"address": "חי אל נעמאן 54", "found": false}
+{"address": "חי אל נעמאן 10", "found": false}
+{"address": "חטיבת הראל 996", "found": true, "lat": 31.7962685, "lon": 35.221165, "precision": "street", "osm_area": ["הבוכרים"]}
+{"address": "חוש דודו 5", "found": false}
+{"address": "חוש אלעדס 9", "found": false}
+{"address": "חוש אלעדס 15", "found": false}
+{"address": "חוש אלחילו 7", "found": false}
+{"address": "חוש אלזבאדי 3", "found": false}
+{"address": "חורי יוסף 13", "found": false}
+{"address": "חומת שמואל 324", "found": true, "lat": 31.7257259, "lon": 35.2212813, "precision": "street", "osm_area": ["חומת שמואל"]}
+{"address": "חומת שמואל 230", "found": true, "lat": 31.7257259, "lon": 35.2212813, "precision": "street", "osm_area": ["חומת שמואל"]}
+{"address": "חומת שמואל 218", "found": true, "lat": 31.7257259, "lon": 35.2212813, "precision": "street", "osm_area": ["חומת שמואל"]}
+{"address": "חומת נחמיה 1", "found": false}
+{"address": "חבשוש 9", "found": true, "lat": 31.7878939, "lon": 35.22202, "precision": "street", "osm_area": ["בית ישראל"]}
+{"address": "חבשוש 8", "found": true, "lat": 31.7878939, "lon": 35.22202, "precision": "street", "osm_area": ["בית ישראל"]}
+{"address": "חבשוש 2", "found": true, "lat": 31.7878939, "lon": 35.22202, "precision": "street", "osm_area": ["בית ישראל"]}
+{"address": "חברת משניות 6", "found": true, "lat": 31.7863413, "lon": 35.2230987, "precision": "street", "osm_area": ["מאה שערים"]}
+{"address": "חברת משניות 1", "found": true, "lat": 31.7863413, "lon": 35.2230987, "precision": "street", "osm_area": ["מאה שערים"]}
+{"address": "חבאיל אל ערב 75", "found": false}
+{"address": "חבאיל אל ערב 32", "found": false}
+{"address": "חבאיל אל ערב 12", "found": false}
+{"address": "חאתם א טאי 24", "found": false}
+{"address": "חאתם א טאי 20", "found": false}
+{"address": "חאתם א טאי 1", "found": false}
+{"address": "חאמד אל-עזאלי סמ2 23", "found": false}
+{"address": "חאמד אל-עזאלי סמ2 2", "found": false}
+{"address": "ח'ליל אלח'אלדי 999", "found": false}
+{"address": "ח'ליל אלח'אלדי 6", "found": false}
+{"address": "ח'ליל אלח'אלדי", "found": false}
+{"address": "זערורה סמ3 6", "found": false}
+{"address": "זערורה סמ3 2", "found": false}
+{"address": "זערורה סמ3 12", "found": false}
+{"address": "זערורה סמ1 9", "found": false}
+{"address": "זערורה סמ1 2", "found": false}
+{"address": "זערורה סמ1 11", "found": false}
+{"address": "זערורה 9999", "found": false}
+{"address": "זערורה 22", "found": false}
+{"address": "זערורה", "found": false}
+{"address": "זהרת אל-צבאח סמ4 3", "found": false}
+{"address": "זהרת אל-צבאח סמ2 3", "found": false}
+{"address": "זהרת אל-צבאח סמ2 1", "found": false}
+{"address": "זהרת אל-צבאח סמ1 6", "found": false}
+{"address": "זהרת אל-צבאח סמ1 3", "found": false}
+{"address": "זהרת אל-צבאח 9", "found": false}
+{"address": "זהרת אל-צבאח 13", "found": false}
+{"address": "זהרת אל-צבאח 10", "found": false}
+{"address": "וינר אשר 4", "found": true, "lat": 31.7416706, "lon": 35.2267518, "precision": "street", "osm_area": ["גבעות ארנונה", "צור באהר"]}
+{"address": "ואדי אל חומוס 999", "found": false}
+{"address": "ו.אום אל עמיד סמ6 999", "found": false}
+{"address": "ו.אום אל עמיד סמ6 11", "found": false}
+{"address": "ו.אום אל עמיד סמ2 3", "found": false}
+{"address": "ו.אום אל עמיד סמ2 24", "found": false}
+{"address": "ו.אום אל עמיד סמ1 44", "found": false}
+{"address": "התכלת 11", "found": true, "lat": 31.7923282, "lon": 35.2035522, "precision": "street", "osm_area": ["רוממה"]}
+{"address": "השיריונאי 9", "found": true, "lat": 31.8302288, "lon": 35.2410524, "precision": "exact", "osm_area": ["פסגת זאב"]}
+{"address": "השיריונאי 5", "found": true, "lat": 31.830273, "lon": 35.2407068, "precision": "exact", "osm_area": ["פסגת זאב"]}
+{"address": "השיריונאי 1", "found": true, "lat": 31.8303289, "lon": 35.2403499, "precision": "exact", "osm_area": ["פסגת זאב"]}
+{"address": "הרדבז 3", "found": false}
+{"address": "הרדבז 2", "found": false}
+{"address": "הרדבז 19", "found": false}
+{"address": "הרב שלמה וורטהיימר 28", "found": true, "lat": 31.7931116, "lon": 35.2045994, "precision": "exact", "osm_area": ["רוממה"]}
+{"address": "הרב שלום משאש 9", "found": true, "lat": 31.8188508, "lon": 35.257459, "precision": "street", "osm_area": ["פסגת זאב"]}
+{"address": "הרב שלום משאש 2", "found": true, "lat": 31.8188508, "lon": 35.257459, "precision": "street", "osm_area": ["פסגת זאב"]}
+{"address": "הרב שלום משאש 10", "found": true, "lat": 31.8188508, "lon": 35.257459, "precision": "street", "osm_area": ["פסגת זאב"]}
+{"address": "הרב קהן חיים 8", "found": true, "lat": 31.818605, "lon": 35.2523652, "precision": "exact", "osm_area": ["פסגת זאב"]}
+{"address": "הרב קהן חיים 4", "found": true, "lat": 31.8186716, "lon": 35.2526223, "precision": "exact", "osm_area": ["פסגת זאב"]}
+{"address": "הרב קהן חיים 10", "found": true, "lat": 31.8185647, "lon": 35.2522591, "precision": "exact", "osm_area": ["פסגת זאב"]}
+{"address": "הרב עראקי חיים 3", "found": true, "lat": 31.7803411, "lon": 35.2114173, "precision": "street", "osm_area": ["נחלאות"]}
+{"address": "הרב עזרן ניסים 3", "found": true, "lat": 31.7914097, "lon": 35.1926165, "precision": "exact", "osm_area": ["גבעת שאול"]}
+{"address": "הרב משה בן טוב 8", "found": true, "lat": 31.8071369, "lon": 35.2283755, "precision": "exact", "osm_area": ["גבעת המבתר"]}
+{"address": "הרב משה בן טוב 3", "found": true, "lat": 31.7788472, "lon": 35.2257856, "precision": "street", "osm_area": []}
+{"address": "הרב משה בן טוב 10", "found": true, "lat": 31.7788472, "lon": 35.2257856, "precision": "street", "osm_area": []}
+{"address": "הרב יחיא שניאור 17", "found": false}
+{"address": "הרב והרבנית קאפח 9", "found": false}
+{"address": "הרב והרבנית קאפח 2", "found": false}
+{"address": "הרב והרבנית קאפח 10", "found": false}
+{"address": "הרב אברהם זקן 4", "found": true, "lat": 31.7424654, "lon": 35.2229005, "precision": "exact", "osm_area": ["גבעות ארנונה", "ארנונה"]}
+{"address": "הרב אברהם זקן 2", "found": true, "lat": 31.7425379, "lon": 35.2226472, "precision": "street", "osm_area": ["גבעות ארנונה", "ארנונה"]}
+{"address": "הרב אברהם זקן 11", "found": true, "lat": 31.7425379, "lon": 35.2226472, "precision": "street", "osm_area": ["גבעות ארנונה", "ארנונה"]}
+{"address": "הראם 4", "found": false}
+{"address": "הראם 3", "found": false}
+{"address": "הר הבית 10", "found": true, "lat": 31.7779499, "lon": 35.2357485, "precision": "street", "osm_area": ["העיר העתיקה"]}
+{"address": "הקמרונות 30", "found": false}
+{"address": "הקונגרס הציוני 5", "found": true, "lat": 31.8178957, "lon": 35.1937084, "precision": "street", "osm_area": ["רמות"]}
+{"address": "הקונגרס הציוני 3", "found": true, "lat": 31.8178957, "lon": 35.1937084, "precision": "street", "osm_area": ["רמות"]}
+{"address": "הצרקסים 18", "found": false}
+{"address": "הצפצפה 7", "found": true, "lat": 31.7689022, "lon": 35.1631238, "precision": "exact", "osm_area": ["עין כרם"]}
+{"address": "הצלם רחמים 2", "found": false}
+{"address": "הסלח 12", "found": false}
+{"address": "הסלח 10", "found": false}
+{"address": "הסהר 7", "found": true, "lat": 31.780664, "lon": 35.234048, "precision": "street", "osm_area": ["העיר העתיקה"]}
+{"address": "הסהר 5", "found": true, "lat": 31.780664, "lon": 35.234048, "precision": "street", "osm_area": ["העיר העתיקה"]}
+{"address": "הנגר 7", "found": true, "lat": 31.7878669, "lon": 35.2236904, "precision": "street", "osm_area": ["בית ישראל"]}
+{"address": "הנגר 11", "found": true, "lat": 31.7878669, "lon": 35.2236904, "precision": "street", "osm_area": ["בית ישראל"]}
+{"address": "המסגד 999", "found": true, "lat": 31.745592, "lon": 35.201824, "precision": "street", "osm_area": ["בית צפאפא"]}
+{"address": "המנזר האתיופי 2", "found": true, "lat": 31.7802326, "lon": 35.2299589, "precision": "street", "osm_area": ["העיר העתיקה"]}
+{"address": "המטבע היהודי 9", "found": true, "lat": 31.789962, "lon": 35.21505, "precision": "exact", "osm_area": ["גאולה"]}
+{"address": "המטבע היהודי 4", "found": true, "lat": 31.7901327, "lon": 35.2138003, "precision": "exact", "osm_area": ["גאולה"]}
+{"address": "המטבע היהודי 1", "found": true, "lat": 31.7904359, "lon": 35.2140065, "precision": "exact", "osm_area": ["גאולה"]}
+{"address": "המהרמ מרוטנבורג 1", "found": false}
+{"address": "הלב העברי 6", "found": false}
+{"address": "הלב העברי 2", "found": false}
+{"address": "הלב העברי 15", "found": false}
+{"address": "הכרי 40", "found": true, "lat": 31.7771761, "lon": 35.2318989, "precision": "street", "osm_area": ["העיר העתיקה"]}
+{"address": "הכרי 42", "found": true, "lat": 31.7771761, "lon": 35.2318989, "precision": "street", "osm_area": ["העיר העתיקה"]}
+{"address": "הכותל 8", "found": true, "lat": 31.7782563, "lon": 35.2340884, "precision": "street", "osm_area": ["העיר העתיקה"]}
+{"address": "הכותל 7", "found": true, "lat": 31.7782563, "lon": 35.2340884, "precision": "street", "osm_area": ["העיר העתיקה"]}
+{"address": "הכותל 1", "found": true, "lat": 31.7782563, "lon": 35.2340884, "precision": "street", "osm_area": ["העיר העתיקה"]}
+{"address": "היינריך היינה 7", "found": true, "lat": 31.7721092, "lon": 35.2240414, "precision": "street", "osm_area": ["ימין משה"]}
+{"address": "הגתית 2", "found": false}
+{"address": "האשורים 8", "found": false}
+{"address": "האשורים 3", "found": false}
+{"address": "האמונה 9", "found": true, "lat": 31.7894066, "lon": 35.224894, "precision": "street", "osm_area": ["בית ישראל"]}
+{"address": "האמאם אלמלכי סמ3 2", "found": false}
+{"address": "האמאם אלמלכי סמ3 10", "found": false}
+{"address": "האמאם אלמלכי סמ1 3", "found": false}
+{"address": "האמאם אלמלכי סמ1 2", "found": false}
+{"address": "האמאם אלמלכי 7", "found": false}
+{"address": "האמאם אלמלכי 2", "found": false}
+{"address": "האמאם אבו חניפה 9999", "found": false}
+{"address": "האמאם אבו חניפה 32", "found": false}
+{"address": "האמאם אבו חניפה 0", "found": false}
+{"address": "האומן 36", "found": true, "lat": 31.7508981, "lon": 35.2078195, "precision": "street", "osm_area": ["קטמונים (גוננים)"]}
+{"address": "האומן 9", "found": true, "lat": 31.7485189, "lon": 35.2111389, "precision": "exact", "osm_area": ["מקור חיים"]}
+{"address": "האומן 16", "found": true, "lat": 31.7513873, "lon": 35.209014, "precision": "exact", "osm_area": ["קטמונים (גוננים)"]}
+{"address": "האדריכל 3", "found": true, "lat": 31.7906336, "lon": 35.2042155, "precision": "exact", "osm_area": ["רוממה"]}
+{"address": "האדמור מגור 4", "found": false}
+{"address": "האדמור מגור 131", "found": false}
+{"address": "דרך צור באהר 9999", "found": true, "lat": 31.736978, "lon": 35.230176, "precision": "street", "osm_area": ["גבעות ארנונה", "צור באהר"]}
+{"address": "דרך צור באהר 680", "found": true, "lat": 31.736978, "lon": 35.230176, "precision": "street", "osm_area": ["גבעות ארנונה", "צור באהר"]}
+{"address": "דרך צור באהר 0", "found": false}
+{"address": "דרך מעלה אדמים 9999", "found": false}
+{"address": "דרך העופל 22", "found": true, "lat": 31.7768471, "lon": 35.2378661, "precision": "street", "osm_area": ["סילוואן"]}
+{"address": "דרך הכדים 78", "found": false}
+{"address": "דרך הגן סמ3 9999", "found": false}
+{"address": "דרך הגן סמ3 167", "found": false}
+{"address": "דרך הגן סמ3 108", "found": false}
+{"address": "דרך הגן סמ2 72", "found": false}
+{"address": "דרך הגן סמ2 70", "found": false}
+{"address": "דרך הגן סמ2 45", "found": false}
+{"address": "דרך הגן 99", "found": false}
+{"address": "דרך הגן 169", "found": false}
+{"address": "דרך הגן 104", "found": false}
+{"address": "דרך ביר נבאלה 5", "found": true, "lat": 31.8332764, "lon": 35.2254574, "precision": "street", "osm_area": ["בית חנינא"]}
+{"address": "דר יוסף בורג 2", "found": false}
+{"address": "דר יוסף בורג 10", "found": false}
+{"address": "דר יוסף בורג 6", "found": false}
+{"address": "דיר כרמיזן 7", "found": false}
+{"address": "דיר כרמיזן 2", "found": false}
+{"address": "דיר כרמיזן 15", "found": false}
+{"address": "דיר טנטורה 18", "found": false}
+{"address": "דיר טנטורה", "found": false}
+{"address": "דיר טנטורה 687", "found": false}
+{"address": "דביר 6", "found": true, "lat": 31.7829385, "lon": 35.2104117, "precision": "street", "osm_area": ["נחלאות"]}
+{"address": "דביר 4", "found": true, "lat": 31.7829385, "lon": 35.2104117, "precision": "street", "osm_area": ["נחלאות"]}
+{"address": "דאחית א-סלאם סמטה 15 מס' 9 9", "found": false}
+{"address": "דאחית א-סלאם סמטה 15 מס' 9 26", "found": false}
+{"address": "דאחית א-סלאם סמטה 15 מס' 9 115", "found": false}
+{"address": "גרייבסקי פנחס 6", "found": false}
+{"address": "גרייבסקי פנחס 4", "found": false}
+{"address": "גרייבסקי פנחס 28", "found": false}
+{"address": "גן העשרים 1", "found": false}
+{"address": "גינת אגוז 3", "found": false}
+{"address": "גינת אגוז 1", "found": false}
+{"address": "גיא בן הינום 89", "found": true, "lat": 31.768445, "lon": 35.229547, "precision": "street", "osm_area": ["הר ציון"]}
+{"address": "גיא בן הינום 45", "found": true, "lat": 31.768445, "lon": 35.229547, "precision": "street", "osm_area": ["הר ציון"]}
+{"address": "גיא בן הינום 39", "found": true, "lat": 31.768445, "lon": 35.229547, "precision": "street", "osm_area": ["הר ציון"]}
+{"address": "גוגה ומוריס רג'ואן 9", "found": true, "lat": 31.7605971, "lon": 35.189213, "precision": "exact", "osm_area": ["בית וגן"]}
+{"address": "גוגה ומוריס רג'ואן 11", "found": true, "lat": 31.7606378, "lon": 35.1890603, "precision": "exact", "osm_area": ["בית וגן"]}
+{"address": "גוגה ומוריס רג'ואן 1", "found": true, "lat": 31.760903, "lon": 35.1897725, "precision": "exact", "osm_area": ["בית וגן"]}
+{"address": "ג'עפר א-סאדק 9", "found": true, "lat": 31.8413862, "lon": 35.2312034, "precision": "street", "osm_area": ["בית חנינא"]}
+{"address": "ג'עפר א-סאדק 26", "found": true, "lat": 31.8413862, "lon": 35.2312034, "precision": "street", "osm_area": ["בית חנינא"]}
+{"address": "ג'עפר א-סאדק 1", "found": true, "lat": 31.8413862, "lon": 35.2312034, "precision": "street", "osm_area": ["בית חנינא"]}
+{"address": "בקור חולים 6", "found": false}
+{"address": "בנה ביתך גילה 63", "found": false}
+{"address": "בנה ביתך גילה 42", "found": false}
+{"address": "בלכר נחום 5", "found": false}
+{"address": "בלזר יצחק 8", "found": true, "lat": 31.78848, "lon": 35.2219981, "precision": "street", "osm_area": ["בית ישראל"]}
+{"address": "בלזר יצחק 18", "found": true, "lat": 31.78848, "lon": 35.2219981, "precision": "street", "osm_area": ["בית ישראל"]}
+{"address": "בלזר יצחק 1", "found": true, "lat": 31.78848, "lon": 35.2219981, "precision": "street", "osm_area": ["בית ישראל"]}
+{"address": "בית פאג'י סמ2 11", "found": false}
+{"address": "בית פאג'י 670", "found": false}
+{"address": "בית פאג'י 25", "found": false}
+{"address": "בית פאג'י 11", "found": false}
+{"address": "ביר אל-עקבה סמ1 8", "found": false}
+{"address": "ביר אל-עקבה סמ1 2", "found": false}
+{"address": "ביר אל-עקבה 9999", "found": false}
+{"address": "ביר אל-עקבה 4", "found": false}
+{"address": "ביר אל-עקבה 12", "found": false}
+{"address": "ביר אל-חמראה' 9999", "found": false}
+{"address": "ביר אל-חמראה' 2", "found": false}
+{"address": "ביר אל-חמראה' 1", "found": false}
+{"address": "בטיש שמעון 1", "found": false}
+{"address": "בורג אל פדי 9999", "found": false}
+{"address": "באב אל הווא 6", "found": true, "lat": 31.7397091, "lon": 35.1923341, "precision": "street", "osm_area": ["שרפאת"]}
+{"address": "באב אל הווא 37", "found": true, "lat": 31.7397091, "lon": 35.1923341, "precision": "street", "osm_area": ["שרפאת"]}
+{"address": "באב אל הווא 12", "found": true, "lat": 31.7397091, "lon": 35.1923341, "precision": "street", "osm_area": ["שרפאת"]}
+{"address": "ארד אל עקבה 8", "found": false}
+{"address": "ארד אל עקבה 36", "found": false}
+{"address": "אעלה בתמר 33", "found": false}
+{"address": "אעלה בתמר 31", "found": false}
+{"address": "אעלה בתמר 27", "found": false}
+{"address": "אע'זייל סמ6 16", "found": false}
+{"address": "אע'זייל סמ6 14", "found": false}
+{"address": "אע'זייל סמ3 683", "found": false}
+{"address": "אע'זייל סמ3 4", "found": false}
+{"address": "אע'זייל סמ3 1", "found": false}
+{"address": "אע'זייל סמ1 9", "found": false}
+{"address": "אע'זייל סמ1 6", "found": false}
+{"address": "אע'זייל סמ1 12", "found": false}
+{"address": "אע'זייל 9", "found": false}
+{"address": "אע'זייל 37", "found": false}
+{"address": "אע'זייל 14", "found": false}
+{"address": "אמיר 7", "found": true, "lat": 31.776498, "lon": 35.1839539, "precision": "exact", "osm_area": ["יפה נוף"]}
+{"address": "אמאם אבו חניפה סמ1 21", "found": false}
+{"address": "אלתין 8", "found": false}
+{"address": "אלתין 14", "found": false}
+{"address": "אלתין 10", "found": false}
+{"address": "אלראזי 27", "found": false}
+{"address": "אלקות'ר 3", "found": false}
+{"address": "אלקות'ר 2", "found": false}
+{"address": "אלעזר דוד 11", "found": true, "lat": 31.840467, "lon": 35.2318396, "precision": "street", "osm_area": ["בית חנינא"]}
+{"address": "אלמעבר 53", "found": false}
+{"address": "אלמעבר 44", "found": false}
+{"address": "אלמעבר 10", "found": false}
+{"address": "אלמלכ אלמועט'ם עיסא 4", "found": false}
+{"address": "אלמחאגר סמ3 18", "found": false}
+{"address": "אלוני שחר 526", "found": false}
+{"address": "אלוני שחר 525", "found": false}
+{"address": "אלבו יוסף 8", "found": true, "lat": 31.8151759, "lon": 35.1910037, "precision": "street", "osm_area": ["רמות"]}
+{"address": "אלבו יוסף 20", "found": true, "lat": 31.8149831, "lon": 35.1908476, "precision": "exact", "osm_area": ["רמות"]}
+{"address": "אלבו יוסף 10", "found": true, "lat": 31.8153008, "lon": 35.1905128, "precision": "exact", "osm_area": ["רמות"]}
+{"address": "אל שוקר 6", "found": false}
+{"address": "אל שוקר 4", "found": false}
+{"address": "אל שוקר 13", "found": false}
+{"address": "אל שאפעיה זיינב 9999", "found": false}
+{"address": "אל שאפעיה זיינב 4", "found": false}
+{"address": "אל ראוידה 6", "found": false}
+{"address": "אל ראוידה 15", "found": false}
+{"address": "אל ראוידה 13", "found": false}
+{"address": "אל קסילה 1", "found": true, "lat": 31.7990652, "lon": 35.2469923, "precision": "street", "osm_area": ["עיסוויה"]}
+{"address": "אל קאע 52", "found": true, "lat": 31.7884543, "lon": 35.2187712, "precision": "street", "osm_area": ["גאולה"]}
+{"address": "אל קאע 42", "found": true, "lat": 31.7884543, "lon": 35.2187712, "precision": "street", "osm_area": ["גאולה"]}
+{"address": "אל קאע 17", "found": true, "lat": 31.7682333, "lon": 35.2267435, "precision": "exact", "osm_area": ["גבעת חנניה"]}
+{"address": "אל עזזה 9", "found": false}
+{"address": "אל עזזה 7", "found": false}
+{"address": "אל סילם 4", "found": false}
+{"address": "אל סילם 1", "found": false}
+{"address": "אל סיידה 4", "found": false}
+{"address": "אל סיידה 1", "found": false}
+{"address": "אל סיידה", "found": false}
+{"address": "אל נאדר 6", "found": false}
+{"address": "אל נאדר 5", "found": false}
+{"address": "אל נאדר 2", "found": false}
+{"address": "אל מסגיד 61", "found": false}
+{"address": "אל מנארה 80", "found": false}
+{"address": "אל מוסתשפא 67", "found": false}
+{"address": "אל מוסתשפא 53", "found": false}
+{"address": "אל מוסתשפא 116", "found": false}
+{"address": "אל מדראס 42", "found": true, "lat": 31.7985795, "lon": 35.2545902, "precision": "street", "osm_area": ["עיסוויה"]}
+{"address": "אל מדראס 30", "found": true, "lat": 31.7985795, "lon": 35.2545902, "precision": "street", "osm_area": ["עיסוויה"]}
+{"address": "אל מדראס 13", "found": true, "lat": 31.7985795, "lon": 35.2545902, "precision": "street", "osm_area": ["עיסוויה"]}
+{"address": "אל מדוורה 8", "found": false}
+{"address": "אל מדוורה 15", "found": false}
+{"address": "אל מדוורה", "found": false}
+{"address": "אל יאסמין 13", "found": true, "lat": 31.7455462, "lon": 35.2039617, "precision": "street", "osm_area": ["בית צפאפא"]}
+{"address": "אל חניה 6", "found": false}
+{"address": "אל חמווי 4", "found": true, "lat": 31.7861574, "lon": 35.238009, "precision": "street", "osm_area": ["ואדי ג'וז"]}
+{"address": "אל חג'אג' סמ5 7", "found": false}
+{"address": "אל חג'אג' סמ5 6", "found": false}
+{"address": "אל חג'אג' סמ4 3", "found": false}
+{"address": "אל חג'אג' סמ4 22", "found": false}
+{"address": "אל חג'אג' סמ10 7", "found": false}
+{"address": "אל זמבק 7", "found": false}
+{"address": "אל ורד 2", "found": true, "lat": 31.7709261, "lon": 35.2169244, "precision": "street", "osm_area": ["טלביה"]}
+{"address": "אל ורד 10", "found": true, "lat": 31.7709261, "lon": 35.2169244, "precision": "street", "osm_area": ["טלביה"]}
+{"address": "אל ורד 1", "found": true, "lat": 31.7709261, "lon": 35.2169244, "precision": "street", "osm_area": ["טלביה"]}
+{"address": "אל וולאג'ה 9999", "found": true, "lat": 31.7422927, "lon": 35.1498229, "precision": "street", "osm_area": []}
+{"address": "אל וולאג'ה 999", "found": false}
+{"address": "אל וולאג'ה 1", "found": false}
+{"address": "אל דוואר אל אוול 43", "found": false}
+{"address": "אל דוואר אל אוול 41", "found": false}
+{"address": "אל דוואר אל אוול 39", "found": false}
+{"address": "אל ג'מעיה 7", "found": false}
+{"address": "אל ג'מעיה 18", "found": false}
+{"address": "אל ג'מעיה 10", "found": false}
+{"address": "אל בראעם 71", "found": true, "lat": 31.7818525, "lon": 35.2096208, "precision": "street", "osm_area": ["נחלאות"]}
+{"address": "אל בראעם 19", "found": true, "lat": 31.7818525, "lon": 35.2096208, "precision": "street", "osm_area": ["נחלאות"]}
+{"address": "אל בראעם 13", "found": true, "lat": 31.7813752, "lon": 35.2093358, "precision": "exact", "osm_area": ["נחלאות"]}
+{"address": "אל בסאתין 4", "found": false}
+{"address": "אל בסאתין 1", "found": false}
+{"address": "אל ביאדר סמ1 5", "found": false}
+{"address": "אל ביאדר סמ1 18", "found": false}
+{"address": "אל ביאדר סמ1 1", "found": false}
+{"address": "אל ביאדר 999", "found": true, "lat": 31.7499163, "lon": 35.1720599, "precision": "street", "osm_area": ["גבעת משואה"]}
+{"address": "אל ביאדר 20", "found": true, "lat": 31.7500605, "lon": 35.1719101, "precision": "exact", "osm_area": ["גבעת משואה"]}
+{"address": "אל ביאדר 1", "found": true, "lat": 31.7495747, "lon": 35.1723063, "precision": "exact", "osm_area": ["גבעת משואה"]}
+{"address": "אל בדריה סמ2 7", "found": false}
+{"address": "אל בדריה סמ2 23", "found": false}
+{"address": "אל בדריה 7", "found": true, "lat": 31.7427229, "lon": 35.1910594, "precision": "street", "osm_area": ["שרפאת"]}
+{"address": "אל בדריה 18", "found": true, "lat": 31.7427229, "lon": 35.1910594, "precision": "street", "osm_area": ["שרפאת"]}
+{"address": "אל בדריה 13", "found": true, "lat": 31.7427229, "lon": 35.1910594, "precision": "street", "osm_area": ["שרפאת"]}
+{"address": "אל אחיאא 8", "found": true, "lat": 31.7617496, "lon": 35.2130522, "precision": "exact", "osm_area": ["המושבה היוונית"]}
+{"address": "אל אחיאא 6", "found": true, "lat": 31.7663904, "lon": 35.2112528, "precision": "exact", "osm_area": ["קטמון הישנה"]}
+{"address": "אל אחיאא 10", "found": true, "lat": 31.7662357, "lon": 35.2107528, "precision": "exact", "osm_area": ["קטמון הישנה"]}
+{"address": "אל אח'טל 9999", "found": true, "lat": 31.7847701, "lon": 35.2367123, "precision": "street", "osm_area": ["ואדי ג'וז"]}
+{"address": "אל אח'טל 19", "found": true, "lat": 31.7847701, "lon": 35.2367123, "precision": "street", "osm_area": ["ואדי ג'וז"]}
+{"address": "אל אח'טל 1", "found": true, "lat": 31.7847701, "lon": 35.2367123, "precision": "street", "osm_area": ["ואדי ג'וז"]}
+{"address": "אל-תראב 17", "found": false}
+{"address": "אל-תראב 13", "found": false}
+{"address": "אל-תראב 10", "found": false}
+{"address": "אל-תסאמח סמ4 2", "found": false}
+{"address": "אל-תסאמח סמ4 10", "found": false}
+{"address": "אל-תסאמח סמ2 8", "found": false}
+{"address": "אל-תסאמח סמ2 6", "found": false}
+{"address": "אל-תסאמח סמ2 2", "found": false}
+{"address": "אל-תסאמח 8", "found": false}
+{"address": "אל-תסאמח 27", "found": false}
+{"address": "אל-תסאמח 12", "found": false}
+{"address": "אל-תווחיד סמ2 57", "found": false}
+{"address": "אל-תווחיד סמ1 9", "found": false}
+{"address": "אל-תווחיד סמ1 4", "found": false}
+{"address": "אל-תווחיד סמ1 11", "found": false}
+{"address": "אל-תווחיד 86", "found": false}
+{"address": "אל-תווחיד 61", "found": false}
+{"address": "אל-תווחיד 28", "found": false}
+{"address": "אל-שהד 9999", "found": false}
+{"address": "אל-שהד 17", "found": false}
+{"address": "אל-שהד 1", "found": false}
+{"address": "אל-רסם סמ4 8", "found": false}
+{"address": "אל-רסם סמ4 4", "found": false}
+{"address": "אל-רסם סמ4 10", "found": false}
+{"address": "אל-רסם סמ2 7", "found": false}
+{"address": "אל-רסם 999", "found": false}
+{"address": "אל-רסם 27", "found": false}
+{"address": "אל-רסם 1", "found": false}
+{"address": "אל-רוא'יה סמ5 4", "found": false}
+{"address": "אל-רוא'יה סמ5 29", "found": false}
+{"address": "אל-רוא'יה סמ5 27", "found": false}
+{"address": "אל-רוא'יה סמ4 7", "found": false}
+{"address": "אל-רוא'יה סמ4 5", "found": false}
+{"address": "אל-רוא'יה סמ3 7", "found": false}
+{"address": "אל-רוא'יה סמ3 15", "found": false}
+{"address": "אל-רוא'יה סמ3 1", "found": false}
+{"address": "אל-רוא'יה סמ1 7", "found": false}
+{"address": "אל-רוא'יה סמ1 6", "found": false}
+{"address": "אל-רוא'יה סמ1 43", "found": false}
+{"address": "אל-רוא'יה 9999", "found": false}
+{"address": "אל-רוא'יה 3", "found": false}
+{"address": "אל-רוא'יה 1", "found": false}
+{"address": "אל-צלעה סמ8 9", "found": false}
+{"address": "אל-צלעה סמ6 9", "found": false}
+{"address": "אל-צלעה סמ6 11", "found": false}
+{"address": "אל-צלעה סמ4 9", "found": false}
+{"address": "אל-צלעה סמ4 7", "found": false}
+{"address": "אל-צלעה סמ4 5", "found": false}
+{"address": "אל-צלעה סמ3 7", "found": false}
+{"address": "אל-צלעה סמ3 19", "found": false}
+{"address": "אל-צלעה סמ3 11", "found": false}
+{"address": "אל-צלעה סמ2 5", "found": false}
+{"address": "אל-צלעה סמ2 2", "found": false}
+{"address": "אל-צלעה סמ2 1", "found": false}
+{"address": "אל-צלעה סמ1 30", "found": false}
+{"address": "אל-צלעה סמ1 18", "found": false}
+{"address": "אל-צלעה סמ1 10", "found": false}
+{"address": "אל-צלעה 89", "found": false}
+{"address": "אל-צלעה 30", "found": false}
+{"address": "אל-צלעה 42", "found": false}
+{"address": "אל-עשרק סמ3 7", "found": false}
+{"address": "אל-עשרק סמ3 10", "found": false}
+{"address": "אל-עשרק סמ3 1", "found": false}
+{"address": "אל-עשרק סמ1 8", "found": false}
+{"address": "אל-עשרק סמ1 22", "found": false}
+{"address": "אל-עשרק סמ1 20", "found": false}
+{"address": "אל-עשרק 9999", "found": false}
+{"address": "אל-עשרק 19", "found": false}
+{"address": "אל-עשרק 13", "found": false}
+{"address": "אל-עהד סמ2 7", "found": false}
+{"address": "אל-עהד סמ2 5", "found": false}
+{"address": "אל-עהד סמ2 1", "found": false}
+{"address": "אל-עהד 9999", "found": false}
+{"address": "אל-עהד 30", "found": true, "lat": 31.7884543, "lon": 35.2187712, "precision": "street", "osm_area": ["גאולה"]}
+{"address": "אל-עהד 20", "found": true, "lat": 31.7884543, "lon": 35.2187712, "precision": "street", "osm_area": ["גאולה"]}
+{"address": "אל-סידר 41", "found": true, "lat": 31.7281596, "lon": 35.2323289, "precision": "street", "osm_area": ["אום טובא"]}
+{"address": "אל-סידר 36", "found": true, "lat": 31.7281596, "lon": 35.2323289, "precision": "street", "osm_area": ["אום טובא"]}
+{"address": "אל-סידר 29", "found": true, "lat": 31.7281596, "lon": 35.2323289, "precision": "street", "osm_area": ["אום טובא"]}
+{"address": "אל-סולם 3", "found": false}
+{"address": "אל-סהל אל-ג'דידסמ10 5", "found": false}
+{"address": "אל-נת'יר סמ6 6", "found": false}
+{"address": "אל-נת'יר סמ6 3", "found": false}
+{"address": "אל-נת'יר סמ4 6", "found": false}
+{"address": "אל-נת'יר סמ4 2", "found": false}
+{"address": "אל-נת'יר סמ4 16", "found": false}
+{"address": "אל-נת'יר סמ2 36", "found": false}
+{"address": "אל-נת'יר סמ2 26", "found": false}
+{"address": "אל-נת'יר סמ2 12", "found": false}
+{"address": "אל-נפל סמ2 9999", "found": false}
+{"address": "אל-נפל סמ2 26", "found": false}
+{"address": "אל-נפל סמ2 18", "found": false}
+{"address": "אל-נפל סמ1 999", "found": false}
+{"address": "אל-נפל 999", "found": false}
+{"address": "אל-נפל 56", "found": false}
+{"address": "אל-נפל 46", "found": false}
+{"address": "אל-נחל (הדבורים) 9", "found": false}
+{"address": "אל-נחל (הדבורים) 44", "found": false}
+{"address": "אל-נחל (הדבורים) 16", "found": false}
+{"address": "אל-מעני סמ1 6", "found": false}
+{"address": "אל-מעני סמ1 4", "found": false}
+{"address": "אל-מעאני 9", "found": false}
+{"address": "אל-מעאני 26", "found": false}
+{"address": "אל-מעאני 10", "found": false}
+{"address": "אל-מנג'ל 8", "found": false}
+{"address": "אל-מנג'ל 12", "found": false}
+{"address": "אל-מנג'ל 10", "found": false}
+{"address": "אל-מחאג'ר סמ6 9999", "found": false}
+{"address": "אל-מחאג'ר סמ6 8", "found": false}
+{"address": "אל-מחאג'ר סמ6 6", "found": false}
+{"address": "אל-מחאג'ר סמ5 999", "found": true, "lat": 31.7253315, "lon": 35.2334829, "precision": "street", "osm_area": ["אום טובא"]}
+{"address": "אל-מחאג'ר סמ5 2", "found": true, "lat": 31.7253315, "lon": 35.2334829, "precision": "street", "osm_area": ["אום טובא"]}
+{"address": "אל-מחאג'ר סמ5 14", "found": true, "lat": 31.7253315, "lon": 35.2334829, "precision": "street", "osm_area": ["אום טובא"]}
+{"address": "אל-מחאג'ר סמ4 8", "found": false}
+{"address": "אל-מחאג'ר סמ4 6", "found": false}
+{"address": "אל-מחאג'ר סמ3 12", "found": false}
+{"address": "אל-מחאג'ר סמ1 9999", "found": true, "lat": 31.7253315, "lon": 35.2334829, "precision": "street", "osm_area": ["אום טובא"]}
+{"address": "אל-מחאג'ר סמ1 3", "found": true, "lat": 31.7253315, "lon": 35.2334829, "precision": "street", "osm_area": ["אום טובא"]}
+{"address": "אל-מחאג'ר סמ1 1", "found": true, "lat": 31.7253315, "lon": 35.2334829, "precision": "street", "osm_area": ["אום טובא"]}
+{"address": "אל-מחאג'ר 9999", "found": true, "lat": 31.7253315, "lon": 35.2334829, "precision": "street", "osm_area": ["אום טובא"]}
+{"address": "אל-מחאג'ר 25", "found": true, "lat": 31.7253315, "lon": 35.2334829, "precision": "street", "osm_area": ["אום טובא"]}
+{"address": "אל-מחאג'ר 2", "found": true, "lat": 31.7253315, "lon": 35.2334829, "precision": "street", "osm_area": ["אום טובא"]}
+{"address": "אל-מוטלה 3", "found": true, "lat": 31.732597, "lon": 35.2058459, "precision": "street", "osm_area": ["גבעת המטוס"]}
+{"address": "אל-מוטלה 27", "found": true, "lat": 31.732597, "lon": 35.2058459, "precision": "street", "osm_area": ["גבעת המטוס"]}
+{"address": "אל-מוטלה 17", "found": true, "lat": 31.732597, "lon": 35.2058459, "precision": "street", "osm_area": ["גבעת המטוס"]}
+{"address": "אל-מהאג'רין סמ2 23", "found": false}
+{"address": "אל-מהאג'רין סמ2 21", "found": false}
+{"address": "אל-מהאג'רין 58", "found": false}
+{"address": "אל-מהאג'רין 28", "found": false}
+{"address": "אל-מהאג'רין", "found": false}
+{"address": "אל-מג'ד 9999", "found": true, "lat": 31.7605604, "lon": 35.2530412, "precision": "street", "osm_area": ["ג'בל מוכאבר"]}
+{"address": "אל-מג'ד 21", "found": true, "lat": 31.7605604, "lon": 35.2530412, "precision": "street", "osm_area": ["ג'בל מוכאבר"]}
+{"address": "אל-מג'ד 1", "found": true, "lat": 31.7605604, "lon": 35.2530412, "precision": "street", "osm_area": ["ג'בל מוכאבר"]}
+{"address": "אל-טפטאף 9999", "found": true, "lat": 31.741959, "lon": 35.20505, "precision": "street", "osm_area": ["בית צפאפא"]}
+{"address": "אל-טפטאף 2", "found": false}
+{"address": "אל-טפטאף 10", "found": false}
+{"address": "אל-חיאה סמ8 14", "found": false}
+{"address": "אל-חיאה סמ6 4", "found": false}
+{"address": "אל-חיאה סמ4 7", "found": false}
+{"address": "אל-חיאה סמ4 15", "found": false}
+{"address": "אל-חיאה סמ4 12", "found": false}
+{"address": "אל-חיאה סמ2 9999", "found": false}
+{"address": "אל-חיאה סמ2 3", "found": false}
+{"address": "אל-חיאה סמ2 1", "found": false}
+{"address": "אל-חיאה סמ2", "found": false}
+{"address": "אל-חיאה 14", "found": false}
+{"address": "אל-חיאה 12", "found": false}
+{"address": "אל-חווארה 8", "found": false}
+{"address": "אל-חווארה 2", "found": false}
+{"address": "אל-חווארה 10", "found": false}
+{"address": "אל-חווא סמ1 13", "found": true, "lat": 31.7700809, "lon": 35.2383472, "precision": "street", "osm_area": ["סילוואן"]}
+{"address": "אל-חווא 15", "found": true, "lat": 31.7700809, "lon": 35.2383472, "precision": "street", "osm_area": ["סילוואן"]}
+{"address": "אל-חווא 13", "found": true, "lat": 31.7700809, "lon": 35.2383472, "precision": "street", "osm_area": ["סילוואן"]}
+{"address": "אל-חווא 12", "found": true, "lat": 31.7397091, "lon": 35.1923341, "precision": "street", "osm_area": ["שרפאת"]}
+{"address": "אל-חאמד 99", "found": false}
+{"address": "אל-חאמד 22", "found": false}
+{"address": "אל-חאמד 101", "found": true, "lat": 31.767276, "lon": 35.23179, "precision": "street", "osm_area": ["אבו טור"]}
+{"address": "אל-זנבק 7", "found": false}
+{"address": "אל-זנבק 5", "found": false}
+{"address": "אל-זנבק 1", "found": false}
+{"address": "אל-זהרא' 17", "found": true, "lat": 31.786035, "lon": 35.23276, "precision": "street", "osm_area": ["באב א-זהרה"]}
+{"address": "אל-זהרא' 16", "found": true, "lat": 31.786035, "lon": 35.23276, "precision": "street", "osm_area": ["באב א-זהרה"]}
+{"address": "אל-זהרא' 5", "found": true, "lat": 31.786035, "lon": 35.23276, "precision": "street", "osm_area": ["באב א-זהרה"]}
+{"address": "אל-בית אל-עתיק 14", "found": false}
+{"address": "אל-בית אל-עתיק 10", "found": false}
+{"address": "איסלייב 9999", "found": false}
+{"address": "איסלייב 296", "found": false}
+{"address": "איסלייב 10", "found": false}
+{"address": "אילה 422", "found": true, "lat": 31.7292546, "lon": 35.1874345, "precision": "exact", "osm_area": ["גילה"]}
+{"address": "אילה 420", "found": true, "lat": 31.728662, "lon": 35.1873814, "precision": "exact", "osm_area": ["גילה"]}
+{"address": "אילה 418", "found": true, "lat": 31.7285605, "lon": 35.1873186, "precision": "street", "osm_area": ["גילה"]}
+{"address": "אחמד אסעד דארי סמ9 9", "found": false}
+{"address": "אחמד אסעד דארי סמ9 27", "found": false}
+{"address": "אחמד אסעד דארי סמ9 15", "found": false}
+{"address": "אחמד אסעד דארי סמ7 9999", "found": false}
+{"address": "אחמד אסעד דארי סמ5 9999", "found": false}
+{"address": "אחמד אסעד דארי סמ5 10", "found": false}
+{"address": "אחמד אסעד דארי סמ3 1", "found": false}
+{"address": "אחמד אסעד דארי סמ1 12", "found": false}
+{"address": "אחמד אסעד אל דארי 9999", "found": false}
+{"address": "אחמד אסעד אל דארי 53", "found": false}
+{"address": "אחמד אסעד אל דארי 16", "found": false}
+{"address": "אח'ואן אל צפא 90", "found": true, "lat": 31.788121, "lon": 35.2346344, "precision": "street", "osm_area": ["באב א-זהרה"]}
+{"address": "אח'ואן אל צפא 44", "found": true, "lat": 31.788121, "lon": 35.2346344, "precision": "street", "osm_area": ["באב א-זהרה"]}
+{"address": "אח'ואן אל צפא 10", "found": true, "lat": 31.788121, "lon": 35.2346344, "precision": "street", "osm_area": ["באב א-זהרה"]}
+{"address": "אורנשטיין 9", "found": true, "lat": 31.7859627, "lon": 35.2148188, "precision": "exact", "osm_area": ["זכרון משה"]}
+{"address": "אורנשטיין 7", "found": true, "lat": 31.7856902, "lon": 35.2146294, "precision": "exact", "osm_area": ["זכרון משה"]}
+{"address": "אורנשטיין 3", "found": true, "lat": 31.7854262, "lon": 35.2147164, "precision": "exact", "osm_area": ["זכרון משה"]}
+{"address": "אוריאל 7", "found": true, "lat": 31.7971651, "lon": 35.2207275, "precision": "exact", "osm_area": ["סנהדריה"]}
+{"address": "אוריאל 3", "found": true, "lat": 31.7970111, "lon": 35.2203699, "precision": "exact", "osm_area": ["סנהדריה"]}
+{"address": "אוריאל 5", "found": true, "lat": 31.7970532, "lon": 35.220568, "precision": "exact", "osm_area": ["סנהדריה"]}
+{"address": "אוסאמה אבן חארת'ה סמטה 7 7", "found": false}
+{"address": "אוסאמה אבן חארת'ה סמטה 7 64", "found": false}
+{"address": "אוסאמה אבן חארת'ה סמטה 5 18", "found": false}
+{"address": "אום אל עמד 5", "found": true, "lat": 31.8086943, "lon": 35.2331471, "precision": "street", "osm_area": ["שועפט"]}
+{"address": "אום אל עמד 3", "found": true, "lat": 31.8086943, "lon": 35.2331471, "precision": "street", "osm_area": ["שועפט"]}
+{"address": "אום אל עמד 10", "found": true, "lat": 31.8086943, "lon": 35.2331471, "precision": "street", "osm_area": ["שועפט"]}
+{"address": "אהרון (שעשוע) עזרא 12", "found": true, "lat": 31.8383941, "lon": 35.2428492, "precision": "exact", "osm_area": ["פסגת זאב"]}
+{"address": "אהרון (שעשוע) עזרא 10", "found": true, "lat": 31.8382122, "lon": 35.2431178, "precision": "exact", "osm_area": ["פסגת זאב"]}
+{"address": "אדלר שאול 7", "found": true, "lat": 31.784345, "lon": 35.2223792, "precision": "street", "osm_area": ["מאה שערים"]}
+{"address": "אדלר שאול 5", "found": true, "lat": 31.784345, "lon": 35.2223792, "precision": "street", "osm_area": ["מאה שערים"]}
+{"address": "אדיב אסעאף 9", "found": true, "lat": 31.7934302, "lon": 35.2317029, "precision": "street", "osm_area": ["שייח' ג'ראח"]}
+{"address": "אדיב אסעאף 5", "found": true, "lat": 31.7934302, "lon": 35.2317029, "precision": "street", "osm_area": ["שייח' ג'ראח"]}
+{"address": "אדיב אסעאף 30", "found": true, "lat": 31.7934302, "lon": 35.2317029, "precision": "street", "osm_area": ["שייח' ג'ראח"]}
+{"address": "אברהם כחילה 26", "found": true, "lat": 31.7486796, "lon": 35.1792031, "precision": "street", "osm_area": ["מלחה"]}
+{"address": "אברהם כחילה 24", "found": true, "lat": 31.7486796, "lon": 35.1792031, "precision": "street", "osm_area": ["מלחה"]}
+{"address": "אבן ג'ראח 6", "found": true, "lat": 31.7901816, "lon": 35.2309583, "precision": "street", "osm_area": ["באב א-זהרה"]}
+{"address": "אבן ג'ראח 9", "found": true, "lat": 31.7901816, "lon": 35.2309583, "precision": "street", "osm_area": ["באב א-זהרה"]}
+{"address": "אבן ג'ראח 7", "found": true, "lat": 31.7901816, "lon": 35.2309583, "precision": "street", "osm_area": ["באב א-זהרה"]}
+{"address": "אבו תמאם 3", "found": true, "lat": 31.8324275, "lon": 35.2276983, "precision": "street", "osm_area": ["בית חנינא"]}
+{"address": "אבו תמאם 1", "found": true, "lat": 31.8324275, "lon": 35.2276983, "precision": "street", "osm_area": ["בית חנינא"]}
+{"address": "אבו פירס אל חמדני 24", "found": false}
+{"address": "אבו חאמד סמ1 3", "found": false}
+{"address": "אבו חאמד סמ1 11", "found": false}
+{"address": "אבו חאמד 52", "found": true, "lat": 31.8136711, "lon": 35.2298662, "precision": "street", "osm_area": ["שועפט"]}
+{"address": "אבו דוויח סמ6 5", "found": false}
+{"address": "אבו דוויח סמ4 4", "found": false}
+{"address": "אבו דוויח סמ2 5", "found": false}
+{"address": "אבו דוויח סמ2 11", "found": false}
+{"address": "אבו דוויח 55", "found": true, "lat": 31.7811569, "lon": 35.2464602, "precision": "street", "osm_area": ["א-טור"]}
+{"address": "אבו דוויח 30", "found": true, "lat": 31.7811569, "lon": 35.2464602, "precision": "street", "osm_area": ["א-טור"]}
+{"address": "אבו דוויח 12", "found": true, "lat": 31.7838941, "lon": 35.246912, "precision": "street", "osm_area": ["א-טור"]}
+{"address": "אאל טלב סמ1 19", "found": false}
+{"address": "אאל טלב סמ1 14", "found": false}
+{"address": "אאל טלב 34", "found": true, "lat": 31.7882626, "lon": 35.230754, "precision": "street", "osm_area": ["באב א-זהרה"]}
+{"address": "אאל טלב 30", "found": true, "lat": 31.7882626, "lon": 35.230754, "precision": "street", "osm_area": ["באב א-זהרה"]}
+{"address": "אאל טלב 20", "found": true, "lat": 31.7882626, "lon": 35.230754, "precision": "street", "osm_area": ["באב א-זהרה"]}
+{"address": "א שיפא סמ2 3", "found": false}
+{"address": "א נח'יל 7", "found": false}
+{"address": "א נח'יל 12", "found": false}
+{"address": "א נח'יל 1", "found": false}
+{"address": "הזכרון 7", "found": false}
+{"address": "הועד הלאומי 21", "found": false}
+{"address": "שכ אוהל משה 1", "found": false}
+{"address": "בייט שמואל 12", "found": true, "lat": 31.7709043, "lon": 35.1892986, "precision": "street", "osm_area": ["רמת בית הכרם"]}
+{"address": "בייט שמואל 1", "found": true, "lat": 31.7709043, "lon": 35.1892986, "precision": "street", "osm_area": ["רמת בית הכרם"]}
+{"address": "מרן הגריש אלישיב 1", "found": false}
+{"address": "מוזיאון ישראל 1", "found": false}
+{"address": "ייבין יהושע 21", "found": false}
+{"address": "חפצדי נחום 5", "found": true, "lat": 31.7894724, "lon": 35.1868322, "precision": "exact", "osm_area": ["גבעת שאול"]}
+{"address": "חפצדי נחום 17", "found": true, "lat": 31.7898136, "lon": 35.1840162, "precision": "street", "osm_area": ["גבעת שאול"]}
+{"address": "תורה ועבודה 8", "found": true, "lat": 31.7671766, "lon": 35.1823239, "precision": "street", "osm_area": ["רמת דניה"]}
+{"address": "תורה ועבודה 15", "found": true, "lat": 31.7671766, "lon": 35.1823239, "precision": "street", "osm_area": ["רמת דניה"]}
+{"address": "תורה ועבודה 2", "found": true, "lat": 31.7679775, "lon": 35.1825585, "precision": "exact", "osm_area": ["רמת דניה"]}
+{"address": "המלמד 1", "found": false}
+{"address": "גל 1", "found": true, "lat": 31.8230738, "lon": 35.2424934, "precision": "exact", "osm_area": ["פסגת זאב"]}
+{"address": "שמשון רפאל הירש 1", "found": true, "lat": 31.7624314, "lon": 35.1917561, "precision": "street", "osm_area": ["גבעת מרדכי"]}
+{"address": "שמשון רפאל הירש 3", "found": true, "lat": 31.7624314, "lon": 35.1917561, "precision": "street", "osm_area": ["גבעת מרדכי"]}
+{"address": "וייז שמואל 1", "found": true, "lat": 31.7749231, "lon": 35.2011691, "precision": "street", "osm_area": ["קרית הממשלה"]}
+{"address": "בית הדפוס 9", "found": true, "lat": 31.7857175, "lon": 35.189277, "precision": "exact", "osm_area": ["קריית משה"]}
+{"address": "בית הדפוס 34", "found": true, "lat": 31.7864648, "lon": 35.191509, "precision": "street", "osm_area": ["קריית משה"]}
+{"address": "בית הדפוס 32", "found": true, "lat": 31.786842, "lon": 35.1814348, "precision": "exact", "osm_area": ["יפה נוף"]}
+{"address": "הרטום 16", "found": true, "lat": 31.8043255, "lon": 35.2109046, "precision": "exact", "osm_area": ["אזור תעשייה הר חוצבים"]}
+{"address": "הרטום 14", "found": true, "lat": 31.8044144, "lon": 35.2124101, "precision": "exact", "osm_area": ["אזור תעשייה הר חוצבים"]}
+{"address": "הרטום 7", "found": true, "lat": 31.8019807, "lon": 35.2133071, "precision": "exact", "osm_area": ["אזור תעשייה הר חוצבים"]}
+{"address": "המרפא 7", "found": true, "lat": 31.8023686, "lon": 35.2111443, "precision": "exact", "osm_area": ["אזור תעשייה הר חוצבים"]}
+{"address": "עם ועולמו 3", "found": true, "lat": 31.7888313, "lon": 35.1866121, "precision": "exact", "osm_area": ["גבעת שאול"]}
+{"address": "דרך השלוה 1", "found": false}
+{"address": "חטיבת ירושלים 1", "found": true, "lat": 31.7730522, "lon": 35.2267698, "precision": "street", "osm_area": ["ימין משה"]}
+{"address": "שיבת ציון 401", "found": true, "lat": 31.814825, "lon": 35.1975437, "precision": "street", "osm_area": ["רמות"]}
+{"address": "שד שזר 4", "found": false}
+{"address": "אל ג'בל אל ג'דיד 30", "found": false}
+{"address": "עוד יעקב רובין 1", "found": false}
+{"address": "המלאכה 4", "found": true, "lat": 31.785736, "lon": 35.2218337, "precision": "exact", "osm_area": ["מאה שערים"]}
+{"address": "אל-חג'אב 7", "found": false}
+{"address": "ברודצקי 8", "found": false}
+{"address": "קרית מדע 5", "found": true, "lat": 31.8015023, "lon": 35.2103559, "precision": "exact", "osm_area": ["אזור תעשייה הר חוצבים"]}
+{"address": "קרית מדע 6", "found": true, "lat": 31.8010894, "lon": 35.2109556, "precision": "exact", "osm_area": ["אזור תעשייה הר חוצבים"]}
+{"address": "שטנר 5", "found": true, "lat": 31.7864463, "lon": 35.1901943, "precision": "exact", "osm_area": ["קריית משה"]}
+{"address": "שטנר 3", "found": true, "lat": 31.7870929, "lon": 35.1899658, "precision": "exact", "osm_area": ["קריית משה"]}
+{"address": "ככר ארן זלמן 5", "found": false}
+{"address": "זמורה 1", "found": true, "lat": 31.7818744, "lon": 35.2227876, "precision": "street", "osm_area": ["מגרש הרוסים"]}
+{"address": "מעשה חושב 4", "found": true, "lat": 31.7516145, "lon": 35.2175851, "precision": "exact", "osm_area": ["גבעות ארנונה", "ארנונה"]}
+{"address": "אז תעש הר החוצבים 29", "found": false}
+{"address": "אז תעש הר החוצבים 105", "found": false}
+{"address": "אלוף שאלתיאל 5", "found": false}
+{"address": "מגרש הרוסים 1", "found": true, "lat": 31.7808075, "lon": 35.223906, "precision": "exact", "osm_area": ["מגרש הרוסים"]}
+{"address": "הרב שאולי 16", "found": true, "lat": 31.8426605, "lon": 35.2461605, "precision": "exact", "osm_area": ["בית חנינא"]}
+{"address": "היצירה 5", "found": true, "lat": 31.858864, "lon": 35.2197806, "precision": "street", "osm_area": ["אזור תעשיה עטרות"]}
+{"address": "מרכז ספיר 3", "found": false}
+{"address": "מרכז ספיר 7", "found": false}
+{"address": "הרב משה צבי נריה 2", "found": false}
+{"address": "תלפיות אזור תעשיה 8", "found": false}
+{"address": "משכנות שאננים 6", "found": false}
+{"address": "אל מונאדילין 1", "found": false}
+{"address": "רוטשילד 1", "found": true, "lat": 31.7805667, "lon": 35.2049872, "precision": "street", "osm_area": ["קרית הממשלה"]}
+{"address": "חכם עטיה עזרא 4", "found": true, "lat": 31.8011343, "lon": 35.2151511, "precision": "street", "osm_area": ["סנהדריה מורחבת"]}
+{"address": "איילון דוד 1", "found": true, "lat": 31.7514232, "lon": 35.1916102, "precision": "exact", "osm_area": ["מלחה"]}
+{"address": "הרב מניטו 2", "found": false}
+{"address": "יער ירושלים 1", "found": true, "lat": 31.7723482, "lon": 35.2355814, "precision": "street", "osm_area": ["סילוואן"]}
+{"address": "קפלן 1", "found": true, "lat": 31.7787656, "lon": 35.2022684, "precision": "street", "osm_area": ["קרית הממשלה"]}
+{"address": "הרקמה 7", "found": true, "lat": 31.7917021, "lon": 35.2020843, "precision": "exact", "osm_area": ["רוממה"]}
+{"address": "מגן האלף 1", "found": true, "lat": 31.7948537, "lon": 35.2230044, "precision": "street", "osm_area": ["מעלות דפנה"]}
+{"address": "שד צ'רצ'יל 1", "found": true, "lat": 31.7964943, "lon": 35.2413413, "precision": "street", "osm_area": ["הר הצופים"]}
+{"address": "דרך בנבנישתי דוד 1", "found": false}
